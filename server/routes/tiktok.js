@@ -1,0 +1,683 @@
+/**
+ * TikTok OAuth and Upload Routes
+ * Requirements: 1.2, 1.3
+ */
+
+import { Hono } from "hono";
+import { prisma } from "../db/prisma.js";
+import { authMiddleware } from "../middleware/auth.js";
+import {
+  getAuthUrl,
+  exchangeCode,
+  refreshToken as refreshTikTokToken,
+  revokeToken,
+  getUserInfo,
+  getCreatorInfo,
+  uploadVideo,
+  getPublishStatus,
+  waitForPublish,
+  validateVideoMetadata,
+} from "../services/platforms/tiktok.js";
+
+const tiktok = new Hono();
+
+// In-memory store for PKCE code verifiers (in production, use Redis or database)
+const codeVerifierStore = new Map();
+
+// Helper to get valid access token (refreshes if needed)
+async function getValidAccessToken(userId, accountId = null) {
+  const whereClause = accountId
+    ? { id: `tiktok_${userId}_${accountId}` }
+    : { userId, providerId: "tiktok" };
+
+  const account = await prisma.account.findFirst({ where: whereClause });
+
+  if (!account) {
+    throw new Error("TikTok account not found");
+  }
+
+  // Check if token is expired or about to expire (within 5 minutes)
+  const isExpired = account.accessTokenExpiresAt
+    ? new Date(account.accessTokenExpiresAt) < new Date(Date.now() + 5 * 60 * 1000)
+    : true;
+
+  if (isExpired && account.refreshToken) {
+    const tokens = await refreshTikTokToken(account.refreshToken);
+    const expiresAt = new Date(Date.now() + tokens.expires_in * 1000);
+
+    await prisma.account.update({
+      where: { id: account.id },
+      data: {
+        accessToken: tokens.access_token,
+        refreshToken: tokens.refresh_token, // TikTok returns new refresh token
+        accessTokenExpiresAt: expiresAt,
+        updatedAt: new Date(),
+      },
+    });
+
+    return tokens.access_token;
+  }
+
+  if (!account.accessToken) {
+    throw new Error("No access token available");
+  }
+
+  return account.accessToken;
+}
+
+
+/**
+ * GET /api/tiktok/auth/url
+ * Get OAuth authorization URL for TikTok
+ * Requirements: 1.2
+ */
+tiktok.get("/auth/url", authMiddleware, async (c) => {
+  try {
+    const user = c.get("user");
+    // Use user ID as state for CSRF protection
+    const state = Buffer.from(JSON.stringify({ userId: user.id })).toString("base64");
+    
+    const { url, codeVerifier } = await getAuthUrl(state);
+    
+    // Store code verifier for later use during token exchange
+    // Key is the state parameter for lookup during callback
+    codeVerifierStore.set(state, {
+      codeVerifier,
+      userId: user.id,
+      createdAt: Date.now(),
+    });
+    
+    // Clean up old entries (older than 10 minutes)
+    const tenMinutesAgo = Date.now() - 10 * 60 * 1000;
+    for (const [key, value] of codeVerifierStore.entries()) {
+      if (value.createdAt < tenMinutesAgo) {
+        codeVerifierStore.delete(key);
+      }
+    }
+    
+    return c.json({ url });
+  } catch (error) {
+    console.error("[TikTok Auth] Error generating auth URL:", error);
+    return c.json({ error: error.message }, 500);
+  }
+});
+
+/**
+ * GET /api/auth/tiktok/callback
+ * OAuth callback endpoint - exchanges code for tokens and saves to database
+ * Requirements: 1.2
+ */
+tiktok.get("/auth/callback", async (c) => {
+  try {
+    const code = c.req.query("code");
+    const state = c.req.query("state");
+    const error = c.req.query("error");
+    const errorDescription = c.req.query("error_description");
+
+    const frontendUrl = process.env.FRONTEND_URL || "http://localhost:5173";
+
+    if (error) {
+      console.error("[TikTok Auth] OAuth error:", error, errorDescription);
+      return c.redirect(`${frontendUrl}/settings?tiktok_error=${encodeURIComponent(errorDescription || error)}`);
+    }
+
+    if (!code) {
+      return c.json({ error: "Missing authorization code" }, 400);
+    }
+
+    if (!state) {
+      return c.json({ error: "Missing state parameter" }, 400);
+    }
+
+    // Retrieve code verifier from store
+    const storedData = codeVerifierStore.get(state);
+    if (!storedData) {
+      return c.json({ error: "Invalid or expired state parameter. Please try again." }, 400);
+    }
+
+    const { codeVerifier, userId } = storedData;
+    
+    // Remove used code verifier
+    codeVerifierStore.delete(state);
+
+    // Exchange code for tokens
+    const tokens = await exchangeCode(code, codeVerifier);
+
+    // Get TikTok user info
+    const userInfo = await getUserInfo(tokens.access_token);
+    
+    const accountId = tokens.open_id || userInfo.open_id;
+    const expiresAt = new Date(Date.now() + tokens.expires_in * 1000);
+    const refreshExpiresAt = tokens.refresh_expires_in 
+      ? new Date(Date.now() + tokens.refresh_expires_in * 1000)
+      : null;
+
+    // Upsert account - update if exists, create if not
+    await prisma.account.upsert({
+      where: {
+        id: `tiktok_${userId}_${accountId}`,
+      },
+      update: {
+        accessToken: tokens.access_token,
+        refreshToken: tokens.refresh_token,
+        accessTokenExpiresAt: expiresAt,
+        refreshTokenExpiresAt: refreshExpiresAt,
+        scope: tokens.scope,
+        updatedAt: new Date(),
+      },
+      create: {
+        id: `tiktok_${userId}_${accountId}`,
+        accountId: accountId,
+        providerId: "tiktok",
+        userId: userId,
+        accessToken: tokens.access_token,
+        refreshToken: tokens.refresh_token,
+        accessTokenExpiresAt: expiresAt,
+        refreshTokenExpiresAt: refreshExpiresAt,
+        scope: tokens.scope,
+      },
+    });
+
+    // Redirect to frontend with success
+    const displayName = userInfo.display_name || "TikTok User";
+    return c.redirect(
+      `${frontendUrl}/settings?tiktok_connected=true&account=${encodeURIComponent(displayName)}`
+    );
+  } catch (error) {
+    console.error("[TikTok Auth] Callback error:", error);
+    const frontendUrl = process.env.FRONTEND_URL || "http://localhost:5173";
+    return c.redirect(
+      `${frontendUrl}/settings?tiktok_error=${encodeURIComponent(error.message)}`
+    );
+  }
+});
+
+
+/**
+ * POST /api/tiktok/auth/refresh
+ * Refresh access token using stored refresh token
+ * Requirements: 1.2
+ */
+tiktok.post("/auth/refresh", authMiddleware, async (c) => {
+  try {
+    const user = c.get("user");
+    const body = await c.req.json().catch(() => ({}));
+    const { accountId } = body;
+
+    // Find the TikTok account for this user
+    const whereClause = accountId
+      ? { id: `tiktok_${user.id}_${accountId}` }
+      : { userId: user.id, providerId: "tiktok" };
+
+    const account = await prisma.account.findFirst({
+      where: whereClause,
+    });
+
+    if (!account) {
+      return c.json({ error: "TikTok account not found" }, 404);
+    }
+
+    if (!account.refreshToken) {
+      return c.json({ error: "No refresh token available. Please re-authenticate.", requiresReauth: true }, 401);
+    }
+
+    // Refresh the token
+    const tokens = await refreshTikTokToken(account.refreshToken);
+    const expiresAt = new Date(Date.now() + tokens.expires_in * 1000);
+    const refreshExpiresAt = tokens.refresh_expires_in 
+      ? new Date(Date.now() + tokens.refresh_expires_in * 1000)
+      : null;
+
+    // Update the account with new tokens (TikTok returns new refresh token)
+    await prisma.account.update({
+      where: { id: account.id },
+      data: {
+        accessToken: tokens.access_token,
+        refreshToken: tokens.refresh_token,
+        accessTokenExpiresAt: expiresAt,
+        refreshTokenExpiresAt: refreshExpiresAt,
+        updatedAt: new Date(),
+      },
+    });
+
+    return c.json({
+      access_token: tokens.access_token,
+      expires_in: tokens.expires_in,
+      expires_at: expiresAt.toISOString(),
+    });
+  } catch (error) {
+    console.error("[TikTok Auth] Refresh error:", error);
+    
+    // If refresh fails, user needs to re-authenticate
+    if (error.message.includes("invalid_grant") || error.message.includes("expired")) {
+      return c.json({ 
+        error: "Refresh token expired or revoked. Please re-authenticate.",
+        requiresReauth: true 
+      }, 401);
+    }
+    
+    return c.json({ error: error.message }, 500);
+  }
+});
+
+/**
+ * GET /api/tiktok/accounts
+ * Get all connected TikTok accounts for the user
+ */
+tiktok.get("/accounts", authMiddleware, async (c) => {
+  try {
+    const user = c.get("user");
+
+    const accounts = await prisma.account.findMany({
+      where: {
+        userId: user.id,
+        providerId: "tiktok",
+      },
+      select: {
+        id: true,
+        accountId: true,
+        accessTokenExpiresAt: true,
+        refreshTokenExpiresAt: true,
+        scope: true,
+        createdAt: true,
+      },
+    });
+
+    // Check if tokens are expired
+    const accountsWithStatus = accounts.map((account) => ({
+      ...account,
+      isExpired: account.accessTokenExpiresAt
+        ? new Date(account.accessTokenExpiresAt) < new Date()
+        : true,
+      refreshExpired: account.refreshTokenExpiresAt
+        ? new Date(account.refreshTokenExpiresAt) < new Date()
+        : false,
+    }));
+
+    return c.json({ accounts: accountsWithStatus });
+  } catch (error) {
+    console.error("[TikTok Auth] Error fetching accounts:", error);
+    return c.json({ error: error.message }, 500);
+  }
+});
+
+/**
+ * DELETE /api/tiktok/accounts/:accountId
+ * Disconnect a TikTok account
+ */
+tiktok.delete("/accounts/:accountId", authMiddleware, async (c) => {
+  try {
+    const user = c.get("user");
+    const accountId = c.req.param("accountId");
+
+    const account = await prisma.account.findFirst({
+      where: {
+        accountId: accountId,
+        userId: user.id,
+        providerId: "tiktok",
+      },
+    });
+
+    if (!account) {
+      return c.json({ error: "Account not found" }, 404);
+    }
+
+    // Revoke the token if we have one
+    if (account.accessToken) {
+      try {
+        await revokeToken(account.accessToken);
+      } catch (revokeError) {
+        console.warn("[TikTok Auth] Failed to revoke token:", revokeError);
+        // Continue with deletion even if revoke fails
+      }
+    }
+
+    // Delete the account
+    await prisma.account.delete({
+      where: { id: account.id },
+    });
+
+    return c.json({ success: true });
+  } catch (error) {
+    console.error("[TikTok Auth] Error disconnecting account:", error);
+    return c.json({ error: error.message }, 500);
+  }
+});
+
+
+/**
+ * GET /api/tiktok/creator-info
+ * Get creator info including posting permissions and limits
+ */
+tiktok.get("/creator-info", authMiddleware, async (c) => {
+  try {
+    const user = c.get("user");
+    const accountId = c.req.query("accountId");
+
+    const accessToken = await getValidAccessToken(user.id, accountId);
+    const creatorInfo = await getCreatorInfo(accessToken);
+
+    return c.json({ creatorInfo });
+  } catch (error) {
+    console.error("[TikTok] Error getting creator info:", error);
+    return c.json({ error: error.message }, 500);
+  }
+});
+
+/**
+ * POST /api/tiktok/upload
+ * Upload a video to TikTok
+ * Requirements: 1.3
+ */
+tiktok.post("/upload", authMiddleware, async (c) => {
+  try {
+    const user = c.get("user");
+    const contentType = c.req.header("Content-Type");
+    const accountId = c.req.header("X-Account-Id");
+    
+    // Get metadata from headers (JSON encoded)
+    const metadataHeader = c.req.header("X-Video-Metadata");
+    let metadata = {};
+    
+    if (metadataHeader) {
+      try {
+        metadata = JSON.parse(metadataHeader);
+      } catch {
+        return c.json({ error: "Invalid X-Video-Metadata header (must be valid JSON)" }, 400);
+      }
+    }
+
+    // Get video data from request body
+    const videoData = Buffer.from(await c.req.arrayBuffer());
+
+    if (videoData.length === 0) {
+      return c.json({ error: "Video data is required" }, 400);
+    }
+
+    // Validate metadata
+    try {
+      validateVideoMetadata(metadata, videoData.length);
+    } catch (validationError) {
+      return c.json({ error: validationError.message }, 400);
+    }
+
+    // Get valid access token
+    const accessToken = await getValidAccessToken(user.id, accountId);
+
+    // Create upload record
+    const uploadRecord = await prisma.upload.create({
+      data: {
+        id: `upload_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`,
+        userId: user.id,
+        fileName: metadata.title || "TikTok Video",
+        fileSize: BigInt(videoData.length),
+        mimeType: contentType || "video/mp4",
+        bytesUploaded: BigInt(0),
+        status: "uploading",
+        platform: "tiktok",
+        metadata: metadata,
+      },
+    });
+
+    // Upload video
+    const result = await uploadVideo(videoData, metadata, accessToken, {
+      onProgress: async (bytesUploaded, totalBytes, status) => {
+        // Update upload record with progress
+        await prisma.upload.update({
+          where: { id: uploadRecord.id },
+          data: {
+            bytesUploaded: BigInt(bytesUploaded),
+            status: status === "processing" ? "processing" : "uploading",
+            updatedAt: new Date(),
+          },
+        }).catch(() => {});
+      },
+    });
+
+    // Update upload record with publish ID
+    await prisma.upload.update({
+      where: { id: uploadRecord.id },
+      data: {
+        status: "processing",
+        metadata: {
+          ...metadata,
+          publishId: result.publishId,
+        },
+        updatedAt: new Date(),
+      },
+    });
+
+    return c.json({
+      uploadId: uploadRecord.id,
+      publishId: result.publishId,
+      status: result.status,
+      bytesUploaded: result.bytesUploaded,
+      totalBytes: result.totalBytes,
+      message: result.message,
+    });
+  } catch (error) {
+    console.error("[TikTok Upload] Error:", error);
+    return c.json({ error: error.message }, 500);
+  }
+});
+
+/**
+ * GET /api/tiktok/status/:publishId
+ * Get the publish status of an uploaded video
+ * Requirements: 1.3
+ */
+tiktok.get("/status/:publishId", authMiddleware, async (c) => {
+  try {
+    const user = c.get("user");
+    const publishId = c.req.param("publishId");
+    const accountId = c.req.query("accountId");
+
+    if (!publishId) {
+      return c.json({ error: "Publish ID is required" }, 400);
+    }
+
+    // Get valid access token
+    const accessToken = await getValidAccessToken(user.id, accountId);
+
+    // Get publish status from TikTok
+    const status = await getPublishStatus(publishId, accessToken);
+
+    // Find and update the upload record if it exists
+    const upload = await prisma.upload.findFirst({
+      where: {
+        userId: user.id,
+        platform: "tiktok",
+        metadata: {
+          path: ["publishId"],
+          equals: publishId,
+        },
+      },
+    });
+
+    if (upload) {
+      // Map TikTok status to our internal status
+      let uploadStatus = "processing";
+      if (status.status === "published") {
+        uploadStatus = "complete";
+      } else if (status.status === "failed") {
+        uploadStatus = "failed";
+      } else if (status.status === "pending_approval") {
+        uploadStatus = "pending";
+      }
+
+      await prisma.upload.update({
+        where: { id: upload.id },
+        data: {
+          status: uploadStatus,
+          publishedAt: status.status === "published" ? new Date() : null,
+          metadata: {
+            ...(upload.metadata || {}),
+            tiktokVideoId: status.publiclyAvailablePostId,
+            tiktokVideoUrl: status.videoUrl,
+            failReason: status.failReason,
+          },
+          updatedAt: new Date(),
+        },
+      });
+    }
+
+    return c.json({
+      publishId: status.publishId,
+      status: status.status,
+      rawStatus: status.rawStatus,
+      videoId: status.publiclyAvailablePostId,
+      videoUrl: status.videoUrl,
+      failReason: status.failReason,
+      uploadedBytes: status.uploadedBytes,
+    });
+  } catch (error) {
+    console.error("[TikTok Status] Error:", error);
+    return c.json({ error: error.message }, 500);
+  }
+});
+
+
+/**
+ * POST /api/tiktok/status/:publishId/wait
+ * Wait for video to finish processing (polling)
+ */
+tiktok.post("/status/:publishId/wait", authMiddleware, async (c) => {
+  try {
+    const user = c.get("user");
+    const publishId = c.req.param("publishId");
+    const accountId = c.req.query("accountId");
+    const body = await c.req.json().catch(() => ({}));
+    
+    const maxAttempts = body.maxAttempts || 30;
+    const intervalMs = body.intervalMs || 5000;
+
+    if (!publishId) {
+      return c.json({ error: "Publish ID is required" }, 400);
+    }
+
+    // Get valid access token
+    const accessToken = await getValidAccessToken(user.id, accountId);
+
+    // Wait for publish to complete
+    const status = await waitForPublish(publishId, accessToken, {
+      maxAttempts,
+      intervalMs,
+    });
+
+    // Update upload record
+    const upload = await prisma.upload.findFirst({
+      where: {
+        userId: user.id,
+        platform: "tiktok",
+        metadata: {
+          path: ["publishId"],
+          equals: publishId,
+        },
+      },
+    });
+
+    if (upload) {
+      await prisma.upload.update({
+        where: { id: upload.id },
+        data: {
+          status: "complete",
+          publishedAt: new Date(),
+          metadata: {
+            ...(upload.metadata || {}),
+            tiktokVideoId: status.publiclyAvailablePostId,
+            tiktokVideoUrl: status.videoUrl,
+          },
+          updatedAt: new Date(),
+        },
+      });
+    }
+
+    return c.json({
+      publishId: status.publishId,
+      status: status.status,
+      videoId: status.publiclyAvailablePostId,
+      videoUrl: status.videoUrl,
+    });
+  } catch (error) {
+    console.error("[TikTok Status] Wait error:", error);
+    return c.json({ error: error.message }, 500);
+  }
+});
+
+/**
+ * GET /api/tiktok/uploads
+ * Get all TikTok uploads for the current user
+ */
+tiktok.get("/uploads", authMiddleware, async (c) => {
+  try {
+    const user = c.get("user");
+    const limit = parseInt(c.req.query("limit") || "50", 10);
+    const status = c.req.query("status");
+
+    const whereClause = {
+      userId: user.id,
+      platform: "tiktok",
+    };
+
+    if (status) {
+      whereClause.status = status;
+    }
+
+    const uploads = await prisma.upload.findMany({
+      where: whereClause,
+      orderBy: { createdAt: "desc" },
+      take: limit,
+    });
+
+    // Convert BigInt to number for JSON serialization
+    const serializedUploads = uploads.map((upload) => ({
+      ...upload,
+      fileSize: upload.fileSize ? Number(upload.fileSize) : null,
+      bytesUploaded: Number(upload.bytesUploaded),
+    }));
+
+    return c.json({ uploads: serializedUploads });
+  } catch (error) {
+    console.error("[TikTok] Error getting uploads:", error);
+    return c.json({ error: error.message }, 500);
+  }
+});
+
+/**
+ * DELETE /api/tiktok/uploads/:uploadId
+ * Cancel/delete an upload record
+ */
+tiktok.delete("/uploads/:uploadId", authMiddleware, async (c) => {
+  try {
+    const user = c.get("user");
+    const uploadId = c.req.param("uploadId");
+
+    const upload = await prisma.upload.findFirst({
+      where: {
+        id: uploadId,
+        userId: user.id,
+        platform: "tiktok",
+      },
+    });
+
+    if (!upload) {
+      return c.json({ error: "Upload not found" }, 404);
+    }
+
+    // Only allow deletion of non-published uploads
+    if (upload.status === "complete") {
+      return c.json({ error: "Cannot delete published uploads" }, 400);
+    }
+
+    await prisma.upload.delete({
+      where: { id: uploadId },
+    });
+
+    return c.json({ success: true });
+  } catch (error) {
+    console.error("[TikTok] Error deleting upload:", error);
+    return c.json({ error: error.message }, 500);
+  }
+});
+
+export default tiktok;
