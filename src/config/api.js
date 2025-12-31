@@ -1,5 +1,5 @@
 // API Configuration
-export const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+export const API_URL = import.meta.env.VITE_API_URL || '';
 
 // Helper function to build full API URLs
 const buildUrl = (path) => `${API_URL}${path}`;
