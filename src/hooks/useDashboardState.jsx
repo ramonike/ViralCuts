@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect, createContext, useContext } from "react";
 import { uploadVideo } from "../api/upload";
 import { fetchChannelDetails, fetchChannelVideos, fetchChannelAnalytics, searchVideos } from "../api/youtube";
 import { uploadToOpus, checkProjectStatus, getClips, createProjectFromUrl } from "../api/opus";
@@ -218,7 +218,7 @@ export function exportCSV(rows, filename = "viralcuts_export.csv") {
     URL.revokeObjectURL(url);
 }
 
-export function useDashboardState() {
+export function useDashboardLogic() {
     const [state, setState] = useState(loadState);
 
     // Track API Quota Usage
@@ -348,17 +348,7 @@ export function useDashboardState() {
                     console.error("[useDashboardState] Error fetching analytics:", err);
                 });
 
-            // Fetch Suggestions
-            searchVideos(state.auth.youtubeToken, "podcast ciência curiosidades")
-                .then(videos => {
-                    console.log("[useDashboardState] Received suggestions:", videos?.length);
-                    if (videos) {
-                        setState(prev => ({ ...prev, suggestions: videos }));
-                    }
-                })
-                .catch(err => {
-                    console.error("[useDashboardState] Error fetching suggestions:", err);
-                });
+
         } else {
             console.log("[useDashboardState] No token, clearing channelStats");
             setState(prev => ({ ...prev, channelStats: null }));
@@ -999,17 +989,18 @@ export function useDashboardState() {
 
             // Prepare query for suggestions
             let queryToUse = customQuery;
-            if (!queryToUse) {
-                const queries = ["curiosidades mundo", "ciência tecnologia", "fatos históricos", "animais incríveis", "mistérios universo", "dicas produtividade", "saúde bem estar"];
-                queryToUse = queries[Math.floor(Math.random() * queries.length)];
+            // Removed random query generation to ensure suggestions are only populated by explicit user search
+            if (queryToUse) {
+                console.log(`[refreshChannelStats] Searching for: ${queryToUse}`);
+            } else {
+                console.log(`[refreshChannelStats] Skipping search (no query provided)`);
             }
-            console.log(`[refreshChannelStats] Searching for: ${queryToUse}`);
 
             // Execute requests in parallel with allSettled to handle individual failures
             const results = await Promise.allSettled([
                 fetchChannelDetails(state.auth.youtubeToken),
                 fetchChannelVideos(state.auth.youtubeToken),
-                searchVideos(state.auth.youtubeToken, queryToUse)
+                queryToUse ? searchVideos(state.auth.youtubeToken, queryToUse) : Promise.resolve(null)
             ]);
 
             // Extract results or use fallback
@@ -1219,6 +1210,7 @@ export function useDashboardState() {
             addToUploadQueue,
             removeQueueItem,
             markQueueStatus,
+            startUploadQueue,
             resetChecklist,
             addChecklistItem,
             updateSettings,
@@ -1235,4 +1227,30 @@ export function useDashboardState() {
             updateVideoMetadata
         }
     };
+}
+
+// Context Pattern Implementation
+export const DashboardContext = createContext(null);
+
+export function DashboardProvider({ children }) {
+    const dashboard = useDashboardLogic();
+    return (
+        <DashboardContext.Provider value={dashboard}>
+            {children}
+        </DashboardContext.Provider>
+    );
+}
+
+export function useDashboardState() {
+    const context = useContext(DashboardContext);
+    if (context) {
+        return context;
+    }
+
+    // Fallback: This ensures existing code doesn't crash, 
+    // but warns about the potential for duplicate instances (the original bug).
+    if (process.env.NODE_ENV === 'development') {
+        console.warn("useDashboardState used outside DashboardProvider. Creating a new LOCAL instance (may cause duplicate uploads). Please wrap your app in <DashboardProvider>.");
+    }
+    return useDashboardLogic();
 }

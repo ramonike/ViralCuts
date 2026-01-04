@@ -16,6 +16,7 @@ import videosRoutes from "./routes/videos.js";
 import youtubeRoutes from "./routes/youtube.js";
 import notificationsRoutes from "./routes/notifications.js";
 import tiktokRoutes from "./routes/tiktok.js";
+import commandCenterRoutes from "./routes/commandCenter.js";
 
 // Import scheduled jobs
 import { startScheduledUploadsJob, stopScheduledUploadsJob } from "./jobs/scheduled-uploads.js";
@@ -40,6 +41,7 @@ app.use("/api/videos/*", rateLimiter());
 app.use("/api/youtube/*", rateLimiter());
 app.use("/api/tiktok/*", rateLimiter());
 app.use("/api/notifications/*", rateLimiter());
+app.use("/api/command-center/*", rateLimiter());
 app.use("/api/health", rateLimiter());
 
 // YouTube OAuth callback - must be BEFORE the generic auth handler
@@ -240,6 +242,7 @@ app.route("/api/videos", videosRoutes);
 app.route("/api/youtube", youtubeRoutes);
 app.route("/api/tiktok", tiktokRoutes);
 app.route("/api/notifications", notificationsRoutes);
+app.route("/api/command-center", commandCenterRoutes);
 
 // Health check with database connection test
 app.get("/api/health", async (c) => {

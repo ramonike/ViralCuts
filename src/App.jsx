@@ -21,63 +21,67 @@ import SettingsPage from "./pages/SettingsPage";
 import ProfilePage from "./pages/ProfilePage";
 import AdminPage from "./pages/AdminPage";
 
+import { DashboardProvider } from "./hooks/useDashboardState";
+
 export default function App() {
   return (
     <ThemeProvider>
       <NotificationProvider>
         <AuthProvider>
           <JourneyProvider>
-            <ErrorBoundary>
-              <BrowserRouter>
-                <Routes>
-                  {/* Página inicial - redireciona para dashboard se logado */}
-                  <Route path="/" element={
-                    <AuthRedirect>
-                      <LandingPage />
-                    </AuthRedirect>
-                  } />
-                  
-                  {/* Rotas públicas - redireciona para dashboard se já logado */}
-                  <Route path="/login" element={
-                    <PublicRoute>
-                      <LoginPage />
-                    </PublicRoute>
-                  } />
-                  <Route path="/register" element={
-                    <PublicRoute>
-                      <RegisterPage />
-                    </PublicRoute>
-                  } />
-                  <Route path="/forgot-password" element={
-                    <PublicRoute>
-                      <ForgotPasswordPage />
-                    </PublicRoute>
-                  } />
-                  <Route path="/reset-password" element={<ResetPasswordPage />} />
-                  <Route path="/verify-email" element={<VerifyEmailPage />} />
-                  
-                  {/* Rotas protegidas - requer autenticação */}
-                  <Route path="/dashboard" element={
-                    <ProtectedRoute>
-                      <DashboardLayout />
-                    </ProtectedRoute>
-                  }>
-                    <Route index element={<DashboardHome />} />
-                    <Route path="videos" element={<VideosPage />} />
-                    <Route path="calendar" element={<CalendarPage />} />
-                    <Route path="analytics" element={<AnalyticsPage />} />
-                    <Route path="profile" element={<ProfilePage />} />
-                    <Route path="settings" element={<SettingsPage />} />
-                  </Route>
+            <DashboardProvider>
+              <ErrorBoundary>
+                <BrowserRouter>
+                  <Routes>
+                    {/* Página inicial - redireciona para dashboard se logado */}
+                    <Route path="/" element={
+                      <AuthRedirect>
+                        <LandingPage />
+                      </AuthRedirect>
+                    } />
 
-                  <Route path="/admin" element={
-                    <ProtectedRoute>
-                      <AdminPage />
-                    </ProtectedRoute>
-                  } />
-                </Routes>
-              </BrowserRouter>
-            </ErrorBoundary>
+                    {/* Rotas públicas - redireciona para dashboard se já logado */}
+                    <Route path="/login" element={
+                      <PublicRoute>
+                        <LoginPage />
+                      </PublicRoute>
+                    } />
+                    <Route path="/register" element={
+                      <PublicRoute>
+                        <RegisterPage />
+                      </PublicRoute>
+                    } />
+                    <Route path="/forgot-password" element={
+                      <PublicRoute>
+                        <ForgotPasswordPage />
+                      </PublicRoute>
+                    } />
+                    <Route path="/reset-password" element={<ResetPasswordPage />} />
+                    <Route path="/verify-email" element={<VerifyEmailPage />} />
+
+                    {/* Rotas protegidas - requer autenticação */}
+                    <Route path="/dashboard" element={
+                      <ProtectedRoute>
+                        <DashboardLayout />
+                      </ProtectedRoute>
+                    }>
+                      <Route index element={<DashboardHome />} />
+                      <Route path="videos" element={<VideosPage />} />
+                      <Route path="calendar" element={<CalendarPage />} />
+                      <Route path="analytics" element={<AnalyticsPage />} />
+                      <Route path="profile" element={<ProfilePage />} />
+                      <Route path="settings" element={<SettingsPage />} />
+                    </Route>
+
+                    <Route path="/admin" element={
+                      <ProtectedRoute>
+                        <AdminPage />
+                      </ProtectedRoute>
+                    } />
+                  </Routes>
+                </BrowserRouter>
+              </ErrorBoundary>
+            </DashboardProvider>
           </JourneyProvider>
         </AuthProvider>
       </NotificationProvider>

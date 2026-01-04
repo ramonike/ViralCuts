@@ -13,7 +13,10 @@ export async function uploadVideo(item, token, file) {
 
   // Se for YouTube e tiver token e arquivo, tenta upload real
   // Mas se o token for "MOCK_TOKEN", força a simulação
-  if (item.platform === "YouTube Shorts" && token && !token.startsWith("MOCK_TOKEN") && file) {
+  // FIX: Accept both "YouTube Shorts" (legacy) and "youtube-shorts" (modal ID)
+  const isYouTube = item.platform === "YouTube Shorts" || item.platform === "youtube-shorts";
+
+  if (isYouTube && token && !token.startsWith("MOCK_TOKEN") && file) {
     return await uploadToYouTube({
       file: file,
       title: item.title,
