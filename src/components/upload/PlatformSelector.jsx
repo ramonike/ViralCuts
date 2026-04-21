@@ -41,14 +41,14 @@ const PLATFORMS = [
         id: 'tiktok',
         name: 'TikTok',
         icon: TikTokIcon,
-        color: 'cyan',
-        bgColor: 'bg-cyan-500/10',
-        borderColor: 'border-cyan-500/30',
-        textColor: 'text-cyan-400',
-        hoverBg: 'hover:bg-cyan-500/20',
-        selectedBg: 'bg-cyan-500/20',
-        selectedBorder: 'border-cyan-400',
-        description: 'Vídeos até 10 min'
+        color: 'slate',
+        bgColor: 'bg-slate-500/10',
+        borderColor: 'border-slate-500/30',
+        textColor: 'text-slate-400',
+        hoverBg: '',
+        selectedBg: 'bg-slate-500/20',
+        selectedBorder: 'border-slate-400',
+        description: 'Em breve'
     },
     {
         id: 'instagram',

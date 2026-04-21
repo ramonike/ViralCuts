@@ -57,15 +57,15 @@ export const DashboardLayout = () => {
                 <NotificationBadge />
             </header>
 
-            {/* Mobile Menu Overlay */}
+            {/* Mobile Menu Overlay - Subtask 8.3: Enhanced with backdrop-blur */}
             {mobileMenuOpen && (
                 <div 
-                    className="lg:hidden fixed inset-0 z-40 bg-black/50 backdrop-blur-sm"
+                    className="lg:hidden fixed inset-0 z-40 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200"
                     onClick={() => setMobileMenuOpen(false)}
                 />
             )}
 
-            {/* Sidebar */}
+            {/* Sidebar - Subtask 8.3: Enhanced drawer with slide animation and close button */}
             <aside className={`
                 fixed inset-y-0 left-0 w-64 z-50 
                 transform transition-transform duration-300 ease-in-out
@@ -88,14 +88,28 @@ export const DashboardLayout = () => {
                         }`}>
                             ViralCuts
                         </h1>
-                        <div className="hidden lg:block">
-                            <NotificationBadge />
+                        <div className="flex items-center gap-2">
+                            <div className="hidden lg:block">
+                                <NotificationBadge />
+                            </div>
+                            {/* Close button for mobile - Subtask 8.3 */}
+                            <button
+                                onClick={() => setMobileMenuOpen(false)}
+                                className={`lg:hidden p-2 rounded-lg transition-colors ${
+                                    isDark ? 'hover:bg-slate-800 text-slate-400 hover:text-white' : 'hover:bg-gray-100 text-gray-500 hover:text-gray-900'
+                                }`}
+                                aria-label="Fechar menu"
+                            >
+                                <X className="w-5 h-5" />
+                            </button>
                         </div>
                     </div>
                     
                     {/* User Profile Section */}
                     <div className={`p-4 border-b ${isDark ? 'border-slate-800' : 'border-gray-200'}`}>
-                        <div className="flex items-center gap-3">
+                        <div className={`flex items-center gap-3 p-2 rounded-lg transition-all duration-200 ${
+                            isDark ? 'hover:bg-slate-800/50' : 'hover:bg-gray-100'
+                        }`}>
                             <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-semibold flex-shrink-0">
                                 {loading ? (
                                     <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />

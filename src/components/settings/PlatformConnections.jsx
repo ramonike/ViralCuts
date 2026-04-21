@@ -175,7 +175,7 @@ function PlatformCard({ platform, connection, onConnect, onDisconnect, onRefresh
               variant="outline"
               size="sm"
               onClick={() => onConnect(platform)}
-              disabled={isLoading || platform === 'instagram'}
+              disabled={isLoading || platform === 'instagram' || platform === 'tiktok'}
               className="flex-1"
             >
               {isLoading ? (
@@ -183,7 +183,7 @@ function PlatformCard({ platform, connection, onConnect, onDisconnect, onRefresh
               ) : (
                 <Link2 className="w-4 h-4 mr-2" />
               )}
-              {platform === 'instagram' ? 'Em breve' : 'Conectar'}
+              {platform === 'instagram' || platform === 'tiktok' ? 'Em breve' : 'Conectar'}
             </Button>
           )}
         </div>
@@ -266,9 +266,9 @@ export default function PlatformConnections() {
         
         const data = await response.json();
         window.location.href = data.url;
-      } else if (platform === 'instagram') {
-        // Instagram not yet implemented
-        setError('Instagram Reels estará disponível em breve!');
+      } else if (platform === 'instagram' || platform === 'tiktok') {
+        // Not yet implemented for test launch
+        setError(`${PLATFORMS[platform].name} estará disponível em breve!`);
       }
     } catch (err) {
       setError(err.message);

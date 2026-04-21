@@ -91,7 +91,7 @@ export const DEFAULT_JOURNEY_STAGES: JourneyStage[] = [
   {
     id: 'setup',
     name: 'Configuração',
-    description: 'Configure sua conta e conecte seu canal do YouTube',
+    description: 'Deixe tudo pronto para o sistema postar por você.',
     icon: '🚀',
     order: 1,
     estimatedTime: 15,
@@ -100,180 +100,102 @@ export const DEFAULT_JOURNEY_STAGES: JourneyStage[] = [
     milestones: [
       {
         id: 'youtube-connection',
-        title: 'Conectar YouTube',
-        description: 'Conecte sua conta do YouTube para começar',
+        title: 'Como Conectar Contas Sociais',
+        description: 'Passo 1: Clique no botão gigante abaixo para ir até as Configurações.\nPasso 2: Localize a aba lateral "Contas Conectadas/Integrações".\nPasso 3: Autorize sua conta Google/YouTube.\n\nIsso é OBRIGATÓRIO para que a postagem automática do ViralCuts funcione por você 24h por dia.',
         completed: false,
         category: 'setup',
         points: 100,
-        actionUrl: '/settings?tab=connections'
+        actionUrl: '/dashboard/settings'
       },
       {
         id: 'channel-photo',
-        title: 'Foto do Canal',
-        description: 'Adicione uma foto profissional ao seu canal',
+        title: 'Avatar e Banner do Canal',
+        description: 'Passo 1: Utilize ferramentas modernas (como Canva ou Midjourney) para criar uma imagem de perfil atraente e capa.\nPasso 2: Volte nas Configurações do seu Painel e aplique os layouts atualizados.\n\nMostre credibilidade para seus inscritos desde o primeiro segundo.',
         completed: false,
         category: 'setup',
-        points: 50
-      },
-      {
-        id: 'channel-banner',
-        title: 'Banner do Canal',
-        description: 'Crie um banner atrativo para seu canal',
-        completed: false,
-        category: 'setup',
-        points: 50
-      },
-      {
-        id: 'channel-description',
-        title: 'Descrição do Canal',
-        description: 'Escreva uma descrição clara sobre seu conteúdo',
-        completed: false,
-        category: 'setup',
-        points: 75
+        points: 50,
+        actionUrl: '/dashboard/settings'
       }
     ]
   },
   {
     id: 'planning',
-    name: 'Planejamento',
-    description: 'Defina sua estratégia de conteúdo e nichos',
+    name: 'Tutorial: Planejamento',
+    description: 'Aprenda a agendar publicações automaticamente.',
     icon: '📋',
     order: 2,
-    estimatedTime: 30,
-    difficulty: 'medium',
-    unlocked: false,
+    estimatedTime: 15,
+    difficulty: 'easy',
+    unlocked: true,
     milestones: [
       {
-        id: 'niche-selection',
-        title: 'Escolher Nicho',
-        description: 'Defina o nicho do seu canal',
-        completed: false,
-        category: 'creation',
-        points: 100
-      },
-      {
         id: 'content-calendar',
-        title: 'Calendário de Conteúdo',
-        description: 'Planeje seus próximos vídeos',
+        title: 'Como usar o Calendário',
+        description: 'O Calendário é sua central de inteligência e distribuição de mídia:\n\n1. Acesse o botão abaixo para abrir a Grade Semanal.\n2. Visualize de cima todos os seus horários configurados como "Picos de Audiência".\n3. Basta arrastar seus vídeos finalizados para os espaços vazios e esquecer deles. O nosso sistema posta tudo sozinho no segundo exato.',
         completed: false,
         category: 'creation',
-        points: 150
+        points: 150,
+        actionUrl: '/dashboard/calendar'
       },
       {
-        id: 'keyword-research',
-        title: 'Pesquisa de Palavras-chave',
-        description: 'Encontre palavras-chave para seus vídeos',
+        id: 'scheduled-publishing',
+        title: 'Como usar a Fila de Upload',
+        description: 'Todo vídeo que você mandar vira um item na fila de espera.\n\n1. Use o botão para visitar seus Vídeos e acione "Novo Upload".\n2. Suba o arquivo do seu vídeo (formato Shorts/Reels é ideal).\n3. Escolha: Postar AGORA ou Jogar na Fila Inteligente.\n4. Se escolher a Fila Inteligente, ele ficará na área "Próximos" te aguardando!',
         completed: false,
-        category: 'optimization',
-        points: 125
+        category: 'publishing',
+        points: 100,
+        actionUrl: '/dashboard/videos'
       }
     ]
   },
   {
     id: 'creation',
-    name: 'Criação',
-    description: 'Use ferramentas IA para criar conteúdo viral',
+    name: 'Tutorial: Estúdio Criação IA',
+    description: 'Use a automação para fatiar vídeos e gerar roteiros.',
     icon: '🎬',
     order: 3,
-    estimatedTime: 45,
+    estimatedTime: 30,
     difficulty: 'medium',
-    unlocked: false,
+    unlocked: true,
     milestones: [
+      {
+        id: 'vizard-opus',
+        title: 'Cortando com OpusClip e Vizard.ai',
+        description: 'Transforme 1 entrevista longa em 30 Shorts prontos!\n\nPasso 1: Clique no botão da ferramenta para abrir a matriz de Inteligência Artificial.\nPasso 2: Role até os botões externos como OpusClip.\nPasso 3: Cole URLs diretas do YouTube e o robô cortará, escolherá os momentos de mais impacto e adicionará Legendas Estilo Hormozi por cima!',
+        completed: false,
+        category: 'creation',
+        points: 200,
+        actionUrl: '/dashboard/creation'
+      },
       {
         id: 'first-ai-tool',
-        title: 'Primeira Ferramenta IA',
-        description: 'Use uma ferramenta de IA para criar conteúdo',
+        title: 'Gerando Roteiros Mágicos',
+        description: 'Teve um branco criativo?\n\nPasso 1: No Estúdio de IA, busque pelo gerador de Ideias.\nPasso 2: Digite simples "Dicas de musculação rápida".\nPasso 3: Deixe o algoritmo desenhar 4 blocos textuais testados em alta retenção, do "Gancho" inicial ao "CTA" final.',
         completed: false,
         category: 'creation',
-        points: 200
-      },
-      {
-        id: 'video-library-usage',
-        title: 'Biblioteca de Vídeos',
-        description: 'Explore bibliotecas de vídeo gratuitas',
-        completed: false,
-        category: 'creation',
-        points: 100
-      },
-      {
-        id: 'first-upload',
-        title: 'Primeiro Upload',
-        description: 'Faça upload do seu primeiro vídeo',
-        completed: false,
-        category: 'publishing',
-        points: 300
+        points: 100,
+        actionUrl: '/dashboard/creation'
       }
     ]
   },
   {
-    id: 'optimization',
-    name: 'Otimização',
-    description: 'Otimize seus vídeos para máximo alcance',
+    id: 'analytics',
+    name: 'Tutorial: Otimização e Resultados',
+    description: 'Aprenda a ler suas métricas para crescer.',
     icon: '⚡',
     order: 4,
-    estimatedTime: 20,
-    difficulty: 'medium',
-    unlocked: false,
+    estimatedTime: 10,
+    difficulty: 'easy',
+    unlocked: true,
     milestones: [
-      {
-        id: 'seo-optimization',
-        title: 'Otimização SEO',
-        description: 'Otimize títulos, descrições e tags',
-        completed: false,
-        category: 'optimization',
-        points: 150
-      },
-      {
-        id: 'thumbnail-creation',
-        title: 'Criação de Thumbnail',
-        description: 'Crie thumbnails atrativas',
-        completed: false,
-        category: 'optimization',
-        points: 100
-      },
       {
         id: 'analytics-setup',
-        title: 'Configurar Analytics',
-        description: 'Configure acompanhamento de métricas',
+        title: 'Lendo os Gráficos do Analytics',
+        description: 'Saber o que dá certo é o que difere amadores de profissionais.\n\nPasso 1: Clique para abrir o Painel Completo de Data-Science do seu canal.\nPasso 2: Mire diretamente nos "Gráficos de Retenção".\nPasso 3: Se o gráfico despenca depois de 3 segundos, seu vídeo não teve um gancho forte.\nPasso 4: Utilize as conclusões e volte à aba de Criação com novas instruções para o algoritmo!',
         completed: false,
         category: 'optimization',
-        points: 125
-      }
-    ]
-  },
-  {
-    id: 'publishing',
-    name: 'Publicação',
-    description: 'Publique e promova seu conteúdo',
-    icon: '📤',
-    order: 5,
-    estimatedTime: 25,
-    difficulty: 'easy',
-    unlocked: false,
-    milestones: [
-      {
-        id: 'scheduled-publishing',
-        title: 'Publicação Agendada',
-        description: 'Agende seus vídeos para horários otimizados',
-        completed: false,
-        category: 'publishing',
-        points: 100
-      },
-      {
-        id: 'social-promotion',
-        title: 'Promoção Social',
-        description: 'Promova seus vídeos nas redes sociais',
-        completed: false,
-        category: 'publishing',
-        points: 150
-      },
-      {
-        id: 'community-engagement',
-        title: 'Engajamento',
-        description: 'Responda comentários e interaja com a audiência',
-        completed: false,
-        category: 'engagement',
-        points: 200
+        points: 125,
+        actionUrl: '/dashboard/analytics'
       }
     ]
   }

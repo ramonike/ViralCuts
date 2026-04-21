@@ -38,7 +38,7 @@ describe('ProgressDashboard Component', () => {
       render(<ProgressDashboard metrics={mockMetrics} />);
       
       expect(screen.getByTestId('progress-dashboard')).toBeInTheDocument();
-      expect(screen.getByText('Progress Dashboard')).toBeInTheDocument();
+      expect(screen.getByText('Painel de Progresso')).toBeInTheDocument();
     });
 
     it('displays loading state correctly', () => {
@@ -69,7 +69,7 @@ describe('ProgressDashboard Component', () => {
       
       expect(screen.getByTestId('videos-metric')).toBeInTheDocument();
       expect(screen.getByText('5')).toBeInTheDocument();
-      expect(screen.getByText('Videos created this week')).toBeInTheDocument();
+      expect(screen.getByText('Vídeos criados esta semana')).toBeInTheDocument();
     });
 
     it('displays upload consistency percentage', () => {
@@ -81,7 +81,7 @@ describe('ProgressDashboard Component', () => {
       
       expect(screen.getByTestId('consistency-metric')).toBeInTheDocument();
       expect(screen.getByText('100%')).toBeInTheDocument();
-      expect(screen.getByText('Upload consistency')).toBeInTheDocument();
+      expect(screen.getByText('Consistência de uploads')).toBeInTheDocument();
     });
 
     it('displays channel growth metrics', () => {
@@ -97,7 +97,7 @@ describe('ProgressDashboard Component', () => {
       
       expect(screen.getByTestId('growth-metric')).toBeInTheDocument();
       expect(screen.getByText('1.5K')).toBeInTheDocument();
-      expect(screen.getByText('Total subscribers')).toBeInTheDocument();
+      expect(screen.getByText('Total de inscritos')).toBeInTheDocument();
     });
   });
 
@@ -114,13 +114,13 @@ describe('ProgressDashboard Component', () => {
       render(<ProgressDashboard metrics={mockMetrics} />);
       
       expect(screen.getByTestId('daily-streak')).toBeInTheDocument();
-      expect(screen.getByText('10 days')).toBeInTheDocument();
+      expect(screen.getByText(/10.*dias/i)).toBeInTheDocument();
       
       expect(screen.getByTestId('weekly-streak')).toBeInTheDocument();
-      expect(screen.getByText('3 weeks')).toBeInTheDocument();
+      expect(screen.getByText(/3.*semanas/i)).toBeInTheDocument();
       
       expect(screen.getByTestId('creation-streak')).toBeInTheDocument();
-      expect(screen.getByText('15 days')).toBeInTheDocument();
+      expect(screen.getByText(/15.*dias/i)).toBeInTheDocument();
     });
   });
 
@@ -172,7 +172,8 @@ describe('ProgressDashboard Component', () => {
       
       expect(screen.getByTestId('achievement-achievement-1')).toBeInTheDocument();
       expect(screen.getByText('First Upload')).toBeInTheDocument();
-      expect(screen.getByText('+100 pts')).toBeInTheDocument();
+      expect(screen.getByText('+100')).toBeInTheDocument();
+      expect(screen.getByText('Pontos')).toBeInTheDocument();
     });
   });
 
@@ -192,7 +193,7 @@ describe('ProgressDashboard Component', () => {
           const videosMetric = container.querySelector('[data-testid="videos-metric"]');
           if (videosMetric) {
             const hasNumber = videosMetric.textContent.match(/\d+/);
-            const hasLabel = videosMetric.textContent.includes('Videos created');
+            const hasLabel = videosMetric.textContent.includes('Vídeos criados') || videosMetric.textContent.includes('Videos created');
             expect(hasNumber).toBeTruthy();
             expect(hasLabel).toBeTruthy();
           }
@@ -201,7 +202,7 @@ describe('ProgressDashboard Component', () => {
           const consistencyMetric = container.querySelector('[data-testid="consistency-metric"]');
           if (consistencyMetric) {
             const hasPercentage = consistencyMetric.textContent.includes('%');
-            const hasLabel = consistencyMetric.textContent.includes('consistency');
+            const hasLabel = consistencyMetric.textContent.includes('Consistência') || consistencyMetric.textContent.includes('consistency');
             expect(hasPercentage).toBeTruthy();
             expect(hasLabel).toBeTruthy();
           }
@@ -210,7 +211,7 @@ describe('ProgressDashboard Component', () => {
           const growthMetric = container.querySelector('[data-testid="growth-metric"]');
           if (growthMetric) {
             const hasNumber = growthMetric.textContent.match(/[\d.]+[KM]?/);
-            const hasLabel = growthMetric.textContent.includes('subscribers');
+            const hasLabel = growthMetric.textContent.includes('inscritos') || growthMetric.textContent.includes('subscribers');
             expect(hasNumber).toBeTruthy();
             expect(hasLabel).toBeTruthy();
           }
@@ -219,8 +220,8 @@ describe('ProgressDashboard Component', () => {
           const dailyStreak = container.querySelector('[data-testid="daily-streak"]');
           if (dailyStreak) {
             const hasNumber = dailyStreak.textContent.match(/\d+/);
-            const hasUnit = dailyStreak.textContent.includes('days');
-            const hasLabel = dailyStreak.textContent.includes('activity');
+            const hasUnit = dailyStreak.textContent.includes('dias') || dailyStreak.textContent.includes('days');
+            const hasLabel = dailyStreak.textContent.includes('Atividade') || dailyStreak.textContent.includes('activity');
             expect(hasNumber).toBeTruthy();
             expect(hasUnit).toBeTruthy();
             expect(hasLabel).toBeTruthy();
@@ -498,7 +499,7 @@ describe('ProgressDashboard Component', () => {
       
       render(<ProgressDashboard metrics={mockMetrics} />);
       
-      expect(screen.getByText('Recent Achievements')).toBeInTheDocument();
+      expect(screen.getByText('Conquistas Recentes')).toBeInTheDocument();
       expect(screen.getByTestId('achievement-achievement-1')).toBeInTheDocument();
     });
   });

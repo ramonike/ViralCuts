@@ -17,6 +17,7 @@ import youtubeRoutes from "./routes/youtube.js";
 import notificationsRoutes from "./routes/notifications.js";
 import tiktokRoutes from "./routes/tiktok.js";
 import commandCenterRoutes from "./routes/commandCenter.js";
+import aiRoutes from "./routes/ai.js";
 
 // Import scheduled jobs
 import { startScheduledUploadsJob, stopScheduledUploadsJob } from "./jobs/scheduled-uploads.js";
@@ -49,7 +50,7 @@ app.use("/api/health", rateLimiter());
 app.get("/api/auth/youtube/callback", async (c) => {
   // Import and call the callback handler directly
   const { exchangeCode } = await import("./services/youtube-auth.js");
-  
+
   try {
     const code = c.req.query("code");
     const state = c.req.query("state");
@@ -97,7 +98,7 @@ app.get("/api/auth/youtube/callback", async (c) => {
 
     const channelData = await channelResponse.json();
     const channel = channelData.items?.[0];
-    
+
     if (!channel) {
       throw new Error("No YouTube channel found for this account");
     }
@@ -148,7 +149,7 @@ app.get("/api/auth/youtube/callback", async (c) => {
 // Requirements: 1.3, 1.4
 app.post("/api/auth/youtube/refresh", async (c) => {
   const { refreshToken: refreshYouTubeToken } = await import("./services/youtube-auth.js");
-  
+
   try {
     // Validate session
     const session = await auth.api.getSession({
@@ -201,15 +202,15 @@ app.post("/api/auth/youtube/refresh", async (c) => {
     });
   } catch (err) {
     console.error("[YouTube Auth] Refresh error:", err);
-    
+
     // If refresh fails, user needs to re-authenticate
     if (err.message.includes("invalid_grant") || err.message.includes("Token has been revoked")) {
-      return c.json({ 
+      return c.json({
         error: "Refresh token expired or revoked. Please re-authenticate.",
-        requiresReauth: true 
+        requiresReauth: true
       }, 401);
     }
-    
+
     return c.json({ error: err.message }, 500);
   }
 });
@@ -243,6 +244,7 @@ app.route("/api/youtube", youtubeRoutes);
 app.route("/api/tiktok", tiktokRoutes);
 app.route("/api/notifications", notificationsRoutes);
 app.route("/api/command-center", commandCenterRoutes);
+app.route("/api/ai", aiRoutes);
 
 // Health check with database connection test
 app.get("/api/health", async (c) => {
@@ -251,7 +253,7 @@ app.get("/api/health", async (c) => {
     return c.json({ status: "ok", database: "connected" });
   } catch (error) {
     console.error("Database connection error:", error.message);
-    
+
     const errorResponse = {
       status: "error",
       database: "disconnected",
@@ -259,7 +261,7 @@ app.get("/api/health", async (c) => {
       code: error.code || 'UNKNOWN',
       retryable: isRetryableError(error),
     };
-    
+
     return c.json(errorResponse, 500);
   }
 });
@@ -298,7 +300,7 @@ initializeDatabase().then((connected) => {
     if (!connected) {
       console.warn("Warning: Server started without database connection");
     }
-    
+
     // Start scheduled uploads job if database is connected
     if (connected) {
       startScheduledUploadsJob();

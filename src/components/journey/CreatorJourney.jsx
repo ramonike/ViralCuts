@@ -7,7 +7,7 @@ import { JourneyRoadmap } from './JourneyRoadmap';
 import { ProgressTracker } from './ProgressTracker';
 
 export function CreatorJourney() {
-    const { journeyState, stages, userStats, updateProgress } = useJourney();
+    const { journeyState, stages, userStats, updateProgress, resetJourney } = useJourney();
     const [showOnboarding, setShowOnboarding] = useState(false);
     const [activeView, setActiveView] = useState('roadmap'); // 'roadmap' | 'progress'
 
@@ -58,7 +58,18 @@ export function CreatorJourney() {
                                 </p>
                             </div>
                         </div>
-                        <div className="flex gap-1">
+                        <div className="flex gap-1 items-center">
+                            {/* BOTAO TEMPORARIO DE RESET PARA TESTES */}
+                            <button
+                                onClick={() => {
+                                    if(window.confirm('Resetar progresso para testar?')) resetJourney();
+                                }}
+                                className="text-[10px] px-2 py-1.5 mr-2 rounded bg-red-500/20 text-red-400 hover:bg-red-500 hover:text-white transition-all font-semibold"
+                                title="Botão temporário para resetar seus testes"
+                            >
+                                Resetar Limpo
+                            </button>
+
                             <button
                                 onClick={() => setActiveView('roadmap')}
                                 className={`text-[10px] px-3 py-1.5 rounded-full transition-all font-semibold ${

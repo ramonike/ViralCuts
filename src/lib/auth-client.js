@@ -1,6 +1,12 @@
 import { createAuthClient } from "better-auth/react";
-import { API_ENDPOINTS, API_URL } from '../config/api';
+import { API_URL } from '../config/api';
+
+const getBaseUrl = () => {
+    if (API_URL) return API_URL; 
+    if (typeof window !== 'undefined') return window.location.origin;
+    return '';
+};
 
 export const authClient = createAuthClient({
-    baseURL: API_URL
+    baseURL: getBaseUrl()
 });

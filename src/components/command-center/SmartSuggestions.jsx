@@ -4,6 +4,8 @@
  */
 
 import React, { useState, useEffect, useMemo } from 'react';
+import WidgetWrapper from '../shared/WidgetWrapper';
+import { Lightbulb } from 'lucide-react';
 
 /**
  * Analyzes user behavior patterns to generate insights
@@ -511,13 +513,16 @@ export function SmartSuggestions({
   };
 
   return (
-    <div className="smart-suggestions space-y-5">
-      <div className="flex items-center justify-between">
-        <h2 className="text-xl font-bold text-slate-100">Sugestões Inteligentes</h2>
-        <div className="text-sm text-slate-400">
+    <WidgetWrapper
+      title="Sugestões Inteligentes"
+      icon={<Lightbulb className="w-5 h-5" />}
+      actions={
+        <div className="text-xs md:text-sm text-slate-400">
           Baseado nos seus padrões de atividade
         </div>
-      </div>
+      }
+    >
+      <div className="smart-suggestions space-y-5">
 
       {/* Main Suggestions */}
       {visibleSuggestions.length > 0 && (
@@ -656,11 +661,12 @@ export function SmartSuggestions({
         <div className="text-center py-8 text-slate-400">
           <div className="text-4xl mb-2">🤖</div>
           <p className="text-sm">
-            No suggestions available right now. Keep creating content and we'll provide personalized recommendations!
+            Nenhuma sugestão disponível no momento. Continue criando conteúdo e forneceremos recomendações personalizadas!
           </p>
         </div>
       )}
-    </div>
+      </div>
+    </WidgetWrapper>
   );
 }
 

@@ -62,7 +62,15 @@ export const JourneyProvider = ({ children }) => {
 
     const [stages, setStages] = useState(() => {
         const saved = localStorage.getItem(STORAGE_KEYS.stages);
-        return saved ? JSON.parse(saved) : DEFAULT_JOURNEY_STAGES;
+        if (saved) {
+            const parsed = JSON.parse(saved);
+            // Invalidate cache if old stages are present (by checking for new 'analytics' stage)
+            if (!parsed.find(s => s.id === 'analytics')) {
+                return DEFAULT_JOURNEY_STAGES;
+            }
+            return parsed;
+        }
+        return DEFAULT_JOURNEY_STAGES;
     });
 
     const [userStats, setUserStats] = useState(() => {

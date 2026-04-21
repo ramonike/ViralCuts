@@ -22,6 +22,7 @@ import { QuickActions } from './QuickActions';
 import { SmartSuggestions } from './SmartSuggestions';
 import { ContentWorkflow } from './ContentWorkflow';
 import { CommandCenterNotifications } from './CommandCenterNotifications';
+import { BeginnerJourney } from './BeginnerJourney';
 import { FocusMode, getFocusModeService } from './FocusMode';
 
 // Import layout and customization components
@@ -189,6 +190,9 @@ function CommandCenterContent({
   const setupComplete = setupTasks.every(task => task.completed);
   const showSetupAssistant = !setupComplete && isWidgetVisible('setup-assistant');
 
+  // Determine if user is in beginner state to streamline the UI
+  const isBeginner = !metrics?.videosCreatedThisWeek && !(scheduledUploads?.length > 0);
+
   return (
     <ResponsiveContainer className="min-h-screen bg-slate-950">
       {/* Header - Enhanced Dark Design */}
@@ -246,6 +250,28 @@ function CommandCenterContent({
 
       {/* Main Grid Layout - Dark Theme */}
       <ResponsiveGrid className="gap-6">
+        {/* Beginner Journey - Prominent for new users */}
+        {isBeginner && (
+          <ResponsiveWidget id="beginner-journey" fullWidth>
+            <BeginnerJourney 
+              userState={{
+                hasConnectedChannel: !!token || !!(typeof window !== 'undefined' && localStorage.getItem('viralcuts_workflow_v1')?.includes('"youtubeToken":') && !localStorage.getItem('viralcuts_workflow_v1')?.includes('"youtubeToken":null')),
+                hasCreatedVideo: metrics?.videosCreatedThisWeek > 0,
+                hasScheduledContent: scheduledUploads?.length > 0
+              }}
+              onNavigate={(actionId) => {
+                const routes = {
+                  'connect-channels': '/dashboard/settings',
+                  'ai-tools': '/dashboard/creation',
+                  'upload-video': '/dashboard/videos',
+                  'schedule-content': '/dashboard/calendar',
+                };
+                window.location.href = routes[actionId] || '/dashboard';
+              }}
+            />
+          </ResponsiveWidget>
+        )}
+
         {/* Setup Assistant - Full width on top for new users */}
         {showSetupAssistant && (
           <ResponsiveWidget id="setup-assistant" fullWidth>
@@ -277,7 +303,7 @@ function CommandCenterContent({
                   'schedule-content': '/dashboard/calendar',
                   'check-analytics': '/dashboard/analytics',
                   'optimize-channel': '/dashboard',
-                  'ai-tools': '/dashboard',
+                  'ai-tools': '/dashboard/creation',
                   'notifications': '/dashboard',
                 };
                 const route = routes[actionId] || '/dashboard';
@@ -302,7 +328,7 @@ function CommandCenterContent({
         )}
 
         {/* Progress Dashboard */}
-        {isWidgetVisible('progress-dashboard') && (
+        {isWidgetVisible('progress-dashboard') && !isBeginner && (
           <ResponsiveWidget id="progress-dashboard">
             <ProgressDashboard
               metrics={metrics}
@@ -313,7 +339,7 @@ function CommandCenterContent({
         )}
 
         {/* Content Workflow */}
-        {isWidgetVisible('content-workflow') && (
+        {isWidgetVisible('content-workflow') && !isBeginner && (
           <ResponsiveWidget id="content-workflow">
             <ContentWorkflow
               currentWorkflow={currentWorkflow}
@@ -325,7 +351,7 @@ function CommandCenterContent({
         )}
 
         {/* Smart Suggestions - Full width for better layout */}
-        {isWidgetVisible('smart-suggestions') && featureFlags.enableSmartSuggestions && (
+        {isWidgetVisible('smart-suggestions') && featureFlags.enableSmartSuggestions && !isBeginner && (
           <ResponsiveWidget id="smart-suggestions" fullWidth hideOnMobile>
             <Card className="p-5 bg-slate-900/80 border-slate-800">
               <SmartSuggestions

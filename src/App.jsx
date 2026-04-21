@@ -19,6 +19,7 @@ import CalendarPage from "./pages/CalendarPage";
 import AnalyticsPage from "./pages/AnalyticsPage";
 import SettingsPage from "./pages/SettingsPage";
 import ProfilePage from "./pages/ProfilePage";
+import CreationPage from "./pages/CreationPage";
 import AdminPage from "./pages/AdminPage";
 
 import { DashboardProvider } from "./hooks/useDashboardState";
@@ -67,6 +68,7 @@ export default function App() {
                     }>
                       <Route index element={<DashboardHome />} />
                       <Route path="videos" element={<VideosPage />} />
+                      <Route path="creation" element={<CreationPage />} />
                       <Route path="calendar" element={<CalendarPage />} />
                       <Route path="analytics" element={<AnalyticsPage />} />
                       <Route path="profile" element={<ProfilePage />} />

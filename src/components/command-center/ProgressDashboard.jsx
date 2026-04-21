@@ -6,6 +6,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { fetchChannelAnalytics } from '../../api/analytics';
+import WidgetWrapper from '../shared/WidgetWrapper';
+import { TrendingUp } from 'lucide-react';
 
 /**
  * ProgressDashboard Component
@@ -212,22 +214,20 @@ export function ProgressDashboard({
 
   if (loading || analyticsLoading) {
     return (
-      <div className="bg-slate-900/80 rounded-2xl border border-slate-800 p-6" data-testid="progress-dashboard">
-        <div className="animate-pulse">
-          <div className="h-6 bg-slate-700 rounded mb-4 w-1/3"></div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {[1, 2, 3].map(i => (
-              <div key={i} className="h-24 bg-slate-700 rounded-xl"></div>
-            ))}
-          </div>
-        </div>
-      </div>
+      <WidgetWrapper
+        title="Painel de Progresso"
+        icon={<TrendingUp className="w-5 h-5" />}
+        loading={true}
+      />
     );
   }
 
   if (error || analyticsError) {
     return (
-      <div className="bg-slate-900/80 rounded-2xl border border-slate-800 p-6" data-testid="progress-dashboard">
+      <WidgetWrapper
+        title="Painel de Progresso"
+        icon={<TrendingUp className="w-5 h-5" />}
+      >
         <div className="text-center py-8">
           <div className="text-red-400 text-lg mb-2">⚠️</div>
           <h3 className="text-lg font-semibold text-slate-100 mb-2">
@@ -237,7 +237,7 @@ export function ProgressDashboard({
             {error?.message || analyticsError?.message || 'Please try again later'}
           </p>
         </div>
-      </div>
+      </WidgetWrapper>
     );
   }
 
@@ -246,42 +246,43 @@ export function ProgressDashboard({
   const performanceAnalysis = analyzePerformance();
 
   return (
-    <div className="bg-slate-900/80 rounded-2xl border border-slate-800 p-6" data-testid="progress-dashboard">
-      <div className="flex items-center justify-between mb-6">
-        <h2 className="text-xl font-bold text-slate-100">
-          Painel de Progresso
-        </h2>
-        <div className="text-sm text-slate-400 font-medium">
+    <WidgetWrapper
+      title="Painel de Progresso"
+      icon={<TrendingUp className="w-5 h-5" />}
+      actions={
+        <div className="text-xs md:text-sm text-slate-400 font-medium">
           Últimos 7 dias
         </div>
-      </div>
+      }
+    >
+      <div data-testid="progress-dashboard">
 
-      {/* Key Metrics Grid - Dark Theme */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+      {/* Key Metrics Grid - Dark Theme - Subtask 8.4: Mobile-optimized padding and font sizes */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 md:gap-4 mb-4 md:mb-6">
         {/* Videos Created This Week */}
-        <div className="bg-gradient-to-br from-blue-950/80 to-blue-900/50 rounded-xl p-4 border border-blue-800/30" data-testid="videos-metric">
-          <div className="flex items-center justify-between mb-2">
-            <div className="text-blue-400 text-2xl">🎬</div>
+        <div className="bg-gradient-to-br from-blue-950/80 to-blue-900/50 rounded-xl p-4 md:p-5 border border-blue-800/30" data-testid="videos-metric">
+          <div className="flex items-center justify-between mb-2 md:mb-3">
+            <div className="text-2xl md:text-3xl">🎬</div>
             <div className="text-xs text-blue-400 font-bold uppercase tracking-wider">VÍDEOS</div>
           </div>
-          <div className="text-3xl font-black text-blue-100 mb-1">
+          <div className="text-2xl md:text-3xl font-black text-blue-100 mb-1">
             {metrics?.videosCreatedThisWeek || 0}
           </div>
-          <div className="text-sm text-blue-300/80">
+          <div className="text-xs md:text-sm text-blue-300/80">
             Vídeos criados esta semana
           </div>
         </div>
 
         {/* Upload Consistency */}
-        <div className="bg-gradient-to-br from-emerald-950/80 to-emerald-900/50 rounded-xl p-4 border border-emerald-800/30" data-testid="consistency-metric">
-          <div className="flex items-center justify-between mb-2">
-            <div className="text-emerald-400 text-2xl">📅</div>
+        <div className="bg-gradient-to-br from-emerald-950/80 to-emerald-900/50 rounded-xl p-4 md:p-5 border border-emerald-800/30" data-testid="consistency-metric">
+          <div className="flex items-center justify-between mb-2 md:mb-3">
+            <div className="text-2xl md:text-3xl">📅</div>
             <div className="text-xs text-emerald-400 font-bold uppercase tracking-wider">CONSISTÊNCIA</div>
           </div>
-          <div className="text-3xl font-black text-emerald-100 mb-1">
+          <div className="text-2xl md:text-3xl font-black text-emerald-100 mb-1">
             {Math.round(consistencyPercentage)}%
           </div>
-          <div className="text-sm text-emerald-300/80">
+          <div className="text-xs md:text-sm text-emerald-300/80">
             Consistência de uploads
           </div>
           <div className="mt-2 bg-emerald-950/50 rounded-full h-2">
@@ -293,41 +294,41 @@ export function ProgressDashboard({
         </div>
 
         {/* Channel Growth */}
-        <div className="bg-gradient-to-br from-purple-950/80 to-purple-900/50 rounded-xl p-4 border border-purple-800/30" data-testid="growth-metric">
-          <div className="flex items-center justify-between mb-2">
-            <div className="text-purple-400 text-2xl">📊</div>
+        <div className="bg-gradient-to-br from-purple-950/80 to-purple-900/50 rounded-xl p-4 md:p-5 border border-purple-800/30" data-testid="growth-metric">
+          <div className="flex items-center justify-between mb-2 md:mb-3">
+            <div className="text-2xl md:text-3xl">📊</div>
             <div className="text-xs text-purple-400 font-bold uppercase tracking-wider">CRESCIMENTO</div>
           </div>
           <div className="flex items-center gap-2 mb-1">
-            <div className="text-3xl font-black text-purple-100">
+            <div className="text-2xl md:text-3xl font-black text-purple-100">
               {formatNumber(metrics?.channelGrowth?.subscribers || 0)}
             </div>
-            <div className={`text-lg ${getTrendColor(growthTrend)}`}>
+            <div className={`text-base md:text-lg ${getTrendColor(growthTrend)}`}>
               {getTrendIcon(growthTrend)}
             </div>
           </div>
-          <div className="text-sm text-purple-300/80">
+          <div className="text-xs md:text-sm text-purple-300/80">
             Total de inscritos
           </div>
         </div>
       </div>
 
-      {/* Performance Analysis Section */}
+      {/* Performance Analysis Section - Subtask 8.4: Mobile-optimized padding */}
       {performanceAnalysis.suggestions.length > 0 && (
-        <div className="mb-6" data-testid="performance-analysis">
-          <h3 className="text-lg font-bold text-slate-100 mb-4">Análise de Desempenho</h3>
-          <div className="space-y-3">
+        <div className="mb-4 md:mb-6" data-testid="performance-analysis">
+          <h3 className="text-base md:text-lg font-bold text-slate-100 mb-3 md:mb-4">Análise de Desempenho</h3>
+          <div className="space-y-2 md:space-y-3">
             {performanceAnalysis.suggestions.map((suggestion, index) => (
               <div 
                 key={index}
-                className={`p-4 rounded-xl border ${getSuggestionColor(suggestion.type)}`}
+                className={`p-3 md:p-4 rounded-xl border ${getSuggestionColor(suggestion.type)}`}
                 data-testid={`suggestion-${suggestion.type}-${index}`}
               >
-                <div className="flex items-start gap-3">
-                  <div className="text-lg">{getSuggestionIcon(suggestion.type)}</div>
+                <div className="flex items-start gap-2 md:gap-3">
+                  <div className="text-base md:text-lg">{getSuggestionIcon(suggestion.type)}</div>
                   <div className="flex-1">
-                    <h4 className="font-semibold mb-1">{suggestion.title}</h4>
-                    <p className="text-sm opacity-80">{suggestion.description}</p>
+                    <h4 className="text-sm md:text-base font-semibold mb-1">{suggestion.title}</h4>
+                    <p className="text-xs md:text-sm opacity-80">{suggestion.description}</p>
                     {suggestion.actionable && (
                       <div className="mt-2">
                         <span className="text-xs font-bold px-2 py-1 bg-white/10 rounded-lg">
@@ -343,40 +344,40 @@ export function ProgressDashboard({
         </div>
       )}
 
-      {/* Streak Counters */}
-      <div className="mb-6">
-        <h3 className="text-lg font-bold text-slate-100 mb-4">Sequências de Atividade</h3>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+      {/* Streak Counters - Subtask 8.4: Mobile-optimized padding and font sizes */}
+      <div className="mb-4 md:mb-6">
+        <h3 className="text-base md:text-lg font-bold text-slate-100 mb-3 md:mb-4">Sequências de Atividade</h3>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 md:gap-3">
           {/* Daily Activity Streak */}
-          <div className="flex items-center gap-3 p-3 bg-orange-950/50 border border-orange-800/30 rounded-xl" data-testid="daily-streak">
-            <div className="text-orange-400 text-xl">🔥</div>
+          <div className="flex items-center gap-3 md:gap-4 p-3 md:p-4 bg-gradient-to-br from-orange-950/80 to-orange-900/50 border border-orange-800/30 rounded-xl" data-testid="daily-streak">
+            <div className={`text-orange-400 text-3xl md:text-4xl ${(metrics?.streaks?.dailyActivity || 0) > 0 ? 'animate-pulse' : ''}`}>🔥</div>
             <div>
-              <div className="font-bold text-orange-100">
+              <div className="text-xl md:text-2xl font-black text-orange-100">
                 {metrics?.streaks?.dailyActivity || 0} dias
               </div>
-              <div className="text-sm text-orange-300/70">Atividade diária</div>
+              <div className="text-xs md:text-sm text-orange-300/80">Atividade diária</div>
             </div>
           </div>
 
           {/* Weekly Uploads Streak */}
-          <div className="flex items-center gap-3 p-3 bg-indigo-950/50 border border-indigo-800/30 rounded-xl" data-testid="weekly-streak">
-            <div className="text-indigo-400 text-xl">📈</div>
+          <div className="flex items-center gap-3 md:gap-4 p-3 md:p-4 bg-gradient-to-br from-indigo-950/80 to-indigo-900/50 border border-indigo-800/30 rounded-xl" data-testid="weekly-streak">
+            <div className={`text-indigo-400 text-3xl md:text-4xl ${(metrics?.streaks?.weeklyUploads || 0) > 0 ? 'animate-pulse' : ''}`}>📈</div>
             <div>
-              <div className="font-bold text-indigo-100">
+              <div className="text-xl md:text-2xl font-black text-indigo-100">
                 {metrics?.streaks?.weeklyUploads || 0} semanas
               </div>
-              <div className="text-sm text-indigo-300/70">Uploads semanais</div>
+              <div className="text-xs md:text-sm text-indigo-300/80">Uploads semanais</div>
             </div>
           </div>
 
           {/* Content Creation Streak */}
-          <div className="flex items-center gap-3 p-3 bg-teal-950/50 border border-teal-800/30 rounded-xl" data-testid="creation-streak">
-            <div className="text-teal-400 text-xl">✨</div>
+          <div className="flex items-center gap-3 md:gap-4 p-3 md:p-4 bg-gradient-to-br from-teal-950/80 to-teal-900/50 border border-teal-800/30 rounded-xl" data-testid="creation-streak">
+            <div className={`text-teal-400 text-3xl md:text-4xl ${(metrics?.streaks?.contentCreation || 0) > 0 ? 'animate-pulse' : ''}`}>✨</div>
             <div>
-              <div className="font-bold text-teal-100">
+              <div className="text-xl md:text-2xl font-black text-teal-100">
                 {metrics?.streaks?.contentCreation || 0} dias
               </div>
-              <div className="text-sm text-teal-300/70">Criação de conteúdo</div>
+              <div className="text-xs md:text-sm text-teal-300/80">Criação de conteúdo</div>
             </div>
           </div>
         </div>
@@ -419,27 +420,31 @@ export function ProgressDashboard({
       {metrics?.achievements && metrics.achievements.length > 0 && (
         <div className="border-t border-slate-700/50 pt-5 mt-5">
           <h3 className="text-lg font-bold text-slate-100 mb-4">Conquistas Recentes</h3>
-          <div className="space-y-2">
+          <div className="space-y-3">
             {metrics.achievements.slice(0, 3).map((achievement) => (
               <div 
                 key={achievement.id} 
-                className="flex items-center gap-3 p-3 bg-amber-950/50 border border-amber-800/30 rounded-xl"
+                className="flex items-center gap-4 p-4 bg-gradient-to-br from-amber-950/80 to-amber-900/50 border-2 border-amber-500 rounded-xl shadow-lg shadow-amber-500/20"
                 data-testid={`achievement-${achievement.id}`}
               >
-                <div className="text-xl">{achievement.icon}</div>
+                <div className="text-3xl">{achievement.icon}</div>
                 <div className="flex-1">
-                  <div className="font-semibold text-amber-100">{achievement.title}</div>
-                  <div className="text-sm text-amber-300/70">{achievement.description}</div>
+                  <div className="font-bold text-lg text-amber-100">{achievement.title}</div>
+                  <div className="text-sm text-amber-300/80">{achievement.description}</div>
                 </div>
-                <div className="text-sm font-bold text-amber-200">
-                  +{achievement.points} pts
+                <div className="flex flex-col items-center justify-center px-4 py-2 bg-amber-500/20 border border-amber-500/50 rounded-lg">
+                  <div className="text-xs text-amber-300 font-semibold uppercase">Pontos</div>
+                  <div className="text-xl font-black text-amber-100">
+                    +{achievement.points}
+                  </div>
                 </div>
               </div>
             ))}
           </div>
         </div>
       )}
-    </div>
+      </div>
+    </WidgetWrapper>
   );
 }
 

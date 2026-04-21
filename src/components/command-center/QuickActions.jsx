@@ -9,6 +9,7 @@
 
 import { useMemo, useCallback, useState, useRef } from 'react';
 import { Card } from '../ui/card';
+import WidgetWrapper from '../shared/WidgetWrapper';
 import {
   Upload,
   Calendar,
@@ -21,7 +22,9 @@ import {
   Clock,
   Target,
   Lightbulb,
-  Zap
+  Zap,
+  Video,
+  Wand2 as Wand
 } from 'lucide-react';
 
 // Storage key for tracking usage statistics (for analytics only, not reordering)
@@ -108,6 +111,8 @@ const getActionIcon = (iconName, size = 'w-5 h-5') => {
     'target': Target,
     'lightbulb': Lightbulb,
     'zap': Zap,
+    'video': Video,
+    'wand': Wand,
   };
 
   const IconComponent = iconMap[iconName] || Sparkles;
@@ -115,17 +120,17 @@ const getActionIcon = (iconName, size = 'w-5 h-5') => {
 };
 
 /**
- * Get category color for action button - Dark Theme
+ * Get category color for action button - Dark Theme / Glassmorphism
  */
 const getCategoryColor = (category) => {
   const colorMap = {
-    'creation': 'bg-blue-950/80 hover:bg-blue-900/80 text-blue-300 border-blue-800/60 hover:border-blue-700',
-    'optimization': 'bg-emerald-950/80 hover:bg-emerald-900/80 text-emerald-300 border-emerald-800/60 hover:border-emerald-700',
-    'analysis': 'bg-purple-950/80 hover:bg-purple-900/80 text-purple-300 border-purple-800/60 hover:border-purple-700',
-    'management': 'bg-amber-950/80 hover:bg-amber-900/80 text-amber-300 border-amber-800/60 hover:border-amber-700',
+    'creation': 'bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 border-blue-500/20 hover:border-blue-500/40 shadow-[0_0_15px_rgba(59,130,246,0.1)] hover:shadow-[0_0_25px_rgba(59,130,246,0.25)]',
+    'optimization': 'bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border-emerald-500/20 hover:border-emerald-500/40 shadow-[0_0_15px_rgba(16,185,129,0.1)] hover:shadow-[0_0_25px_rgba(16,185,129,0.25)]',
+    'analysis': 'bg-purple-500/10 hover:bg-purple-500/20 text-purple-400 border-purple-500/20 hover:border-purple-500/40 shadow-[0_0_15px_rgba(168,85,247,0.1)] hover:shadow-[0_0_25px_rgba(168,85,247,0.25)]',
+    'management': 'bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border-amber-500/20 hover:border-amber-500/40 shadow-[0_0_15px_rgba(245,158,11,0.1)] hover:shadow-[0_0_25px_rgba(245,158,11,0.25)]',
   };
 
-  return colorMap[category] || 'bg-slate-800/80 hover:bg-slate-700/80 text-slate-300 border-slate-700/60 hover:border-slate-600';
+  return colorMap[category] || 'bg-slate-500/10 hover:bg-slate-500/20 text-slate-400 border-slate-500/20 hover:border-slate-500/40 shadow-[0_0_15px_rgba(100,116,139,0.1)] hover:shadow-[0_0_25px_rgba(100,116,139,0.25)]';
 };
 
 /**
@@ -229,16 +234,17 @@ const PANEL_CONTENT = {
       {
         title: 'Criar com IA',
         items: [
-          { icon: 'sparkles', label: 'Gerar ideias de vídeo', action: 'ai-ideas' },
-          { icon: 'lightbulb', label: 'Criar roteiro', action: 'ai-script' },
-          { icon: 'target', label: 'Otimizar título e tags', action: 'ai-seo' },
+          { icon: 'video', label: 'Gerar vídeo por prompt', action: 'ai-video' },
+          { icon: 'wand', label: 'Edição viral automática', action: 'ai-viral-edit' },
+          { icon: 'zap', label: 'Transformar imagem em vídeo', action: 'ai-motion' },
         ]
       },
       {
-        title: 'Tendências',
+        title: 'Tendências e APIs',
         tips: [
-          'Tópico em alta: "Produtividade 2024"',
-          'Formato popular: Shorts de 60s',
+          'Use Replicate para geração via prompt',
+          'Shotstack para edição programática',
+          'Submagic para legendas dinâmicas',
         ]
       }
     ]
@@ -379,10 +385,10 @@ const ActionButton = ({ action, onClick, showBadge = false, notificationCount = 
     <button
       onClick={handleClick}
       className={`
-        relative flex flex-col items-center justify-center p-4 rounded-lg border
-        transition-all duration-200 min-w-[100px]
+        group relative flex flex-col items-center justify-center p-6 rounded-2xl border backdrop-blur-md
+        transition-all duration-300 transform hover:-translate-y-1 hover:scale-105 min-w-[100px] gap-2
         ${getCategoryColor(action.category)}
-        ${hasNotification ? 'ring-2 ring-offset-1 ring-red-200' : ''}
+        ${hasNotification ? 'ring-2 ring-offset-1 ring-red-500/50 ring-offset-slate-900' : ''}
       `}
       title={action.description}
       data-testid={`quick-action-${action.id}`}
@@ -544,41 +550,44 @@ export const QuickActions = ({
 
   return (
     <>
-      <Card className={`p-5 ${className}`} data-testid="quick-actions">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-bold text-slate-100">Ações Rápidas</h2>
-          {totalNotifications > 0 && (
+      <WidgetWrapper
+        title="Ações Rápidas"
+        icon={<Zap className="w-5 h-5" />}
+        actions={
+          totalNotifications > 0 && (
             <span
               className="text-sm text-slate-400"
               data-testid="attention-count"
             >
               {totalNotifications} {totalNotifications !== 1 ? 'itens precisam' : 'item precisa'} de atenção
             </span>
-          )}
-        </div>
+          )
+        }
+        className={className}
+      >
+        <div data-testid="quick-actions">
+          {/* Action buttons grid - FIXED ORDER */}
+          <div
+            className="grid grid-cols-3 sm:grid-cols-6 gap-3"
+            data-testid="quick-actions-grid"
+          >
+            {displayActions.map(action => (
+              <ActionButton
+                key={action.id}
+                action={action}
+                onClick={handleActionClick}
+                showBadge={showNotificationBadges}
+                notificationCount={mergedNotificationCounts[action.id] || 0}
+              />
+            ))}
+          </div>
 
-        {/* Action buttons grid - FIXED ORDER */}
-        <div
-          className="grid grid-cols-3 sm:grid-cols-6 gap-3"
-          data-testid="quick-actions-grid"
-        >
-          {displayActions.map(action => (
-            <ActionButton
-              key={action.id}
-              action={action}
-              onClick={handleActionClick}
-              showBadge={showNotificationBadges}
-              notificationCount={mergedNotificationCounts[action.id] || 0}
-            />
-          ))}
+          {/* Keyboard shortcuts hint */}
+          <div className="mt-4 text-xs text-slate-500 text-center">
+            Use atalhos de teclado para acesso rápido
+          </div>
         </div>
-
-        {/* Keyboard shortcuts hint */}
-        <div className="mt-4 text-xs text-slate-500 text-center">
-          Use atalhos de teclado para acesso rápido
-        </div>
-      </Card>
+      </WidgetWrapper>
 
       {/* Action Panel Modal */}
       {activePanel && (
