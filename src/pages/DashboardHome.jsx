@@ -4,71 +4,19 @@ import { CreatorJourney } from "../components/journey/CreatorJourney";
 import { SharedUploadQueue } from "../components/shared/SharedUploadQueue";
 import { PageLayout } from "../components/layout/PageLayout";
 import { useTheme } from "../contexts/ThemeContext";
-import { 
-    DailyCommandCenter, 
-    useSystemSwitcher,
-} from "../components/command-center";
+
 import { Sparkles, Rocket, Calendar, TrendingUp, AlertCircle, RefreshCw } from "lucide-react";
 import React from "react";
 
-// Error Boundary for Dashboard
-class DashboardErrorBoundary extends React.Component {
-    constructor(props) {
-        super(props);
-        this.state = { hasError: false, error: null };
-    }
 
-    static getDerivedStateFromError(error) {
-        return { hasError: true, error };
-    }
-
-    componentDidCatch(error, errorInfo) {
-        console.error('[DashboardHome] Error caught:', error, errorInfo);
-    }
-
-    render() {
-        if (this.state.hasError) {
-            return (
-                <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4">
-                    <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 max-w-md">
-                        <div className="flex items-start gap-4">
-                            <AlertCircle className="w-6 h-6 text-red-400 flex-shrink-0" />
-                            <div>
-                                <h3 className="font-semibold text-slate-100 mb-2">
-                                    Erro no Dashboard
-                                </h3>
-                                <p className="text-sm text-slate-400 mb-4">
-                                    {this.state.error?.message || 'Ocorreu um erro inesperado.'}
-                                </p>
-                                <button
-                                    onClick={() => {
-                                        this.setState({ hasError: false, error: null });
-                                        window.location.reload();
-                                    }}
-                                    className="flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-sm font-medium transition-colors"
-                                >
-                                    <RefreshCw className="w-4 h-4" />
-                                    Recarregar Página
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            );
-        }
-
-        return this.props.children;
-    }
-}
 
 export default function DashboardHome() {
     const { state, actions } = useDashboardState();
     const supabase = useSupabaseDashboard();
-    const { isCommandCenter } = useSystemSwitcher();
     const { theme } = useTheme();
     
     // Debug logging
-    console.log('[DashboardHome] Render - isCommandCenter:', isCommandCenter, 'supabase.loading:', supabase.loading);
+    console.log('[DashboardHome] Render - supabase.loading:', supabase.loading);
     
     const isDark = theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
 
@@ -124,34 +72,6 @@ export default function DashboardHome() {
         }
     };
 
-    // Render Daily Command Center if active system is command-center
-    // Requirements: 9.2, 9.4 - Feature flag system for gradual rollout
-    if (isCommandCenter) {
-        return (
-            <DashboardErrorBoundary>
-                <PageLayout maxWidth="7xl" spacing="standard">
-                    <DailyCommandCenter
-                        user={supabase.user}
-                        userSettings={state.settings}
-                        uploadQueueHook={{
-                            uploadQueue: state.uploadQueue,
-                            addToUploadQueue: hybridActions.addToUploadQueue,
-                            removeQueueItem: actions.removeQueueItem,
-                            markQueueStatus: actions.markQueueStatus,
-                            startUploadQueue: actions.startUploadQueue,
-                            rescheduleVideo: actions.rescheduleVideo,
-                            updateVideoMetadata: actions.updateVideoMetadata,
-                        }}
-                        settingsHook={{
-                            settings: state.settings,
-                            updateSettings: hybridActions.updateSettings,
-                        }}
-                        token={supabase.user?.access_token}
-                    />
-                </PageLayout>
-            </DashboardErrorBoundary>
-        );
-    }
 
     // Quick stats for the dashboard
     const quickStats = [
