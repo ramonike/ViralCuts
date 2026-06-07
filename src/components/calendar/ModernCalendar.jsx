@@ -1,11 +1,11 @@
 import React, { useState, useMemo, useCallback } from 'react';
-import { 
-    Calendar as CalendarIcon, 
-    ChevronLeft, 
-    ChevronRight, 
-    Plus, 
-    Clock, 
-    Video, 
+import {
+    Calendar as CalendarIcon,
+    ChevronLeft,
+    ChevronRight,
+    Plus,
+    Clock,
+    Video,
     Eye,
     ExternalLink,
     Edit3,
@@ -26,18 +26,18 @@ const MONTHS = [
 const WEEKDAYS = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
 const WEEKDAYS_FULL = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
 
-export function ModernCalendar({ 
-    history = {}, 
-    uploadQueue = [], 
+export function ModernCalendar({
+    history = {},
+    uploadQueue = [],
     onScheduleVideo,
     onEditVideo,
     onDeleteVideo,
-    onViewVideo 
+    onViewVideo
 }) {
     const [currentDate, setCurrentDate] = useState(new Date());
     const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
     const [viewMode, setViewMode] = useState('month'); // 'month' | 'week' | 'day'
-    
+
     const announce = useAnnounce();
 
     const currentYear = currentDate.getFullYear();
@@ -75,7 +75,7 @@ export function ModernCalendar({
     };
 
     const goToToday = () => {
-        const today = new Date();
+        const today = new Date(new Date().toLocaleDateString('en-CA'));
         setCurrentDate(today);
         setSelectedDate(today.toISOString().split('T')[0]);
         announce('Navegando para hoje');
@@ -87,10 +87,10 @@ export function ModernCalendar({
         const lastDay = new Date(currentYear, currentMonth + 1, 0);
         const startDate = new Date(firstDay);
         startDate.setDate(startDate.getDate() - firstDay.getDay());
-        
+
         const days = [];
         const current = new Date(startDate);
-        
+
         for (let i = 0; i < 42; i++) {
             const dateStr = current.toISOString().split('T')[0];
             const dayData = history[dateStr] || {};
@@ -98,7 +98,7 @@ export function ModernCalendar({
                 const itemDate = new Date(item.scheduledAt || item.publishAt);
                 return itemDate.toISOString().split('T')[0] === dateStr;
             });
-            
+
             days.push({
                 date: new Date(current),
                 dateStr,
@@ -109,10 +109,10 @@ export function ModernCalendar({
                 scheduledVideos,
                 hasActivity: (dayData.completedItems?.length || 0) + scheduledVideos.length > 0
             });
-            
+
             current.setDate(current.getDate() + 1);
         }
-        
+
         return days;
     }, [currentYear, currentMonth, selectedDate, history, uploadQueue]);
 
@@ -180,15 +180,15 @@ export function ModernCalendar({
 
     // Generate aria-label for day
     const getDayAriaLabel = (day) => {
-        const dateLabel = day.date.toLocaleDateString('pt-BR', { 
-            weekday: 'long', 
-            day: 'numeric', 
+        const dateLabel = day.date.toLocaleDateString('pt-BR', {
+            weekday: 'long',
+            day: 'numeric',
             month: 'long',
             year: 'numeric'
         });
-        
+
         const parts = [dateLabel];
-        
+
         if (day.isToday) parts.push('hoje');
         if (day.postedVideos.length > 0) {
             parts.push(`${day.postedVideos.length} vídeo${day.postedVideos.length > 1 ? 's' : ''} publicado${day.postedVideos.length > 1 ? 's' : ''}`);
@@ -196,12 +196,12 @@ export function ModernCalendar({
         if (day.scheduledVideos.length > 0) {
             parts.push(`${day.scheduledVideos.length} vídeo${day.scheduledVideos.length > 1 ? 's' : ''} agendado${day.scheduledVideos.length > 1 ? 's' : ''}`);
         }
-        
+
         return parts.join(', ');
     };
 
     return (
-        <div 
+        <div
             className="bg-gradient-to-br from-slate-900/95 to-slate-800/95 backdrop-blur-xl border border-slate-700/50 rounded-xl overflow-hidden shadow-xl"
             role="application"
             aria-label="Calendário de agendamentos"
@@ -218,7 +218,7 @@ export function ModernCalendar({
                             <p className="text-xs text-slate-400">Agendamentos e histórico</p>
                         </div>
                     </div>
-                    
+
                     <Button
                         onClick={goToToday}
                         size="sm"
@@ -240,15 +240,15 @@ export function ModernCalendar({
                         >
                             <ChevronLeft className="w-3 h-3" aria-hidden="true" />
                         </button>
-                        
-                        <h3 
+
+                        <h3
                             className="text-sm font-bold text-white min-w-[140px] text-center"
                             aria-live="polite"
                             aria-atomic="true"
                         >
                             {MONTHS[currentMonth]} {currentYear}
                         </h3>
-                        
+
                         <button
                             onClick={navigateNext}
                             className="p-1.5 rounded-md bg-slate-800/50 border border-slate-600/50 text-slate-400 hover:text-white hover:bg-slate-700/50 transition-all"
@@ -274,7 +274,7 @@ export function ModernCalendar({
 
             <div className="p-4">
                 {viewMode === 'month' && (
-                    <div 
+                    <div
                         className="grid grid-cols-7 gap-1.5 max-w-sm mx-auto"
                         role="grid"
                         aria-labelledby="calendar-title"
@@ -282,8 +282,8 @@ export function ModernCalendar({
                         {/* Weekday Headers */}
                         <div role="row" className="contents">
                             {WEEKDAYS.map((day, index) => (
-                                <div 
-                                    key={day} 
+                                <div
+                                    key={day}
                                     className="text-center text-[10px] font-bold text-slate-500 uppercase tracking-wider py-1.5"
                                     role="columnheader"
                                     aria-label={WEEKDAYS_FULL[index]}
@@ -292,7 +292,7 @@ export function ModernCalendar({
                                 </div>
                             ))}
                         </div>
-                        
+
                         {/* Calendar Days */}
                         {calendarData.map((day, index) => (
                             <button
@@ -307,8 +307,8 @@ export function ModernCalendar({
                                     relative w-10 h-10 rounded-md border transition-all duration-200 hover:scale-110 group text-xs font-medium
                                     focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2 focus:ring-offset-slate-900
                                     ${day.isCurrentMonth ? 'opacity-100' : 'opacity-40'}
-                                    ${day.isToday 
-                                        ? 'bg-gradient-to-br from-purple-500/30 to-blue-500/30 border-purple-400 shadow-sm text-white' 
+                                    ${day.isToday
+                                        ? 'bg-gradient-to-br from-purple-500/30 to-blue-500/30 border-purple-400 shadow-sm text-white'
                                         : day.hasActivity
                                             ? 'bg-gradient-to-br from-green-500/15 to-blue-500/15 border-green-400/50 text-green-300'
                                             : 'bg-slate-800/40 border-slate-700/50 hover:border-slate-600 text-slate-300'
@@ -324,7 +324,7 @@ export function ModernCalendar({
                                 <span className="relative z-10" aria-hidden="true">
                                     {day.date.getDate()}
                                 </span>
-                                
+
                                 {/* Activity Indicators */}
                                 <div className="absolute bottom-1 left-1 right-1 flex flex-col gap-0.5" aria-hidden="true">
                                     {day.postedVideos.length > 0 && (
@@ -334,10 +334,10 @@ export function ModernCalendar({
                                         <div className="w-full h-0.5 bg-blue-400 rounded-full opacity-80"></div>
                                     )}
                                 </div>
-                                
+
                                 {/* Count Badge */}
                                 {day.hasActivity && (
-                                    <div 
+                                    <div
                                         className="absolute -top-1 -right-1 w-4 h-4 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center text-[8px] font-bold text-white shadow-sm"
                                         aria-hidden="true"
                                     >
@@ -356,17 +356,17 @@ export function ModernCalendar({
                             <div className="flex items-center justify-between">
                                 <div>
                                     <h4 className="font-bold text-white text-sm">
-                                        {selectedDayData.date.toLocaleDateString('pt-BR', { 
-                                            weekday: 'short', 
-                                            day: 'numeric', 
-                                            month: 'short' 
+                                        {selectedDayData.date.toLocaleDateString('pt-BR', {
+                                            weekday: 'short',
+                                            day: 'numeric',
+                                            month: 'short'
                                         })}
                                     </h4>
                                     <p className="text-xs text-slate-400">
                                         {selectedDayData.postedVideos.length + selectedDayData.scheduledVideos.length} vídeos
                                     </p>
                                 </div>
-                                
+
                                 <Button
                                     onClick={() => onScheduleVideo?.(selectedDate)}
                                     size="sm"
@@ -399,7 +399,7 @@ export function ModernCalendar({
                                                 </h5>
                                                 <div className="flex-1 h-px bg-gradient-to-r from-blue-400/50 to-transparent"></div>
                                             </div>
-                                            
+
                                             <div className="space-y-1.5">
                                                 {selectedDayData.scheduledVideos.map((video, index) => (
                                                     <div key={video.id} className="group bg-slate-800/50 hover:bg-slate-700/50 rounded-md p-2 border border-slate-600/30 hover:border-blue-400/50 transition-all">
@@ -407,23 +407,23 @@ export function ModernCalendar({
                                                             <div className="w-6 h-6 rounded-md bg-gradient-to-br from-blue-500/20 to-purple-500/20 border border-blue-400/30 flex items-center justify-center flex-shrink-0">
                                                                 <Upload className="w-3 h-3 text-blue-400" />
                                                             </div>
-                                                            
+
                                                             <div className="flex-1 min-w-0">
                                                                 <h6 className="font-medium text-white text-xs truncate" title={video.title}>
                                                                     {video.title}
                                                                 </h6>
                                                                 <div className="flex items-center gap-1.5 mt-0.5">
                                                                     <span className="text-[10px] text-blue-400 font-medium">
-                                                                        {new Date(video.scheduledAt || video.publishAt).toLocaleTimeString('pt-BR', { 
-                                                                            hour: '2-digit', 
-                                                                            minute: '2-digit' 
+                                                                        {new Date(video.scheduledAt || video.publishAt).toLocaleTimeString('pt-BR', {
+                                                                            hour: '2-digit',
+                                                                            minute: '2-digit'
                                                                         })}
                                                                     </span>
                                                                     <span className="text-[10px] text-slate-500">•</span>
                                                                     <span className="text-[10px] text-slate-400">{video.platform}</span>
                                                                 </div>
                                                             </div>
-                                                            
+
                                                             <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
                                                                 <button
                                                                     onClick={() => onEditVideo?.(video)}
@@ -457,7 +457,7 @@ export function ModernCalendar({
                                                 </h5>
                                                 <div className="flex-1 h-px bg-gradient-to-r from-green-400/50 to-transparent"></div>
                                             </div>
-                                            
+
                                             <div className="space-y-1.5">
                                                 {selectedDayData.postedVideos.map((video) => (
                                                     <div key={video.id} className="group bg-slate-800/50 hover:bg-slate-700/50 rounded-md p-2 border border-slate-600/30 hover:border-green-400/50 transition-all cursor-pointer">
@@ -473,7 +473,7 @@ export function ModernCalendar({
                                                                     <Video className="w-3 h-3 text-green-400" />
                                                                 </div>
                                                             )}
-                                                            
+
                                                             <div className="flex-1 min-w-0">
                                                                 <h6 className="font-medium text-white text-xs truncate" title={video.title}>
                                                                     {video.title}
@@ -493,7 +493,7 @@ export function ModernCalendar({
                                                                     <span className="text-[10px] text-green-400">Publicado</span>
                                                                 </div>
                                                             </div>
-                                                            
+
                                                             <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
                                                                 <button
                                                                     onClick={() => onViewVideo?.(video)}
