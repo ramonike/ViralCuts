@@ -13,7 +13,18 @@ const admin = new Hono();
 admin.use("/*", authMiddleware);
 admin.use("/*", async (c, next) => {
   const user = c.get("user");
-  if (!user || user.role !== "admin") {
+  if (!user) {
+    return c.json({ error: "Acesso negado." }, 403);
+  }
+
+  // Better Auth doesn't include custom fields (like role) in the session object.
+  // We must fetch the role directly from the database.
+  const dbUser = await prisma.user.findUnique({
+    where: { id: user.id },
+    select: { role: true },
+  });
+
+  if (!dbUser || dbUser.role !== "admin") {
     return c.json({ error: "Acesso negado. Apenas administradores." }, 403);
   }
   await next();
