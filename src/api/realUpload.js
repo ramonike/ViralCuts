@@ -4,67 +4,64 @@
  * Requirements: 2.1-2.4
  */
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+const API_URL = import.meta.env.VITE_API_URL || '';
 const DEFAULT_CHUNK_SIZE = 8 * 1024 * 1024; // 8MB chunks
 
 /**
- * Initiate a resumable upload session
+ * Initiate a resumable upload session (Client-Side)
  * Requirements: 2.1
- * 
- * @param {Object} params - Upload parameters
- * @param {string} params.title - Video title (required)
- * @param {string} params.description - Video description
- * @param {string[]} params.tags - Video tags
- * @param {string} params.categoryId - YouTube category ID
- * @param {string} params.privacyStatus - 'private' | 'public' | 'unlisted'
- * @param {string} params.publishAt - ISO date string for scheduled publish
- * @param {string} params.playlistId - Playlist to add video to
- * @param {number} params.fileSize - Total file size in bytes
- * @param {string} params.mimeType - Video MIME type
- * @param {string} params.accountId - YouTube account ID (optional)
- * @returns {Promise<{uploadId: string, sessionUri: string, status: string}>}
  */
 export async function initiateResumableUpload(params) {
-  const { title, description, tags, categoryId, privacyStatus, publishAt, playlistId, fileSize, mimeType, accountId } = params;
+  const { title, description, tags, categoryId, privacyStatus, publishAt, playlistId, fileSize, mimeType, accountId, token } = params;
 
-  if (!title) {
-    return { status: "error", error: "Título do vídeo é obrigatório." };
-  }
-
-  if (!fileSize || fileSize <= 0) {
-    return { status: "error", error: "Tamanho do arquivo inválido." };
-  }
+  if (!title) return { status: "error", error: "Título do vídeo é obrigatório." };
+  if (!fileSize || fileSize <= 0) return { status: "error", error: "Tamanho do arquivo inválido." };
+  if (!token) return { status: "error", error: "Token não fornecido para upload." };
 
   try {
-    const res = await fetch(`${API_URL}/api/youtube/upload/initiate`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',
-      body: JSON.stringify({
+    const videoResource = {
+      snippet: {
         title,
         description: description || "Uploaded via ViralCuts Dashboard",
         tags: tags || ["shorts", "viralcuts"],
         categoryId: categoryId || "22",
+      },
+      status: {
         privacyStatus: publishAt ? "private" : (privacyStatus || "private"),
-        publishAt: publishAt ? new Date(publishAt).toISOString() : undefined,
-        playlistId,
-        fileSize,
-        mimeType,
-        accountId,
-      }),
+        selfDeclaredMadeForKids: false,
+      },
+    };
+
+    if (publishAt) {
+      videoResource.status.publishAt = new Date(publishAt).toISOString();
+    }
+
+    const res = await fetch(`https://www.googleapis.com/upload/youtube/v3/videos?uploadType=resumable&part=snippet,status`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+        'X-Upload-Content-Length': fileSize.toString(),
+        'X-Upload-Content-Type': mimeType,
+      },
+      body: JSON.stringify(videoResource),
     });
 
-    const data = await res.json();
-
     if (!res.ok) {
-      return { status: "error", error: data.error || "Erro ao iniciar upload." };
+      const data = await res.json().catch(() => ({}));
+      return { status: "error", error: data.error?.message || "Erro ao iniciar upload no Google." };
+    }
+
+    const sessionUri = res.headers.get('location');
+    if (!sessionUri) {
+        return { status: "error", error: "Nenhum session URI retornado pelo YouTube." };
     }
 
     return {
       status: "success",
-      uploadId: data.uploadId,
-      sessionUri: data.sessionUri,
-      totalBytes: data.totalBytes,
+      uploadId: `up_${Date.now()}`,
+      sessionUri: sessionUri,
+      totalBytes: fileSize,
     };
   } catch (error) {
     console.error("[Initiate Upload] Exception:", error);
@@ -73,55 +70,55 @@ export async function initiateResumableUpload(params) {
 }
 
 /**
- * Upload a chunk of the video file
+ * Upload a chunk of the video file (Client-Side)
  * Requirements: 2.2
- * 
- * @param {Object} params - Chunk upload parameters
- * @param {string} params.sessionUri - Resumable session URI
- * @param {string} params.uploadId - Upload ID
- * @param {Blob} params.chunk - Chunk data
- * @param {number} params.startByte - Starting byte position
- * @param {number} params.totalBytes - Total file size
- * @param {string} params.accountId - YouTube account ID (optional)
- * @returns {Promise<{status: string, bytesUploaded: number, progress: number, videoId?: string}>}
  */
 export async function uploadChunk(params) {
-  const { sessionUri, uploadId, chunk, startByte, totalBytes, accountId } = params;
+  const { sessionUri, uploadId, chunk, startByte, totalBytes, accountId, token } = params;
 
-  if (!sessionUri) {
-    return { status: "error", error: "Session URI é obrigatório." };
-  }
+  if (!sessionUri) return { status: "error", error: "Session URI é obrigatório." };
 
   const endByte = startByte + chunk.size - 1;
 
   try {
-    const res = await fetch(`${API_URL}/api/youtube/upload/chunk`, {
-      method: 'POST',
+    const res = await fetch(sessionUri, {
+      method: 'PUT',
       headers: {
         'Content-Range': `bytes ${startByte}-${endByte}/${totalBytes}`,
-        'X-Session-Uri': sessionUri,
-        'X-Upload-Id': uploadId || '',
-        'X-Account-Id': accountId || '',
       },
-      credentials: 'include',
       body: chunk,
     });
 
-    const data = await res.json();
+    if (res.status === 308) {
+        let bytesUploaded = endByte + 1;
+        const rangeHeader = res.headers.get("range");
+        if (rangeHeader) {
+            const match = rangeHeader.match(/bytes=0-(\d+)/);
+            if (match) bytesUploaded = parseInt(match[1], 10) + 1;
+        }
 
-    if (!res.ok) {
-      const error = { status: "error", error: data.error || "Erro no upload do chunk." };
-      if (data.retryable) error.retryable = true;
-      return error;
+        return {
+            status: "uploading",
+            bytesUploaded,
+            totalBytes,
+            progress: Math.round((bytesUploaded / totalBytes) * 100),
+        };
     }
 
-    return {
-      status: data.status,
-      bytesUploaded: data.bytesUploaded,
-      totalBytes: data.totalBytes,
-      progress: data.progress,
-      videoId: data.videoId,
-    };
+    if (res.ok) {
+      const data = await res.json();
+      return {
+        status: "complete",
+        bytesUploaded: totalBytes,
+        totalBytes: totalBytes,
+        progress: 100,
+        videoId: data.id,
+      };
+    }
+
+    const data = await res.json().catch(() => ({}));
+    return { status: "error", error: data.error?.message || "Erro no upload do chunk.", retryable: res.status >= 500 };
+
   } catch (error) {
     console.error("[Upload Chunk] Exception:", error);
     return { status: "error", error: error.message, retryable: true };
@@ -129,46 +126,49 @@ export async function uploadChunk(params) {
 }
 
 /**
- * Resume an interrupted upload
+ * Resume an interrupted upload (Client-Side)
  * Requirements: 2.3
- * 
- * @param {Object} params - Resume parameters
- * @param {string} params.uploadId - Upload ID
- * @param {string} params.sessionUri - Resumable session URI
- * @param {number} params.totalBytes - Total file size
- * @param {string} params.accountId - YouTube account ID (optional)
- * @returns {Promise<{status: string, bytesUploaded: number, resumeFrom?: number}>}
  */
 export async function resumeUpload(params) {
-  const { uploadId, sessionUri, totalBytes, accountId } = params;
+  const { uploadId, sessionUri, totalBytes, accountId, token } = params;
 
-  if (!sessionUri) {
-    return { status: "error", error: "Session URI é obrigatório." };
-  }
+  if (!sessionUri) return { status: "error", error: "Session URI é obrigatório." };
 
   try {
-    const res = await fetch(`${API_URL}/api/youtube/upload/resume`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',
-      body: JSON.stringify({ uploadId, sessionUri, totalBytes, accountId }),
+    const res = await fetch(sessionUri, {
+      method: 'PUT',
+      headers: { 'Content-Range': `bytes */${totalBytes}` },
     });
 
-    const data = await res.json();
+    if (res.status === 308) {
+        let bytesUploaded = 0;
+        const rangeHeader = res.headers.get("range");
+        if (rangeHeader) {
+            const match = rangeHeader.match(/bytes=0-(\d+)/);
+            if (match) bytesUploaded = parseInt(match[1], 10) + 1;
+        }
 
-    if (!res.ok) {
-      return { status: "error", error: data.error || "Erro ao retomar upload." };
+        return {
+            status: "uploading",
+            bytesUploaded,
+            totalBytes,
+            progress: Math.round((bytesUploaded / totalBytes) * 100),
+            resumeFrom: bytesUploaded,
+        };
     }
 
-    return {
-      status: data.status,
-      bytesUploaded: data.bytesUploaded,
-      totalBytes: data.totalBytes,
-      progress: data.progress,
-      resumeFrom: data.resumeFrom,
-      videoId: data.videoId,
-      error: data.error,
-    };
+    if (res.ok) {
+        const data = await res.json();
+        return {
+            status: "complete",
+            bytesUploaded: totalBytes,
+            totalBytes,
+            progress: 100,
+            videoId: data.id,
+        };
+    }
+
+    return { status: "error", error: "Erro ao retomar upload." };
   } catch (error) {
     console.error("[Resume Upload] Exception:", error);
     return { status: "error", error: error.message };
@@ -196,7 +196,7 @@ export async function resumeUpload(params) {
 export async function uploadToYouTubeResumable(params) {
   const { 
     file, title, description, tags, categoryId, privacyStatus, 
-    publishAt, playlistId, accountId, onProgress, signal 
+    publishAt, playlistId, accountId, onProgress, signal, token 
   } = params;
 
   if (!file) {
@@ -220,6 +220,7 @@ export async function uploadToYouTubeResumable(params) {
       fileSize: file.size,
       mimeType: file.type,
       accountId,
+      token,
     });
 
     if (initResult.status === "error") {
@@ -247,6 +248,7 @@ export async function uploadToYouTubeResumable(params) {
         startByte: bytesUploaded,
         totalBytes,
         accountId,
+        token,
       });
 
       if (chunkResult.status === "error") {
@@ -261,6 +263,7 @@ export async function uploadToYouTubeResumable(params) {
             startByte: bytesUploaded,
             totalBytes,
             accountId,
+            token,
           });
 
           if (retryResult.status === "error") {
@@ -420,7 +423,7 @@ export async function uploadToTikTok({ file, title, token }) {
  * @returns {Promise<{status: string, thumbnails?: Object, error?: string}>}
  */
 export async function uploadThumbnail({ videoId, thumbnailFile, accountId }) {
-  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+  const API_URL = import.meta.env.VITE_API_URL || '';
 
   if (!videoId) {
     return { status: "error", error: "ID do vídeo é obrigatório." };
@@ -487,7 +490,7 @@ export async function uploadThumbnail({ videoId, thumbnailFile, accountId }) {
  * @returns {Promise<{status: string, categories?: Array, error?: string}>}
  */
 export async function getVideoCategories(regionCode = 'BR', accountId) {
-  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+  const API_URL = import.meta.env.VITE_API_URL || '';
 
   try {
     const params = new URLSearchParams({ regionCode });
@@ -524,7 +527,7 @@ export async function getVideoCategories(regionCode = 'BR', accountId) {
  * @returns {Promise<{status: string, playlists?: Array, error?: string}>}
  */
 export async function getUserPlaylists(accountId) {
-  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+  const API_URL = import.meta.env.VITE_API_URL || '';
 
   try {
     const params = new URLSearchParams();
@@ -568,7 +571,7 @@ export async function getUserPlaylists(accountId) {
  * @returns {Promise<{status: string, error?: string}>}
  */
 export async function addVideoToPlaylist({ videoId, playlistId, accountId }) {
-  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+  const API_URL = import.meta.env.VITE_API_URL || '';
 
   if (!videoId || !playlistId) {
     return { status: "error", error: "ID do vídeo e da playlist são obrigatórios." };

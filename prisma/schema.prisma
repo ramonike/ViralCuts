@@ -22,6 +22,13 @@ model User {
   achievements  Achievement[]
   settings      UserSettings?
   notifications Notification[]
+  
+  // Command Center Relations
+  commandCenterState CommandCenterState?
+  dailyTasks         DailyTask[]
+  userMetrics        UserMetrics[]
+  userActivities     UserActivity[]
+  
   @@map("user")
 }
 
@@ -180,4 +187,135 @@ model Notification {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now()) @map("created_at")
   @@map("notification")
+}
+
+// Command Center Models
+model CommandCenterState {
+  id                    String   @id @default(cuid())
+  userId                String   @unique @map("user_id")
+  user                  User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Setup Progress
+  setupCompleted        Boolean  @default(false) @map("setup_completed")
+  completedSetupTasks   String[] @map("completed_setup_tasks")
+  setupProgress         Int      @default(0) @map("setup_progress")
+  
+  // User Goals and Preferences
+  focusAreas            String[] @map("focus_areas") // ['growth', 'engagement', 'monetization']
+  dailyUploadTarget     Int      @default(1) @map("daily_upload_target")
+  weeklyUploadTarget    Int      @default(3) @map("weekly_upload_target")
+  
+  // Feature Flags
+  enabledFeatures       String[] @map("enabled_features")
+  
+  // Widget Layout
+  widgetLayout          Json?    @map("widget_layout")
+  
+  // Current Workflow
+  currentWorkflow       Json?    @map("current_workflow")
+  
+  createdAt             DateTime @default(now()) @map("created_at")
+  updatedAt             DateTime @updatedAt @map("updated_at")
+  
+  @@map("command_center_state")
+}
+
+model DailyTask {
+  id              String    @id @default(cuid())
+  userId          String    @map("user_id")
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  title           String
+  description     String
+  type            String    // 'creation', 'optimization', 'analysis', 'planning'
+  estimatedTime   Int       @map("estimated_time") // in minutes
+  expectedOutcome String    @map("expected_outcome")
+  priority        Int       @default(5) // 1-10 scale
+  
+  // Progress tracking
+  progress        Int       @default(0) // 0-100 percentage
+  completed       Boolean   @default(false)
+  completedAt     DateTime? @map("completed_at")
+  
+  // Scheduling
+  scheduledDate   DateTime  @map("scheduled_date") // Date this task is for
+  deadline        DateTime?
+  
+  // Metadata
+  metadata        Json?     // Additional task-specific data
+  
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+  
+  @@index([userId, scheduledDate])
+  @@map("daily_task")
+}
+
+model UserMetrics {
+  id                      String   @id @default(cuid())
+  userId                  String   @map("user_id")
+  user                    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Time period for these metrics
+  periodStart             DateTime @map("period_start")
+  periodEnd               DateTime @map("period_end")
+  periodType              String   @map("period_type") // 'daily', 'weekly', 'monthly'
+  
+  // Content Creation Metrics
+  videosCreated           Int      @default(0) @map("videos_created")
+  videosUploaded          Int      @default(0) @map("videos_uploaded")
+  totalWatchTime          Int      @default(0) @map("total_watch_time") // in minutes
+  
+  // Channel Growth Metrics
+  subscribersGained       Int      @default(0) @map("subscribers_gained")
+  subscribersLost         Int      @default(0) @map("subscribers_lost")
+  totalSubscribers        Int      @default(0) @map("total_subscribers")
+  totalViews              Int      @default(0) @map("total_views")
+  averageViewDuration     Float    @default(0) @map("average_view_duration") // in seconds
+  
+  // Engagement Metrics
+  totalLikes              Int      @default(0) @map("total_likes")
+  totalComments           Int      @default(0) @map("total_comments")
+  totalShares             Int      @default(0) @map("total_shares")
+  engagementRate          Float    @default(0) @map("engagement_rate") // percentage
+  
+  // Consistency Metrics
+  uploadConsistency       Float    @default(0) @map("upload_consistency") // percentage
+  dailyActivityStreak     Int      @default(0) @map("daily_activity_streak")
+  weeklyUploadStreak      Int      @default(0) @map("weekly_upload_streak")
+  contentCreationStreak   Int      @default(0) @map("content_creation_streak")
+  
+  // Performance Metrics
+  clickThroughRate        Float    @default(0) @map("click_through_rate") // percentage
+  retentionRate           Float    @default(0) @map("retention_rate") // percentage
+  
+  createdAt               DateTime @default(now()) @map("created_at")
+  updatedAt               DateTime @updatedAt @map("updated_at")
+  
+  @@unique([userId, periodStart, periodEnd, periodType])
+  @@index([userId, periodType])
+  @@map("user_metrics")
+}
+
+model UserActivity {
+  id          String   @id @default(cuid())
+  userId      String   @map("user_id")
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  type        String   // 'upload', 'content_creation', 'engagement', 'optimization'
+  action      String   // Specific action taken
+  description String?  // Human readable description
+  
+  // Context and metadata
+  metadata    Json?    // Additional context data
+  
+  // Tracking
+  timestamp   DateTime @default(now())
+  sessionId   String?  @map("session_id") // To group related activities
+  
+  createdAt   DateTime @default(now()) @map("created_at")
+  
+  @@index([userId, type])
+  @@index([userId, timestamp])
+  @@map("user_activity")
 }

@@ -1,26 +1,27 @@
-import { uploadToYouTube } from "./realUpload";
+import { uploadToYouTubeResumable } from "./realUpload";
 
 /**
- * Simula upload de vídeo para YouTube/TikTok ou usa implementação real se token fornecido.
+ * Simula upload de vídeo para YouTube/TikTok ou usa implementação real se arquivo fornecido.
  * @param {Object} item - Dados do vídeo (title, platform, etc)
- * @param {string} [token] - Token de acesso (opcional, se presente tenta upload real)
+ * @param {string} [token] - Token de acesso
  * @param {File} [file] - Arquivo de vídeo (necessário para upload real)
  * @returns {Promise<{status: string, url?: string, error?: string}>}
  */
 export async function uploadVideo(item, token, file) {
-  console.log("[uploadVideo] Token:", token);
-  console.log("[uploadVideo] Is Mock?", token && token.startsWith("MOCK_TOKEN"));
+  console.log("[uploadVideo] Platform:", item.platform);
+  console.log("[uploadVideo] File:", file?.name);
 
-  // Se for YouTube e tiver token e arquivo, tenta upload real
-  // Mas se o token for "MOCK_TOKEN", força a simulação
-  if (item.platform === "YouTube Shorts" && token && !token.startsWith("MOCK_TOKEN") && file) {
-    return await uploadToYouTube({
+  // Se for YouTube e tiver arquivo, tenta upload real via Google API cliente
+  const isYouTube = item.platform === "YouTube Shorts" || item.platform === "youtube-shorts" || item.platform === "youtube";
+
+  if (isYouTube && token && file) {
+    return await uploadToYouTubeResumable({
       file: file,
       title: item.title,
       description: item.description,
-      token: token,
       privacyStatus: item.privacyStatus,
-      publishAt: item.publishAt // YouTube scheduling (distinct from dashboard upload schedule)
+      publishAt: item.publishAt, // YouTube scheduling 
+      token: token // Adicionando o token recuperado do state local
     });
   }
 

@@ -1,27 +1,31 @@
-import React from 'react';
-import { ChevronRight, Clock, Lock, CheckCircle, AlertCircle, ExternalLink } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { ChevronRight, Clock, Lock, CheckCircle, AlertCircle, ExternalLink, ChevronDown, X, Play } from 'lucide-react';
 import { useJourney } from '../../contexts/JourneyContext';
 
 export function JourneyRoadmap() {
     const { journeyState, stages, calculateProgress, updateProgress } = useJourney();
+    const [expandedStage, setExpandedStage] = useState(journeyState.currentStage);
+    const [selectedTutorial, setSelectedTutorial] = useState(null);
+
+    // Keep it synced initially if currentStage changes automatically
+    useEffect(() => {
+        setExpandedStage(journeyState.currentStage);
+    }, [journeyState.currentStage]);
 
     const handleStageClick = (stage) => {
         if (!stage.unlocked) return;
         
-        // Navigate to relevant section or show stage details
-        console.log('Navigate to stage:', stage.id);
+        // Toggle expanded state
+        setExpandedStage(prev => prev === stage.id ? null : stage.id);
     };
 
     const handleMilestoneClick = (milestone) => {
-        if (milestone.completed) return;
-        
-        if (milestone.actionUrl) {
-            // Navigate to the action URL
-            window.location.href = milestone.actionUrl;
-        } else {
-            // Mark as completed (for demo purposes)
-            updateProgress(milestone.id);
-        }
+        setSelectedTutorial(milestone);
+    };
+
+    const handleActionClick = (e, actionUrl) => {
+        e.stopPropagation();
+        window.location.href = actionUrl;
     };
 
     const getDifficultyColor = (difficulty) => {
@@ -138,59 +142,66 @@ export function JourneyRoadmap() {
                             {/* Enhanced Expand Arrow - MENOR */}
                             {!isLocked && (
                                 <div className="relative z-10">
-                                    <ChevronRight className={`w-4 h-4 transition-all group-hover:translate-x-0.5 ${
-                                        isCompleted ? 'text-green-400' : isCurrent ? 'text-purple-400' : 'text-slate-400'
-                                    }`} />
+                                    {expandedStage === stage.id ? (
+                                        <ChevronDown className={`w-4 h-4 transition-all ${
+                                            isCompleted ? 'text-green-400' : isCurrent ? 'text-purple-400' : 'text-slate-400'
+                                        }`} />
+                                    ) : (
+                                        <ChevronRight className={`w-4 h-4 transition-all group-hover:translate-x-0.5 ${
+                                            isCompleted ? 'text-green-400' : isCurrent ? 'text-purple-400' : 'text-slate-400'
+                                        }`} />
+                                    )}
                                 </div>
                             )}
                         </div>
 
-                        {/* Milestones (show for current stage) - MAIS COMPACTO */}
-                        {isCurrent && !isLocked && (
-                            <div className="ml-4 space-y-1">
-                                {stage.milestones.slice(0, 2).map((milestone) => {
+                        {/* Milestones (show for expanded stage) - MAIS COMPACTO */}
+                        {expandedStage === stage.id && !isLocked && (
+                            <div className="ml-4 space-y-1 pb-2">
+                                {stage.milestones.map((milestone) => {
                                     const isCompleted = journeyState.completedMilestones.includes(milestone.id);
                                     
                                     return (
                                         <div
                                             key={milestone.id}
-                                            className={`flex items-center gap-2 p-1.5 rounded border transition-all cursor-pointer group text-xs ${
+                                            className={`flex items-center gap-2 p-2 rounded border transition-all cursor-pointer group text-xs ${
                                                 isCompleted
                                                     ? 'bg-success/5 border-success/20 opacity-60'
-                                                    : 'bg-slate-800/30 border-slate-700/30 hover:border-purple/30 hover:bg-purple/5'
+                                                    : 'bg-slate-800/50 border-slate-700/50 hover:border-purple-500/50 hover:bg-purple-900/20'
                                             }`}
                                             onClick={() => handleMilestoneClick(milestone)}
                                         >
-                                            <div className={`w-2 h-2 rounded border flex items-center justify-center flex-shrink-0 ${
+                                            <div className={`w-3 h-3 rounded border flex items-center justify-center flex-shrink-0 ${
                                                 isCompleted
                                                     ? 'bg-success border-success'
-                                                    : 'border-slate-500 group-hover:border-purple'
+                                                    : 'border-slate-500 group-hover:border-purple-500'
                                             }`}>
-                                                {isCompleted && <CheckCircle className="w-1 h-1 text-white" />}
+                                                {isCompleted && <CheckCircle className="w-2 h-2 text-white" />}
                                             </div>
                                             
-                                            <div className="flex-1 min-w-0">
-                                                <p className={`text-[10px] truncate ${
-                                                    isCompleted ? 'text-slate-500 line-through' : 'text-slate-300'
+                                            <div className="flex-1 min-w-0 flex flex-col pt-0.5">
+                                                <p className={`text-[11px] font-semibold truncate ${
+                                                    isCompleted ? 'text-slate-500 line-through' : 'text-slate-200 group-hover:text-purple-300'
                                                 }`}>
                                                     {milestone.title}
+                                                </p>
+                                                <p className={`text-[9px] break-words whitespace-normal text-slate-400 mt-0.5 leading-tight ${isCompleted && 'line-through'}`}>
+                                                    {milestone.description}
                                                 </p>
                                             </div>
 
                                             {milestone.actionUrl && !isCompleted && (
-                                                <ExternalLink className="w-2 h-2 text-slate-500 group-hover:text-purple flex-shrink-0" />
+                                                <div 
+                                                    className="bg-purple-500/10 p-1.5 rounded-full text-purple-400 hover:bg-purple-500 hover:text-white transition-colors"
+                                                    onClick={(e) => handleActionClick(e, milestone.actionUrl)}
+                                                    role="button"
+                                                >
+                                                    <ExternalLink className="w-3 h-3 flex-shrink-0" />
+                                                </div>
                                             )}
                                         </div>
                                     );
                                 })}
-                                
-                                {stage.milestones.length > 2 && (
-                                    <div className="text-center py-0.5">
-                                        <span className="text-[8px] text-slate-500">
-                                            +{stage.milestones.length - 2} mais marcos
-                                        </span>
-                                    </div>
-                                )}
                             </div>
                         )}
 
@@ -205,6 +216,75 @@ export function JourneyRoadmap() {
                     </div>
                 );
             })}
+
+            {/* Tutorial Modal (Glassmorphism) */}
+            {selectedTutorial && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-in fade-in duration-200">
+                    <div className="max-w-md w-full bg-slate-900 border border-purple-500/30 rounded-2xl shadow-2xl shadow-purple-900/20 overflow-hidden relative">
+                        {/* Header bg */}
+                        <div className="absolute top-0 left-0 right-0 h-32 bg-gradient-to-br from-purple-600/20 to-blue-600/10" />
+                        
+                        <div className="relative p-6">
+                            <button 
+                                onClick={() => setSelectedTutorial(null)}
+                                className="absolute top-2 right-2 p-2 rounded-full bg-slate-800/80 text-slate-400 hover:text-white transition-colors"
+                            >
+                                <X className="w-5 h-5" />
+                            </button>
+
+                            <div className="w-14 h-14 bg-gradient-to-br from-purple-500 to-blue-600 rounded-2xl flex items-center justify-center shadow-lg mb-4">
+                                <Play className="w-6 h-6 text-white" />
+                            </div>
+
+                            <h2 className="text-xl font-bold text-white mb-2 leading-tight">
+                                {selectedTutorial.title}
+                            </h2>
+
+                            <div className="space-y-3 mb-8 mt-4 text-sm text-slate-300">
+                                {selectedTutorial.description.split('\n').map((paragraph, i) => {
+                                    if (!paragraph.trim()) return null;
+                                    const isStep = paragraph.toLowerCase().includes('passo') || /^\d+\./.test(paragraph);
+                                    return (
+                                        <p key={i} className={`${isStep ? 'font-semibold text-purple-300 mt-2' : ''}`}>
+                                            {paragraph}
+                                        </p>
+                                    );
+                                })}
+                            </div>
+
+                            <div className="flex flex-col gap-3">
+                                {selectedTutorial.actionUrl && (
+                                    <button 
+                                        onClick={(e) => {
+                                            handleActionClick(e, selectedTutorial.actionUrl);
+                                            setSelectedTutorial(null);
+                                        }}
+                                        className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 text-white font-bold py-3.5 rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-purple-500/25 transition-all hover:scale-[1.02]"
+                                    >
+                                        <ExternalLink className="w-5 h-5" />
+                                        Acessar o Painel Agora
+                                    </button>
+                                )}
+                                
+                                <button 
+                                    onClick={() => {
+                                        updateProgress(selectedTutorial.id);
+                                        setSelectedTutorial(null);
+                                    }}
+                                    className={`w-full font-semibold py-3 rounded-xl transition-colors border flex items-center justify-center gap-2 ${
+                                        journeyState.completedMilestones.includes(selectedTutorial.id)
+                                            ? 'bg-green-500/10 text-green-400 border-green-500/20'
+                                            : 'bg-slate-800 hover:bg-slate-700 text-slate-300 border-slate-700 hover:border-slate-600'
+                                    }`}
+                                >
+                                    <CheckCircle className="w-4 h-4" />
+                                    {journeyState.completedMilestones.includes(selectedTutorial.id) ? 'Tutorial Lido e Concluído' : 'Marcar como Concluído'}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

@@ -1,11 +1,19 @@
 import { API_URL } from '../config/api';
 
+const getBaseUrl = () => {
+    if (API_URL) return API_URL; 
+    if (typeof window !== 'undefined') return window.location.origin;
+    return '';
+};
+
 /**
  * Generic fetch wrapper for the Go Backend API
  * Handles credentials automatically
  */
 async function fetchAPI(endpoint, options = {}) {
-    const url = `${API_URL}${endpoint}`;
+    const base = getBaseUrl();
+    const normalizedEndpoint = endpoint.startsWith('/api') ? endpoint : `/api${endpoint}`;
+    const url = `${base}${normalizedEndpoint}`;
 
     const defaults = {
         headers: {

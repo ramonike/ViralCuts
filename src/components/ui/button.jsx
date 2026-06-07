@@ -1,5 +1,7 @@
-export function Button({ children, className = "", variant = "primary", size = "default", ...props }) {
-  const baseClasses = "inline-flex items-center justify-center font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary/50 disabled:opacity-50 disabled:pointer-events-none";
+import { ButtonSpinner } from './spinner';
+
+export function Button({ children, className = "", variant = "primary", size = "default", loading = false, ...props }) {
+  const baseClasses = "inline-flex items-center justify-center font-semibold transition-all focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary/50 disabled:opacity-50 disabled:pointer-events-none active:scale-95 cursor-pointer";
   
   const variants = {
     primary: "bg-primary text-white hover:bg-primary/90",
@@ -19,9 +21,11 @@ export function Button({ children, className = "", variant = "primary", size = "
   return (
     <button
       {...props}
+      disabled={loading || props.disabled}
       className={`${baseClasses} ${variants[variant] || variants.primary} ${sizes[size] || sizes.default} ${className}`}
     >
-      {children}
+      {loading && <ButtonSpinner size={size === 'sm' ? 'sm' : 'default'} />}
+      <span className={loading ? 'ml-2' : ''}>{children}</span>
     </button>
   );
 }

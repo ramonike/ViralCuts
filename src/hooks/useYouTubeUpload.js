@@ -6,7 +6,7 @@
 
 import { useState, useCallback, useRef } from 'react';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+const API_URL = import.meta.env.VITE_API_URL || '';
 const DEFAULT_CHUNK_SIZE = 8 * 1024 * 1024; // 8MB chunks
 
 /**
