@@ -29,7 +29,14 @@ app.use("/*", secureHeaders());
 
 // CORS middleware
 app.use("/*", cors({
-  origin: process.env.FRONTEND_URL || "http://localhost:5173",
+  origin: (origin) => {
+    const allowed = [
+      "https://viral-cuts-20.vercel.app",
+      "https://viral-cuts-20-git-main-ramons-projects-9aa5c4f1.vercel.app",
+      "http://localhost:5173",
+    ];
+    return allowed.includes(origin) ? origin : null;
+  },
   credentials: true,
 }));
 
