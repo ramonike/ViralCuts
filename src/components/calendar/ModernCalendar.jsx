@@ -34,8 +34,8 @@ export function ModernCalendar({
     onDeleteVideo,
     onViewVideo
 }) {
-    const [currentDate, setCurrentDate] = useState(new Date());
-    const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+    const [currentDate, setCurrentDate] = useState(new Date(new Date().toLocaleDateString('en-CA')));
+    const [selectedDate, setSelectedDate] = useState(new Date().toLocaleDateString('en-CA'));
     const [viewMode, setViewMode] = useState('month'); // 'month' | 'week' | 'day'
 
     const announce = useAnnounce();
