@@ -30,7 +30,7 @@ function ChannelHero({ channelStats, onRefresh }) {
         : `https://youtube.com/channel/${channelStats?.id}`;
 
     return (
-        <div className="glass-panel rounded-2xl overflow-hidden border border-surface-700/50">
+        <div className="glass-panel rounded-2xl border border-surface-700/50">
             {/* Banner */}
             <div className="h-32 bg-gradient-to-br from-violet-900/40 via-surface-800 to-surface-900 relative overflow-hidden">
                 {channelStats?.brandingSettings?.image?.bannerExternalUrl && (
@@ -79,7 +79,7 @@ function ChannelHero({ channelStats, onRefresh }) {
 
             {/* Conteúdo */}
             <div className="px-6 pb-6">
-                <div className="flex items-end gap-4 -mt-10 mb-5">
+                <div className="flex items-end gap-4 -mt-10 mb-5 relative z-10">
                     <div className="w-20 h-20 rounded-2xl border-4 border-surface-900 overflow-hidden bg-surface-800 shrink-0 shadow-xl">
                         {avatarUrl ? (
                             <img src={avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
