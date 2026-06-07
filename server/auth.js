@@ -10,10 +10,24 @@ export const auth = betterAuth({
     enabled: true,
   },
   session: {
-    expiresIn: 60 * 60 * 24 * 7, // 7 dias
-    updateAge: 60 * 60 * 24, // Atualizar sessão a cada 1 dia
+    expiresIn: 60 * 60 * 24 * 7,
+    updateAge: 60 * 60 * 24,
+    cookieCache: {
+      enabled: true,
+    },
+  },
+  advanced: {
+    crossSubdomainCookies: {
+      enabled: false,
+    },
+    defaultCookieAttributes: {
+      sameSite: "none",
+      secure: true,
+    },
   },
   trustedOrigins: [
-    process.env.FRONTEND_URL || "http://localhost:5173",
+    "https://viral-cuts-20.vercel.app",
+    "https://viral-cuts-20-git-main-ramons-projects-9aa5c4f1.vercel.app",
+    "http://localhost:5173",
   ],
 });
