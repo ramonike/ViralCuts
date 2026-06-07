@@ -70,4 +70,55 @@ ai.get("/status/:id", async (c) => {
     }
 });
 
+/**
+ * POST /api/ai/generate
+ * Generate text content (scripts, titles, descriptions) using Anthropic Claude
+ */
+ai.post("/generate", async (c) => {
+    console.log("[AI Route] POST /generate received");
+    try {
+        const body = await c.req.json().catch(() => null);
+
+        if (!body || !body.prompt) {
+            return c.json({ error: "Prompt is required" }, 400);
+        }
+
+        const apiKey = process.env.ANTHROPIC_API_KEY;
+        if (!apiKey) {
+            return c.json({ error: "ANTHROPIC_API_KEY not configured" }, 500);
+        }
+
+        const { prompt, system } = body;
+
+        const response = await fetch("https://api.anthropic.com/v1/messages", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "x-api-key": apiKey,
+                "anthropic-version": "2023-06-01",
+            },
+            body: JSON.stringify({
+                model: "claude-haiku-4-5-20251001",
+                max_tokens: 2048,
+                system: system || "Você é um assistente especialista em criação de conteúdo para redes sociais brasileiras.",
+                messages: [{ role: "user", content: prompt }],
+            }),
+        });
+
+        if (!response.ok) {
+            const err = await response.text();
+            console.error("[AI Route] Anthropic API error:", err);
+            return c.json({ error: "Erro ao chamar a IA. Tente novamente." }, 500);
+        }
+
+        const data = await response.json();
+        const text = data.content?.[0]?.text || "";
+
+        return c.json({ text });
+    } catch (error) {
+        console.error("[AI Route] Generate error:", error);
+        return c.json({ error: error.message || "Internal Server Error" }, 500);
+    }
+});
+
 export default ai;
