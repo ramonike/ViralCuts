@@ -6,6 +6,7 @@ import { secureHeaders } from "hono/secure-headers";
 import { auth } from "./auth.js";
 import { prisma, connectWithRetry, isRetryableError } from "./db/prisma.js";
 import { rateLimiter, authRateLimiter } from "./middleware/rate-limit.js";
+import adminRoutes from "./routes/admin.js";
 
 // Import route modules
 import progressRoutes from "./routes/progress.js";
@@ -242,6 +243,7 @@ app.get("/api/auth/tiktok/callback", async (c) => {
 app.on(["POST", "GET"], "/api/auth/*", (c) => auth.handler(c.req.raw));
 
 // Mount API routes
+app.route("/api/admin", adminRoutes);
 app.route("/api/progress", progressRoutes);
 app.route("/api/uploads", uploadsRoutes);
 app.route("/api/achievements", achievementsRoutes);
