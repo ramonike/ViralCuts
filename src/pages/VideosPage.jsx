@@ -64,9 +64,10 @@ function UploadZone({ onUpload, isDark }) {
                     <Upload className="w-6 h-6 text-primary" />
                 </div>
                 <p className={`text-sm font-semibold mb-1 ${isDark ? "text-white" : "text-gray-800"}`}>
-                    {dragging ? "Solte o vídeo aqui" : "Arraste ou clique para fazer upload"}
+                    {dragging ? "Solte o vídeo aqui" : "Enviar vídeo agora para o YouTube"}
                 </p>
-                <p className={`text-xs mb-4 ${isDark ? "text-slate-500" : "text-gray-400"}`}>MP4, MOV, AVI até 256GB</p>
+                <p className={`text-xs mb-1 ${isDark ? "text-slate-500" : "text-gray-400"}`}>MP4, MOV, AVI até 256GB · Publicação imediata</p>
+                <p className={`text-[11px] mb-4 ${isDark ? "text-slate-600" : "text-gray-400"}`}>Para agendar com data e hora, use a aba <strong>Calendário</strong></p>
                 <div className="flex items-center gap-2" onClick={e => e.stopPropagation()}>
                     <span className={`text-xs ${isDark ? "text-slate-400" : "text-gray-500"}`}>Privacidade:</span>
                     <select
@@ -86,48 +87,44 @@ function UploadZone({ onUpload, isDark }) {
 
 // ─── Video Card ───────────────────────────────────────────────────────────────
 function VideoCard({ video, isDark }) {
-    const [menuOpen, setMenuOpen] = useState(false);
-    const stats = video.statistics || {};
-    const snippet = video.snippet || {};
+    // Estrutura flat: { id, title, publishedAt, thumbnail, thumbnails, viewCount, likeCount, url }
     const videoId = typeof video.id === "object" ? video.id?.videoId : video.id;
-    const thumb = snippet.thumbnails?.medium?.url || snippet.thumbnails?.default?.url;
-    const status = video.status?.privacyStatus;
-
-    const statusLabel = { public: { label: "Público", color: "text-green-400 bg-green-500/10 border-green-500/20" }, private: { label: "Privado", color: "text-slate-400 bg-slate-500/10 border-slate-500/20" }, unlisted: { label: "Não listado", color: "text-yellow-400 bg-yellow-500/10 border-yellow-500/20" } };
-    const s = statusLabel[status] || statusLabel.private;
+    const thumb = video.thumbnail || video.thumbnails?.medium?.url || video.thumbnails?.default?.url;
+    const title = video.title || "Sem título";
+    const viewCount = video.viewCount ?? 0;
+    const likeCount = video.likeCount ?? 0;
+    const publishedAt = video.publishedAt;
+    const videoUrl = video.url || `https://youtube.com/watch?v=${videoId}`;
 
     return (
         <div className={`rounded-xl border overflow-hidden group transition-all hover:scale-[1.01] ${isDark ? "bg-surface-800/50 border-surface-700/50 hover:border-primary/30" : "bg-white border-gray-200 hover:border-primary/30"} shadow-sm`}>
             {/* Thumbnail */}
             <div className="relative aspect-video bg-surface-900 overflow-hidden">
                 {thumb ? (
-                    <img src={thumb} alt={snippet.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                    <img src={thumb} alt={title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
                 ) : (
                     <div className="w-full h-full flex items-center justify-center">
                         <Video className="w-8 h-8 text-slate-600" />
                     </div>
                 )}
                 <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all flex items-center justify-center">
-                    <a href={`https://youtube.com/watch?v=${videoId}`} target="_blank" rel="noopener noreferrer"
+                    <a href={videoUrl} target="_blank" rel="noopener noreferrer"
                         className="w-10 h-10 rounded-full bg-white/90 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"
                         onClick={e => e.stopPropagation()}>
                         <Play className="w-4 h-4 text-slate-900 ml-0.5" />
                     </a>
                 </div>
-                {status && (
-                    <span className={`absolute top-2 left-2 text-[10px] font-bold px-2 py-0.5 rounded-full border ${s.color}`}>{s.label}</span>
-                )}
             </div>
 
             {/* Info */}
             <div className="p-3">
                 <p className={`text-sm font-medium line-clamp-2 mb-2 leading-tight ${isDark ? "text-white" : "text-gray-900"}`}>
-                    {snippet.title || "Sem título"}
+                    {title}
                 </p>
                 <div className={`flex items-center gap-3 text-xs ${isDark ? "text-slate-500" : "text-gray-400"}`}>
-                    <span className="flex items-center gap-1"><Eye className="w-3 h-3" />{formatNum(stats.viewCount)}</span>
-                    <span className="flex items-center gap-1"><ThumbsUp className="w-3 h-3" />{formatNum(stats.likeCount)}</span>
-                    <span className="flex items-center gap-1 ml-auto"><Clock className="w-3 h-3" />{formatDate(snippet.publishedAt)}</span>
+                    <span className="flex items-center gap-1"><Eye className="w-3 h-3" />{formatNum(viewCount)}</span>
+                    <span className="flex items-center gap-1"><ThumbsUp className="w-3 h-3" />{formatNum(likeCount)}</span>
+                    <span className="flex items-center gap-1 ml-auto"><Clock className="w-3 h-3" />{formatDate(publishedAt)}</span>
                 </div>
             </div>
         </div>
@@ -174,9 +171,9 @@ export default function VideosPage() {
 
     const filteredVideos = useMemo(() => {
         return allVideos.filter(v => {
-            const title = v.snippet?.title || v.title || "";
+            const title = v.title || "";
             const matchSearch = title.toLowerCase().includes(search.toLowerCase());
-            const matchFilter = filter === "all" || v.status?.privacyStatus === filter;
+            const matchFilter = filter === "all";
             return matchSearch && matchFilter;
         });
     }, [allVideos, search, filter]);
