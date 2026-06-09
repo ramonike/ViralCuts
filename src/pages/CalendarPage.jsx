@@ -1,18 +1,73 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { useDashboardState } from "../hooks/useDashboardState";
 import { useSupabaseDashboard } from "../hooks/useSupabaseDashboard";
 import { ModernCalendar } from "../components/calendar/ModernCalendar";
 import { ScheduleVideoModal } from "../components/calendar/ScheduleVideoModal";
-import { SharedUploadQueue } from "../components/shared/SharedUploadQueue";
+import { UploadQueuePanel } from "../components/dashboard/UploadQueuePanel";
 import { VideoDetailModal } from "../components/dashboard/VideoDetailModal";
 import { PageLayout } from "../components/layout/PageLayout";
 import { useNotification } from "../contexts/NotificationContext";
+import { useTheme } from "../contexts/ThemeContext";
 import { fetchScheduledUploads, rescheduleUpload, cancelScheduledUpload } from "../api/youtube";
+import { CalendarDays, Clock, CheckCircle2, TrendingUp, Plus } from "lucide-react";
 
+// ─── Resumo semanal ───────────────────────────────────────────────────────────
+function WeeklySummary({ queue, isDark }) {
+    const now = new Date();
+    const startOfWeek = new Date(now);
+    startOfWeek.setDate(now.getDate() - now.getDay());
+    startOfWeek.setHours(0, 0, 0, 0);
+    const endOfWeek = new Date(startOfWeek);
+    endOfWeek.setDate(startOfWeek.getDate() + 7);
+
+    const thisWeek = queue.filter(v => {
+        const d = new Date(v.scheduledAt || v.publishAt);
+        return d >= startOfWeek && d < endOfWeek;
+    });
+
+    const posted = queue.filter(v => v.status === "done" || v.status === "success" || v.status === "published");
+    const upcoming = queue.filter(v => {
+        const d = new Date(v.scheduledAt || v.publishAt);
+        return d > now && v.status !== "done" && v.status !== "success";
+    });
+    const today = queue.filter(v => {
+        const d = new Date(v.scheduledAt || v.publishAt);
+        const t = new Date();
+        return d.toDateString() === t.toDateString();
+    });
+
+    const items = [
+        { icon: <CalendarDays className="w-4 h-4 text-primary" />, label: "Esta semana", value: thisWeek.length, bg: "bg-primary/10 border-primary/20" },
+        { icon: <Clock className="w-4 h-4 text-amber-400" />, label: "Hoje", value: today.length, bg: "bg-amber-500/10 border-amber-500/20" },
+        { icon: <TrendingUp className="w-4 h-4 text-blue-400" />, label: "Próximos", value: upcoming.length, bg: "bg-blue-500/10 border-blue-500/20" },
+        { icon: <CheckCircle2 className="w-4 h-4 text-green-400" />, label: "Publicados", value: posted.length, bg: "bg-green-500/10 border-green-500/20" },
+    ];
+
+    return (
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+            {items.map((item, i) => (
+                <div key={i} className={`rounded-xl border px-4 py-3 flex items-center gap-3 ${item.bg} ${isDark ? "" : "bg-opacity-50"}`}>
+                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${isDark ? "bg-surface-800/60" : "bg-white/60"}`}>
+                        {item.icon}
+                    </div>
+                    <div>
+                        <p className={`text-xl font-black ${isDark ? "text-white" : "text-gray-900"}`}>{item.value}</p>
+                        <p className={`text-[11px] ${isDark ? "text-slate-500" : "text-gray-500"}`}>{item.label}</p>
+                    </div>
+                </div>
+            ))}
+        </div>
+    );
+}
+
+// ─── Main ─────────────────────────────────────────────────────────────────────
 export default function CalendarPage() {
     const { state, actions } = useDashboardState();
     const supabase = useSupabaseDashboard();
     const { success, error: showError } = useNotification();
+    const { theme } = useTheme();
+    const isDark = theme === "dark" || (theme === "system" && window.matchMedia("(prefers-color-scheme: dark)").matches);
+
     const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
     const [selectedScheduleDate, setSelectedScheduleDate] = useState(null);
     const [selectedVideo, setSelectedVideo] = useState(null);
@@ -20,62 +75,52 @@ export default function CalendarPage() {
     const [scheduledUploads, setScheduledUploads] = useState([]);
     const [loadingScheduled, setLoadingScheduled] = useState(false);
 
-    // Fetch scheduled uploads from backend
+    // Carrega uploads agendados do backend
     const loadScheduledUploads = useCallback(async () => {
         if (!supabase.user) return;
-        
         setLoadingScheduled(true);
         try {
             const uploads = await fetchScheduledUploads(false, 100);
-            // Transform uploads to match the expected format for the calendar
-            const transformedUploads = uploads.map(upload => ({
-                id: upload.id,
-                title: upload.metadata?.title || upload.fileName || 'Untitled',
-                description: upload.metadata?.description || '',
-                platform: upload.platform || 'youtube',
-                scheduledAt: upload.scheduledAt,
-                publishAt: upload.scheduledAt,
-                privacyStatus: upload.metadata?.privacyStatus || 'private',
-                status: upload.status,
-                youtubeVideoId: upload.youtubeVideoId,
-                source: 'backend',
-            }));
-            setScheduledUploads(transformedUploads);
+            setScheduledUploads(uploads.map(u => ({
+                id: u.id,
+                title: u.metadata?.title || u.fileName || "Sem título",
+                description: u.metadata?.description || "",
+                platform: u.platform || "youtube",
+                scheduledAt: u.scheduledAt,
+                publishAt: u.scheduledAt,
+                privacyStatus: u.metadata?.privacyStatus || "private",
+                status: u.status,
+                youtubeVideoId: u.youtubeVideoId,
+                source: "backend",
+            })));
         } catch (err) {
-            console.error('Failed to load scheduled uploads:', err);
+            console.error("Failed to load scheduled uploads:", err);
         } finally {
             setLoadingScheduled(false);
         }
     }, [supabase.user]);
 
-    // Load scheduled uploads on mount and when user changes
-    useEffect(() => {
-        loadScheduledUploads();
-    }, [loadScheduledUploads]);
+    useEffect(() => { loadScheduledUploads(); }, [loadScheduledUploads]);
 
-    // Combine local upload queue with backend scheduled uploads
-    const combinedUploadQueue = React.useMemo(() => {
+    // Fila combinada: backend + local (sem duplicatas)
+    const combinedQueue = useMemo(() => {
         const localQueue = supabase.user ? supabase.uploadQueue : state.uploadQueue;
-        // Filter out duplicates (prefer backend data)
         const backendIds = new Set(scheduledUploads.map(u => u.id));
-        const filteredLocal = localQueue.filter(item => !backendIds.has(item.id));
-        return [...scheduledUploads, ...filteredLocal];
+        return [...scheduledUploads, ...localQueue.filter(item => !backendIds.has(item.id))];
     }, [supabase.user, supabase.uploadQueue, state.uploadQueue, scheduledUploads]);
 
-    // Hybrid actions: Use Supabase when available, fallback to localStorage
+    // Actions híbridas
     const hybridActions = {
         ...actions,
         addToUploadQueue: async (item) => {
             if (supabase.user && !supabase.loading) {
                 try {
                     await supabase.actions.addToQueue(item);
-                    // Reload scheduled uploads to get the new item
                     await loadScheduledUploads();
-                    success('Vídeo agendado com sucesso!');
-                } catch (error) {
-                    console.error('Supabase upload failed, falling back to localStorage:', error);
+                    success("Vídeo agendado com sucesso!");
+                } catch {
                     actions.addToUploadQueue(item);
-                    showError('Erro ao agendar no servidor. Salvo localmente.');
+                    showError("Erro ao agendar no servidor. Salvo localmente.");
                 }
             } else {
                 actions.addToUploadQueue(item);
@@ -96,53 +141,38 @@ export default function CalendarPage() {
         setSelectedScheduleDate(null);
     };
 
-    const handleEditVideo = async (video) => {
-        // If it's a backend scheduled upload, open reschedule modal
-        if (video.source === 'backend') {
-            setSelectedVideo(video);
-            setIsVideoModalOpen(true);
-        } else {
-            setSelectedVideo(video);
-            setIsVideoModalOpen(true);
-        }
+    const handleEditVideo = (video) => {
+        setSelectedVideo(video);
+        setIsVideoModalOpen(true);
     };
 
     const handleRescheduleVideo = async (videoId, newScheduledAt) => {
         try {
             await rescheduleUpload(videoId, newScheduledAt);
             await loadScheduledUploads();
-            success('Vídeo reagendado com sucesso!');
-        } catch (err) {
-            console.error('Failed to reschedule video:', err);
-            showError('Erro ao reagendar vídeo');
+            success("Vídeo reagendado com sucesso!");
+        } catch {
+            showError("Erro ao reagendar vídeo");
         }
     };
 
     const handleDeleteVideo = async (videoId) => {
-        // Check if it's a backend scheduled upload
         const backendUpload = scheduledUploads.find(u => u.id === videoId);
-        
         if (backendUpload) {
             try {
                 await cancelScheduledUpload(videoId);
                 await loadScheduledUploads();
-                success('Agendamento cancelado com sucesso!');
-            } catch (err) {
-                console.error('Failed to cancel scheduled upload:', err);
-                showError('Erro ao cancelar agendamento');
+                success("Agendamento cancelado com sucesso!");
+            } catch {
+                showError("Erro ao cancelar agendamento");
             }
         } else {
-            // Remove from local upload queue
-            const queueItem = (supabase.user ? supabase.uploadQueue : state.uploadQueue)
-                .find(item => item.id === videoId);
-            
+            const queueItem = (supabase.user ? supabase.uploadQueue : state.uploadQueue).find(i => i.id === videoId);
             if (queueItem) {
                 hybridActions.removeQueueItem(videoId);
             } else {
-                // Remove from history if it's posted
                 Object.keys(state.history).forEach(date => {
-                    const dayData = state.history[date];
-                    if (dayData?.completedItems?.some(item => item.id === videoId)) {
+                    if (state.history[date]?.completedItems?.some(i => i.id === videoId)) {
                         actions.removeHistoryItem(date, videoId);
                     }
                 });
@@ -150,47 +180,56 @@ export default function CalendarPage() {
         }
     };
 
-    const handleViewVideo = (video) => {
-        setSelectedVideo(video);
-        setIsVideoModalOpen(true);
-    };
-
     return (
-        <PageLayout 
+        <PageLayout
             title="Calendário"
-            subtitle="Gerencie seus agendamentos e acompanhe seu histórico de publicações"
-            maxWidth="6xl"
+            subtitle="Agende publicações e acompanhe seu histórico de posts."
+            maxWidth="7xl"
         >
-            {/* Main Content Grid - Layout mais equilibrado */}
-            <div className="flex justify-center">
-                <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 w-full">
-                    {/* Calendar - Ocupa 2 colunas no XL */}
-                    <div className="xl:col-span-2">
-                        <ModernCalendar
-                            history={supabase.user ? supabase.history : state.history}
-                            uploadQueue={combinedUploadQueue}
-                            onScheduleVideo={handleScheduleVideo}
-                            onEditVideo={handleEditVideo}
-                            onDeleteVideo={handleDeleteVideo}
-                            onViewVideo={handleViewVideo}
-                            loading={loadingScheduled}
-                        />
-                    </div>
+            {/* Resumo semanal */}
+            <WeeklySummary queue={combinedQueue} isDark={isDark} />
 
-                    {/* Upload Queue - Ocupa 1 coluna no XL */}
-                    <div className="xl:col-span-1">
-                        <SharedUploadQueue />
-                    </div>
+            {/* Grid principal */}
+            <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+
+                {/* Calendário — 2/3 da tela */}
+                <div className="xl:col-span-2">
+                    <ModernCalendar
+                        history={supabase.user ? supabase.history : state.history}
+                        uploadQueue={combinedQueue}
+                        onScheduleVideo={handleScheduleVideo}
+                        onEditVideo={handleEditVideo}
+                        onDeleteVideo={handleDeleteVideo}
+                        onViewVideo={(video) => { setSelectedVideo(video); setIsVideoModalOpen(true); }}
+                        loading={loadingScheduled}
+                    />
+                </div>
+
+                {/* Fila de uploads — 1/3 da tela */}
+                <div className="xl:col-span-1">
+                    {/* Botão de agendar rápido */}
+                    <button
+                        onClick={() => { setSelectedScheduleDate(new Date()); setIsScheduleModalOpen(true); }}
+                        className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-primary hover:bg-primary/90 text-white text-sm font-bold transition-colors mb-4"
+                    >
+                        <Plus className="w-4 h-4" />
+                        Agendar vídeo agora
+                    </button>
+
+                    {/* Fila — sem passar isLoading do supabase (causa skeleton infinito) */}
+                    <UploadQueuePanel
+                        uploadQueue={combinedQueue}
+                        markQueueStatus={hybridActions.markQueueStatus}
+                        removeQueueItem={hybridActions.removeQueueItem}
+                        isLoading={loadingScheduled}
+                    />
                 </div>
             </div>
 
-            {/* Modals */}
+            {/* Modais */}
             <ScheduleVideoModal
                 isOpen={isScheduleModalOpen}
-                onClose={() => {
-                    setIsScheduleModalOpen(false);
-                    setSelectedScheduleDate(null);
-                }}
+                onClose={() => { setIsScheduleModalOpen(false); setSelectedScheduleDate(null); }}
                 selectedDate={selectedScheduleDate}
                 onSchedule={handleScheduleSubmit}
             />
@@ -198,10 +237,7 @@ export default function CalendarPage() {
             <VideoDetailModal
                 video={selectedVideo}
                 isOpen={isVideoModalOpen}
-                onClose={() => {
-                    setIsVideoModalOpen(false);
-                    setSelectedVideo(null);
-                }}
+                onClose={() => { setIsVideoModalOpen(false); setSelectedVideo(null); }}
                 onReschedule={handleRescheduleVideo}
                 onDelete={handleDeleteVideo}
                 onEdit={actions.updateVideoMetadata}
