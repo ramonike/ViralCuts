@@ -21,6 +21,7 @@ import SettingsPage from "./pages/SettingsPage";
 import ProfilePage from "./pages/ProfilePage";
 import CreationPage from "./pages/CreationPage";
 import AdminPage from "./pages/AdminPage";
+import HelpPage from "./pages/HelpPage";
 
 import { DashboardProvider } from "./hooks/useDashboardState";
 
@@ -73,6 +74,7 @@ export default function App() {
                       <Route path="analytics" element={<AnalyticsPage />} />
                       <Route path="profile" element={<ProfilePage />} />
                       <Route path="settings" element={<SettingsPage />} />
+                      <Route path="help" element={<HelpPage />} />
                     </Route>
 
                     <Route path="/admin" element={
