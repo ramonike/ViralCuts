@@ -1,14 +1,13 @@
-import { Home, Video, Calendar, Settings, TrendingUp, LogOut, HelpCircle, User, Sparkles } from 'lucide-react';
+import { Home, Video, Calendar, Settings, TrendingUp, LogOut, HelpCircle, User, Sparkles, Upload, Sun, Moon } from 'lucide-react';
 import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTheme } from '../../contexts/ThemeContext';
 
 export const SidebarLeft = () => {
-    const { signOut } = useAuth();
-    const { theme } = useTheme();
+    const { signOut, user } = useAuth();
+    const { theme, toggleTheme } = useTheme();
     const navigate = useNavigate();
     const location = useLocation();
-
     const isDark = theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
 
     const handleSignOut = async () => {
@@ -17,108 +16,112 @@ export const SidebarLeft = () => {
         navigate('/login', { replace: true });
     };
 
-    const menuItems = [
-        { icon: <Home className="w-5 h-5" />, label: 'Dashboard', path: '/dashboard' },
-        { icon: <TrendingUp className="w-5 h-5" />, label: 'Analytics', path: '/dashboard/analytics' },
-        { icon: <Video className="w-5 h-5" />, label: 'Vídeos', path: '/dashboard/videos' },
-        { icon: <Sparkles className="w-5 h-5" />, label: 'Criação', path: '/dashboard/creation' },
-        { icon: <Calendar className="w-5 h-5" />, label: 'Calendário', path: '/dashboard/calendar' },
-        { icon: <User className="w-5 h-5" />, label: 'Perfil', path: '/dashboard/profile' },
+    const initials = user?.name
+        ? user.name.trim().split(' ').map(p => p[0]).slice(0, 2).join('').toUpperCase()
+        : 'VC';
+
+    const isActive = (path) =>
+        path === '/dashboard'
+            ? location.pathname === '/dashboard'
+            : location.pathname.startsWith(path);
+
+    const navItems = [
+        { icon: Home, label: 'Dashboard', path: '/dashboard' },
+        { icon: TrendingUp, label: 'Analytics', path: '/dashboard/analytics' },
+        { icon: Video, label: 'Vídeos', path: '/dashboard/videos' },
+        { icon: Sparkles, label: 'Criação IA', path: '/dashboard/creation' },
+        { icon: Calendar, label: 'Calendário', path: '/dashboard/calendar' },
     ];
 
-    // Check if a path is active
-    const isPathActive = (path) => {
-        if (path === '/dashboard') {
-            return location.pathname === '/dashboard';
-        }
-        return location.pathname.startsWith(path);
-    };
-
     return (
-        <div className="flex-1 flex flex-col">
-            <h3 className={`text-xs font-semibold uppercase tracking-wider mb-3 px-3 ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>
-                Menu Principal
-            </h3>
-            <nav className="space-y-1">
-                {menuItems.map((item, index) => {
-                    const isActive = isPathActive(item.path);
-                    return (
-                        <NavLink
-                            key={index}
-                            to={item.path}
-                            end={item.path === '/dashboard'}
-                            className={`
-                                w-full flex items-center gap-3 px-3 py-2.5 rounded-lg 
-                                transition-all duration-200 cursor-pointer
-                                ${isActive
-                                    ? isDark
-                                        ? 'bg-gradient-to-r from-blue-500/20 to-purple-500/10 text-blue-400 border-l-2 border-blue-400'
-                                        : 'bg-gradient-to-r from-purple-50 to-blue-50 text-purple-600 border-l-2 border-purple-500'
-                                    : isDark
-                                        ? 'text-slate-400 hover:bg-slate-800/50 hover:text-white border-l-2 border-transparent'
-                                        : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900 border-l-2 border-transparent'
-                                }
-                            `}
-                        >
-                            <span className={isActive ? (isDark ? 'text-blue-400' : 'text-purple-600') : ''}>
-                                {item.icon}
-                            </span>
-                            <span className="text-sm font-medium">{item.label}</span>
-                        </NavLink>
-                    );
-                })}
+        <div className="vc-sidebar">
+            {/* Logo */}
+            <div className="vc-logo">
+                <div className="vc-logo-mark">VC</div>
+                <span className="vc-logo-text">ViralCuts</span>
+            </div>
+
+            {/* Nav */}
+            <nav className="vc-nav">
+                <div className="vc-nav-section">
+                    <div className="vc-nav-label">Menu</div>
+                    {navItems.map((item) => {
+                        const active = isActive(item.path);
+                        const Icon = item.icon;
+                        return (
+                            <NavLink
+                                key={item.path}
+                                to={item.path}
+                                end={item.path === '/dashboard'}
+                                className={`vc-nav-item${active ? ' active' : ''}`}
+                            >
+                                <Icon className="nav-icon" />
+                                <span>{item.label}</span>
+                            </NavLink>
+                        );
+                    })}
+                </div>
+
+                <div className="vc-nav-section">
+                    <div className="vc-nav-label">Conta</div>
+                    <NavLink
+                        to="/dashboard/profile"
+                        className={`vc-nav-item${isActive('/dashboard/profile') ? ' active' : ''}`}
+                    >
+                        <User className="nav-icon" />
+                        <span>Perfil</span>
+                    </NavLink>
+                    <NavLink
+                        to="/dashboard/settings"
+                        className={`vc-nav-item${isActive('/dashboard/settings') ? ' active' : ''}`}
+                    >
+                        <Settings className="nav-icon" />
+                        <span>Configurações</span>
+                    </NavLink>
+                </div>
             </nav>
 
-            {/* Separator */}
-            <div className={`h-px my-4 ${isDark ? 'bg-slate-800' : 'bg-gray-200'}`} />
-
-            {/* Footer Actions */}
-            <div className="mt-auto space-y-1">
-
-                <NavLink
-                    to="/dashboard/settings"
-                    className={({ isActive }) =>
-                        `w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 ${isActive
-                            ? isDark
-                                ? 'bg-slate-800 text-white'
-                                : 'bg-gray-100 text-gray-900'
-                            : isDark
-                                ? 'text-slate-400 hover:bg-slate-800/50 hover:text-white'
-                                : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
-                        }`
-                    }
+            {/* Footer */}
+            <div className="vc-sidebar-footer">
+                {/* Theme toggle */}
+                <button
+                    onClick={toggleTheme}
+                    className="vc-nav-item"
+                    style={{ width: '100%', marginBottom: 4 }}
                 >
-                    <Settings className="w-5 h-5" />
-                    <span className="text-sm font-medium">Configurações</span>
-                </NavLink>
-
-                <NavLink
-                    to="/dashboard/help"
-                    className={({ isActive }) =>
-                        `w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 ${isActive
-                            ? isDark
-                                ? 'bg-slate-800 text-white'
-                                : 'bg-gray-100 text-gray-900'
-                            : isDark
-                                ? 'text-slate-400 hover:bg-slate-800/50 hover:text-white'
-                                : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
-                        }`
+                    {isDark
+                        ? <Sun className="nav-icon" />
+                        : <Moon className="nav-icon" />
                     }
-                >
-                    <HelpCircle className="w-5 h-5" />
-                    <span className="text-sm font-medium">Ajuda</span>
-                </NavLink>
+                    <span>{isDark ? 'Tema claro' : 'Tema escuro'}</span>
+                </button>
 
+                {/* Logout */}
                 <button
                     onClick={handleSignOut}
-                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${isDark
-                        ? 'text-red-400 hover:bg-red-500/10'
-                        : 'text-red-500 hover:bg-red-50'
-                        }`}
+                    className="vc-nav-item"
+                    style={{
+                        width: '100%',
+                        color: 'var(--accent-coral-2)',
+                        marginBottom: 12,
+                    }}
                 >
-                    <LogOut className="w-5 h-5" />
-                    <span className="text-sm font-medium">Sair</span>
+                    <LogOut className="nav-icon" style={{ opacity: 1 }} />
+                    <span>Sair</span>
                 </button>
+
+                {/* User chip */}
+                <div className="vc-user-chip">
+                    <div className="vc-avatar">{initials}</div>
+                    <div style={{ minWidth: 0 }}>
+                        <div className="vc-user-name" style={{
+                            overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                        }}>
+                            {user?.name || 'Criador'}
+                        </div>
+                        <div className="vc-user-plan">Pro</div>
+                    </div>
+                </div>
             </div>
         </div>
     );

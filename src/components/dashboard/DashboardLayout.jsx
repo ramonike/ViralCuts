@@ -1,175 +1,333 @@
 import React, { useState } from 'react';
-import { Outlet, useLocation } from 'react-router-dom';
-import { SidebarLeft } from './SidebarLeft';
-import { ChannelMiniCard } from '../shared/ChannelMiniCard';
-import { NotificationBadge } from '../notifications/NotificationBadge';
+import { Outlet, useLocation, NavLink, useNavigate } from 'react-router-dom';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useAuth } from '../../contexts/AuthContext';
-import { Menu, X } from 'lucide-react';
+import { NotificationBadge } from '../notifications/NotificationBadge';
+import { ChannelMiniCard } from '../shared/ChannelMiniCard';
+import {
+    Home, TrendingUp, Video, Sparkles, Calendar,
+    User, Settings, HelpCircle, LogOut, Menu, X, Sun, Moon,
+    Bell
+} from 'lucide-react';
 
-export const DashboardLayout = () => {
-    const { theme } = useTheme();
-    const { user, loading } = useAuth();
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+function getUserInitials(name) {
+    if (!name) return 'U';
+    const parts = name.trim().split(' ');
+    if (parts.length === 1) return parts[0][0].toUpperCase();
+    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+}
+
+// ─── Nav items ────────────────────────────────────────────────────────────────
+const NAV_MAIN = [
+    { icon: Home, label: 'Dashboard', path: '/dashboard', exact: true },
+    { icon: TrendingUp, label: 'Analytics', path: '/dashboard/analytics' },
+    { icon: Video, label: 'Vídeos', path: '/dashboard/videos' },
+    { icon: Sparkles, label: 'Criação IA', path: '/dashboard/creation' },
+    { icon: Calendar, label: 'Calendário', path: '/dashboard/calendar' },
+];
+
+const NAV_ACCOUNT = [
+    { icon: User, label: 'Perfil', path: '/dashboard/profile' },
+    { icon: Settings, label: 'Configurações', path: '/dashboard/settings' },
+];
+
+// ─── SidebarContent ───────────────────────────────────────────────────────────
+function SidebarContent({ user, loading, onSignOut, onClose, toggleTheme, isDark }) {
     const location = useLocation();
-    const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-    
-    const isDark = theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+    const isActive = (path, exact) =>
+        exact ? location.pathname === path : location.pathname.startsWith(path);
 
-    // Get page title based on current route
-    const getPageTitle = () => {
-        const path = location.pathname;
-        if (path === '/dashboard') return 'Dashboard';
-        if (path.includes('/videos')) return 'Vídeos';
-        if (path.includes('/calendar')) return 'Calendário';
-        if (path.includes('/analytics')) return 'Analytics';
-        if (path.includes('/profile')) return 'Perfil';
-        if (path.includes('/settings')) return 'Configurações';
-        return 'Dashboard';
+    const NavItem = ({ item }) => {
+        const Icon = item.icon;
+        const active = isActive(item.path, item.exact);
+        return (
+            <NavLink
+                to={item.path}
+                end={item.exact}
+                onClick={onClose}
+                className={[
+                    'vc-nav-item',
+                    active ? 'active' : ''
+                ].join(' ')}
+            >
+                <Icon className="nav-icon" size={17} />
+                <span>{item.label}</span>
+            </NavLink>
+        );
     };
-    
+
     return (
-        <div className={`min-h-screen font-sans selection:bg-blue-500/30 ${
-            isDark 
-                ? 'bg-slate-950 text-slate-100' 
-                : 'bg-gray-50 text-slate-900'
-        }`}>
-            {/* Mobile Header */}
-            <header className={`lg:hidden fixed top-0 left-0 right-0 z-50 h-16 flex items-center justify-between px-4 border-b ${
-                isDark 
-                    ? 'bg-slate-900/95 backdrop-blur-xl border-slate-800' 
-                    : 'bg-white/95 backdrop-blur-xl border-gray-200'
-            }`}>
-                <button 
-                    onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                    className={`p-2 rounded-lg ${isDark ? 'hover:bg-slate-800' : 'hover:bg-gray-100'}`}
+        <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+            {/* Logo */}
+            <div className="vc-logo" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 10, padding: '18px 18px 16px', borderBottom: '1px solid var(--border-subtle)' }}>
+                <div className="vc-logo-mark">VC</div>
+                <span className="vc-logo-text">ViralCuts</span>
+            </div>
+
+            {/* User chip */}
+            <div style={{ padding: '12px 10px', borderBottom: '1px solid var(--border-subtle)' }}>
+                <div className="vc-user-chip">
+                    <div className="vc-avatar">
+                        {loading ? (
+                            <div style={{ width: 14, height: 14, border: '2px solid rgba(255,255,255,0.3)', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin 0.6s linear infinite' }} />
+                        ) : user?.image ? (
+                            <img src={user.image} alt={user.name} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 'var(--radius-sm)' }} />
+                        ) : (
+                            getUserInitials(user?.name)
+                        )}
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                        <div className="vc-user-name" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            {user?.name || 'Usuário'}
+                        </div>
+                        <div className="vc-user-plan">Pro</div>
+                    </div>
+                </div>
+            </div>
+
+            {/* Channel mini card */}
+            <div style={{ padding: '10px 10px 0' }}>
+                <ChannelMiniCard />
+            </div>
+
+            {/* Navigation */}
+            <nav className="vc-nav" style={{ flex: 1, overflowY: 'auto', padding: '12px 10px' }}>
+                <div className="vc-nav-section">
+                    <div className="vc-nav-label">Principal</div>
+                    {NAV_MAIN.map(item => <NavItem key={item.path} item={item} />)}
+                </div>
+                <div className="vc-nav-section">
+                    <div className="vc-nav-label">Conta</div>
+                    {NAV_ACCOUNT.map(item => <NavItem key={item.path} item={item} />)}
+                </div>
+            </nav>
+
+            {/* Footer */}
+            <div className="vc-sidebar-footer">
+                {/* Theme toggle */}
+                <button
+                    onClick={toggleTheme}
+                    className="vc-nav-item"
+                    style={{ width: '100%', background: 'none', border: 'none', cursor: 'pointer', marginBottom: 2 }}
                 >
-                    {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+                    {isDark
+                        ? <Sun className="nav-icon" size={17} />
+                        : <Moon className="nav-icon" size={17} />
+                    }
+                    <span>{isDark ? 'Tema claro' : 'Tema escuro'}</span>
                 </button>
-                
-                <h1 className={`text-xl font-black tracking-tighter ${
-                    isDark 
-                        ? 'text-transparent bg-clip-text bg-gradient-to-r from-white via-blue-400 to-blue-500' 
-                        : 'text-transparent bg-clip-text bg-gradient-to-r from-purple-600 via-blue-600 to-cyan-500'
-                }`}>
-                    ViralCuts
-                </h1>
-                
+
+                <button
+                    className="vc-nav-item"
+                    style={{ width: '100%', background: 'none', border: 'none', cursor: 'pointer', marginBottom: 2 }}
+                >
+                    <HelpCircle className="nav-icon" size={17} />
+                    <span>Ajuda</span>
+                </button>
+
+                <button
+                    onClick={onSignOut}
+                    className="vc-nav-item"
+                    style={{
+                        width: '100%', background: 'none', border: 'none', cursor: 'pointer',
+                        color: 'var(--accent-coral)',
+                    }}
+                >
+                    <LogOut size={17} style={{ opacity: 0.8 }} />
+                    <span>Sair</span>
+                </button>
+            </div>
+        </div>
+    );
+}
+
+// ─── Main layout ──────────────────────────────────────────────────────────────
+export const DashboardLayout = () => {
+    const { theme, toggleTheme } = useTheme();
+    const { user, loading, signOut } = useAuth();
+    const navigate = useNavigate();
+    const [mobileOpen, setMobileOpen] = useState(false);
+
+    const isDark = theme === 'dark' ||
+        (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+
+    const handleSignOut = async () => {
+        await signOut();
+        localStorage.clear();
+        navigate('/login', { replace: true });
+    };
+
+    return (
+        <div
+            data-theme={isDark ? 'dark' : 'light'}
+            style={{
+                minHeight: '100vh',
+                background: 'var(--bg-primary)',
+                color: 'var(--text-primary)',
+                fontFamily: 'var(--font-body)',
+            }}
+        >
+            {/* ── Desktop sidebar ─────────────────────────────────── */}
+            <aside
+                className="vc-sidebar"
+                style={{ display: 'none' }}
+            // NOTE: mostrado via CSS acima de lg
+            >
+                {/* Renderizado apenas desktop — ver CSS .vc-sidebar */}
+            </aside>
+
+            {/* ── Sidebar — desktop (hidden mobile via CSS) ──────── */}
+            <aside
+                style={{
+                    width: 220,
+                    flexShrink: 0,
+                    background: 'var(--bg-secondary)',
+                    borderRight: '1px solid var(--border-subtle)',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    position: 'fixed',
+                    top: 0, left: 0, bottom: 0,
+                    zIndex: 40,
+                    overflowY: 'auto',
+                    overflowX: 'hidden',
+                    // oculto em mobile via media query inline abaixo
+                }}
+                className="vc-sidebar-desktop"
+            >
+                <SidebarContent
+                    user={user}
+                    loading={loading}
+                    onSignOut={handleSignOut}
+                    onClose={() => { }}
+                    toggleTheme={toggleTheme}
+                    isDark={isDark}
+                />
+            </aside>
+
+            {/* ── Mobile header ──────────────────────────────────── */}
+            <header
+                className="vc-topbar-mobile"
+                style={{
+                    display: 'none', // mostrado via CSS em mobile
+                    height: 52,
+                    borderBottom: '1px solid var(--border-subtle)',
+                    background: 'var(--bg-secondary)',
+                    position: 'fixed',
+                    top: 0, left: 0, right: 0,
+                    zIndex: 50,
+                    alignItems: 'center',
+                    padding: '0 16px',
+                    gap: 12,
+                }}
+            >
+                <button
+                    onClick={() => setMobileOpen(true)}
+                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)', display: 'flex', padding: 4 }}
+                >
+                    <Menu size={22} />
+                </button>
+                <div style={{ flex: 1, display: 'flex', justifyContent: 'center' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <div className="vc-logo-mark" style={{ width: 26, height: 26, fontSize: 11 }}>VC</div>
+                        <span className="vc-logo-text" style={{ fontSize: '0.9375rem' }}>ViralCuts</span>
+                    </div>
+                </div>
                 <NotificationBadge />
             </header>
 
-            {/* Mobile Menu Overlay - Subtask 8.3: Enhanced with backdrop-blur */}
-            {mobileMenuOpen && (
-                <div 
-                    className="lg:hidden fixed inset-0 z-40 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200"
-                    onClick={() => setMobileMenuOpen(false)}
+            {/* ── Mobile drawer overlay ─────────────────────────── */}
+            {mobileOpen && (
+                <div
+                    onClick={() => setMobileOpen(false)}
+                    style={{
+                        position: 'fixed', inset: 0, zIndex: 48,
+                        background: 'rgba(0,0,0,0.65)',
+                        backdropFilter: 'blur(4px)',
+                    }}
                 />
             )}
 
-            {/* Sidebar - Subtask 8.3: Enhanced drawer with slide animation and close button */}
-            <aside className={`
-                fixed inset-y-0 left-0 w-64 z-50 
-                transform transition-transform duration-300 ease-in-out
-                lg:translate-x-0
-                ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}
-                ${isDark 
-                    ? 'bg-slate-900 border-r border-slate-800' 
-                    : 'bg-white border-r border-gray-200 shadow-lg lg:shadow-none'
-                }
-            `}>
-                <div className="h-full flex flex-col">
-                    {/* Logo */}
-                    <div className={`h-16 flex items-center justify-between px-4 border-b ${
-                        isDark ? 'border-slate-800' : 'border-gray-200'
-                    }`}>
-                        <h1 className={`text-2xl font-black tracking-tighter ${
-                            isDark 
-                                ? 'text-transparent bg-clip-text bg-gradient-to-r from-white via-blue-400 to-blue-500' 
-                                : 'text-transparent bg-clip-text bg-gradient-to-r from-purple-600 via-blue-600 to-cyan-500'
-                        }`}>
-                            ViralCuts
-                        </h1>
-                        <div className="flex items-center gap-2">
-                            <div className="hidden lg:block">
-                                <NotificationBadge />
-                            </div>
-                            {/* Close button for mobile - Subtask 8.3 */}
-                            <button
-                                onClick={() => setMobileMenuOpen(false)}
-                                className={`lg:hidden p-2 rounded-lg transition-colors ${
-                                    isDark ? 'hover:bg-slate-800 text-slate-400 hover:text-white' : 'hover:bg-gray-100 text-gray-500 hover:text-gray-900'
-                                }`}
-                                aria-label="Fechar menu"
-                            >
-                                <X className="w-5 h-5" />
-                            </button>
-                        </div>
-                    </div>
-                    
-                    {/* User Profile Section */}
-                    <div className={`p-4 border-b ${isDark ? 'border-slate-800' : 'border-gray-200'}`}>
-                        <div className={`flex items-center gap-3 p-2 rounded-lg transition-all duration-200 ${
-                            isDark ? 'hover:bg-slate-800/50' : 'hover:bg-gray-100'
-                        }`}>
-                            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-semibold flex-shrink-0">
-                                {loading ? (
-                                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                                ) : user?.image ? (
-                                    <img src={user.image} alt={user.name} className="w-full h-full rounded-full object-cover" />
-                                ) : (
-                                    <span>{user?.name?.charAt(0)?.toUpperCase() || '?'}</span>
-                                )}
-                            </div>
-                            <div className="flex-1 min-w-0">
-                                {loading ? (
-                                    <>
-                                        <div className={`h-4 rounded w-24 mb-1 animate-pulse ${isDark ? 'bg-slate-700' : 'bg-gray-200'}`} />
-                                        <div className={`h-3 rounded w-32 animate-pulse ${isDark ? 'bg-slate-700' : 'bg-gray-200'}`} />
-                                    </>
-                                ) : user ? (
-                                    <>
-                                        <p className={`text-sm font-semibold truncate ${isDark ? 'text-white' : 'text-gray-900'}`}>
-                                            {user.name || 'Usuário'}
-                                        </p>
-                                        <p className={`text-xs truncate ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
-                                            {user.email}
-                                        </p>
-                                    </>
-                                ) : (
-                                    <>
-                                        <p className={`text-sm font-semibold ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
-                                            Não conectado
-                                        </p>
-                                        <p className={`text-xs ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>
-                                            Faça login
-                                        </p>
-                                    </>
-                                )}
-                            </div>
-                        </div>
-                    </div>
-                    
-                    {/* Channel Mini Card */}
-                    <div className="p-4">
-                        <ChannelMiniCard />
-                    </div>
-                    
-                    {/* Navigation */}
-                    <div className="flex-1 px-4 overflow-y-auto" onClick={() => setMobileMenuOpen(false)}>
-                        <SidebarLeft />
-                    </div>
+            {/* ── Mobile drawer ─────────────────────────────────── */}
+            <aside
+                style={{
+                    position: 'fixed',
+                    top: 0, left: 0, bottom: 0,
+                    width: 260,
+                    zIndex: 49,
+                    background: 'var(--bg-secondary)',
+                    borderRight: '1px solid var(--border-subtle)',
+                    transform: mobileOpen ? 'translateX(0)' : 'translateX(-100%)',
+                    transition: 'transform 0.28s cubic-bezier(0.4,0,0.2,1)',
+                    overflowY: 'auto',
+                }}
+            >
+                <div style={{ position: 'absolute', top: 14, right: 14 }}>
+                    <button
+                        onClick={() => setMobileOpen(false)}
+                        style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', padding: 4 }}
+                    >
+                        <X size={18} />
+                    </button>
                 </div>
+                <SidebarContent
+                    user={user}
+                    loading={loading}
+                    onSignOut={handleSignOut}
+                    onClose={() => setMobileOpen(false)}
+                    toggleTheme={toggleTheme}
+                    isDark={isDark}
+                />
             </aside>
 
-            {/* Main Content */}
-            <div className="lg:ml-64 min-h-screen">
-                {/* Spacer for mobile header */}
-                <div className="h-16 lg:hidden" />
-                
-                {/* Page Content */}
-                <main className="p-4 md:p-6 lg:p-8">
+            {/* ── Main content ──────────────────────────────────── */}
+            <div
+                style={{
+                    marginLeft: 220,
+                    minHeight: '100vh',
+                }}
+                className="vc-main-content"
+            >
+                {/* Timeline bar — elemento-assinatura no topo */}
+                <div style={{
+                    height: 2,
+                    background: 'linear-gradient(90deg, var(--accent-coral) 0%, var(--accent-amber) 55%, transparent 100%)',
+                    animation: 'vc-timeline-pulse 3s ease-in-out infinite',
+                    position: 'sticky',
+                    top: 0,
+                    zIndex: 30,
+                }} />
+
+                <main style={{ padding: '28px 28px', maxWidth: 1320 }}>
                     <Outlet />
                 </main>
             </div>
+
+            {/* ── Responsive CSS injetado ──────────────────────── */}
+            <style>{`
+                @keyframes vc-timeline-pulse {
+                    0%, 100% { opacity: 0.65; }
+                    50%       { opacity: 1; }
+                }
+                @keyframes spin {
+                    from { transform: rotate(0deg); }
+                    to   { transform: rotate(360deg); }
+                }
+
+                /* Desktop: sidebar visível, mobile header oculto */
+                @media (min-width: 768px) {
+                    .vc-sidebar-desktop { display: flex !important; }
+                    .vc-topbar-mobile   { display: none !important; }
+                    .vc-main-content    { margin-left: 220px !important; }
+                }
+
+                /* Mobile: sidebar oculta, topbar visível */
+                @media (max-width: 767px) {
+                    .vc-sidebar-desktop { display: none !important; }
+                    .vc-topbar-mobile   { display: flex !important; }
+                    .vc-main-content    { margin-left: 0 !important; padding-top: 52px; }
+                }
+            `}</style>
         </div>
     );
 };

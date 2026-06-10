@@ -6,8 +6,8 @@ import { useTheme } from "../contexts/ThemeContext";
 import { PageLayout } from "../components/layout/PageLayout";
 import {
     Rocket, Calendar, TrendingUp, Eye, Users, Play,
-    Plus, ArrowRight, Clock, CheckCircle, Link, Video,
-    BarChart2, Sparkles, AlertCircle
+    Plus, ArrowRight, Clock, Video, BarChart2, Sparkles,
+    CheckCircle, Link, AlertCircle, Zap
 } from "lucide-react";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -33,158 +33,196 @@ const formatNumber = (n) => {
 };
 
 // ─── Sub-components ──────────────────────────────────────────────────────────
-function StatCard({ icon, label, value, delta, deltaUp, isDark }) {
-    const deltaColor = deltaUp === true
-        ? (isDark ? "#34d399" : "#059669")
-        : deltaUp === false
-            ? (isDark ? "#f87171" : "#dc2626")
-            : (isDark ? "#6b7280" : "#9ca3af");
+
+/**
+ * MetricCard — card de KPI com traço colorido no topo
+ * accent: 'coral' | 'amber' | 'teal' | 'neutral'
+ */
+function MetricCard({ icon: Icon, label, value, delta, accent = "neutral" }) {
+    const deltaColors = {
+        up: "var(--accent-teal)",
+        down: "var(--accent-coral)",
+        flat: "var(--text-muted)",
+    };
+
+    const accentColor = {
+        coral: "var(--accent-coral)",
+        amber: "var(--accent-amber)",
+        teal: "var(--accent-teal)",
+        neutral: "var(--border-default)",
+    }[accent];
+
+    const iconBg = {
+        coral: "var(--accent-coral-3)",
+        amber: "var(--accent-amber-3)",
+        teal: "var(--accent-teal-3)",
+        neutral: "var(--bg-elevated)",
+    }[accent];
+
+    const iconColor = {
+        coral: "var(--accent-coral-2)",
+        amber: "var(--accent-amber-2)",
+        teal: "var(--accent-teal)",
+        neutral: "var(--text-secondary)",
+    }[accent];
 
     return (
-        <div style={{
-            background: isDark ? "rgba(255,255,255,0.04)" : "#fff",
-            border: `1px solid ${isDark ? "rgba(255,255,255,0.08)" : "#e5e7eb"}`,
-            borderRadius: 14,
-            padding: "16px 18px",
-        }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+        <div className="vc-metric-card" style={{ position: 'relative', overflow: 'hidden' }}>
+            {/* traço de acento no topo */}
+            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: accentColor }} />
+
+            <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 12 }}>
                 <div style={{
-                    width: 32, height: 32, borderRadius: 9,
-                    background: isDark ? "rgba(124,58,237,0.2)" : "#f3f0ff",
-                    display: "flex", alignItems: "center", justifyContent: "center",
-                    color: isDark ? "#a78bfa" : "#7c3aed",
+                    width: 34, height: 34, borderRadius: 'var(--radius-md)',
+                    background: iconBg, display: "flex", alignItems: "center",
+                    justifyContent: "center", flexShrink: 0,
                 }}>
-                    {icon}
+                    <Icon size={16} color={iconColor} />
                 </div>
-                <span style={{ fontSize: 11, fontWeight: 600, color: isDark ? "#6b7280" : "#9ca3af", textTransform: "uppercase", letterSpacing: "0.05em" }}>
-                    {label}
-                </span>
             </div>
-            <div style={{ fontSize: 26, fontWeight: 800, color: isDark ? "#f9fafb" : "#111827", lineHeight: 1, marginBottom: 4 }}>
-                {value}
-            </div>
+
+            <div className="vc-metric-label">{label}</div>
+            <div className="vc-metric-value">{value}</div>
+
             {delta && (
-                <div style={{ fontSize: 11, fontWeight: 500, color: deltaColor }}>
-                    {deltaUp === true && "↑ "}{deltaUp === false && "↓ "}{delta}
+                <div style={{ fontSize: 11, fontWeight: 500, color: deltaColors.flat, marginTop: 4, fontFamily: 'var(--font-body)' }}>
+                    {delta}
                 </div>
             )}
         </div>
     );
 }
 
-function QueueItem({ item, isDark, onNavigate }) {
-    const statusColors = {
-        agendado: { bg: "rgba(124,58,237,0.15)", text: "#a78bfa" },
-        publicando: { bg: "rgba(37,99,235,0.15)", text: "#60a5fa" },
-        erro: { bg: "rgba(239,68,68,0.15)", text: "#f87171" },
-        concluido: { bg: "rgba(52,211,153,0.15)", text: "#34d399" },
+/**
+ * QueueItem — linha de vídeo na fila
+ */
+function QueueItem({ item, onNavigate }) {
+    const statusMap = {
+        agendado: { label: "Agendado", cls: "vc-badge-coral" },
+        publicando: { label: "Publicando", cls: "vc-badge-amber" },
+        erro: { label: "Erro", cls: "vc-badge-coral" },
+        concluido: { label: "Publicado", cls: "vc-badge-teal" },
     };
-    const colors = statusColors[item.status] || statusColors.agendado;
+    const status = statusMap[item.status] || statusMap.agendado;
 
     return (
-        <div style={{
-            display: "flex", alignItems: "center", gap: 12,
-            padding: "12px 14px",
-            background: isDark ? "rgba(255,255,255,0.03)" : "#f9fafb",
-            borderRadius: 10,
-            border: `1px solid ${isDark ? "rgba(255,255,255,0.06)" : "#e5e7eb"}`,
-            marginBottom: 8,
-            cursor: "pointer",
-        }} onClick={onNavigate}>
+        <div
+            onClick={onNavigate}
+            style={{
+                display: "flex", alignItems: "center", gap: 12,
+                padding: "11px 14px",
+                background: "var(--bg-tertiary)",
+                border: "1px solid var(--border-subtle)",
+                borderRadius: "var(--radius-md)",
+                marginBottom: 7,
+                cursor: "pointer",
+                transition: "border-color 0.15s",
+            }}
+            onMouseEnter={e => e.currentTarget.style.borderColor = "var(--border-default)"}
+            onMouseLeave={e => e.currentTarget.style.borderColor = "var(--border-subtle)"}
+        >
             <div style={{
-                width: 40, height: 40, borderRadius: 9,
-                background: isDark ? "rgba(124,58,237,0.2)" : "#f3f0ff",
+                width: 36, height: 36, borderRadius: "var(--radius-sm)",
+                background: "var(--accent-coral-3)",
                 display: "flex", alignItems: "center", justifyContent: "center",
                 flexShrink: 0,
             }}>
-                <Video size={18} color={isDark ? "#a78bfa" : "#7c3aed"} />
+                <Video size={16} color="var(--accent-coral-2)" />
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>
-                <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: isDark ? "#f3f4f6" : "#111827", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: "var(--text-primary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontFamily: "var(--font-display)" }}>
                     {item.title}
                 </p>
-                <p style={{ margin: "2px 0 0", fontSize: 11, color: isDark ? "#6b7280" : "#9ca3af" }}>
-                    {item.platform || "YouTube"} · {item.scheduledAt ? new Date(item.scheduledAt).toLocaleString("pt-BR", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" }) : "Sem data"}
+                <p style={{ margin: "2px 0 0", fontSize: 11, color: "var(--text-muted)", fontFamily: "var(--font-body)" }}>
+                    {item.platform || "YouTube"} · {item.scheduledAt
+                        ? new Date(item.scheduledAt).toLocaleString("pt-BR", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })
+                        : "Sem data"}
                 </p>
             </div>
-            <span style={{ fontSize: 11, fontWeight: 600, padding: "3px 9px", borderRadius: 999, background: colors.bg, color: colors.text, flexShrink: 0 }}>
-                {item.status || "agendado"}
-            </span>
+            <span className={`vc-badge ${status.cls}`}>{status.label}</span>
         </div>
     );
 }
 
-function RecentVideo({ video, isDark }) {
+/**
+ * RecentVideoRow — linha de vídeo publicado
+ */
+function RecentVideoRow({ video }) {
     const views = video.views || video.statistics?.viewCount || 0;
     return (
         <div style={{
             display: "flex", alignItems: "center", gap: 11,
-            padding: "11px 0",
-            borderBottom: `1px solid ${isDark ? "rgba(255,255,255,0.05)" : "#f3f4f6"}`,
+            padding: "10px 0",
+            borderBottom: "1px solid var(--border-subtle)",
         }}>
             <div style={{
-                width: 36, height: 36, borderRadius: 8, flexShrink: 0,
-                background: isDark ? "rgba(37,99,235,0.15)" : "#eff6ff",
+                width: 34, height: 34, borderRadius: "var(--radius-sm)", flexShrink: 0,
+                background: "var(--bg-elevated)",
                 display: "flex", alignItems: "center", justifyContent: "center",
             }}>
-                <Play size={14} color={isDark ? "#60a5fa" : "#2563eb"} />
+                <Play size={14} color="var(--text-muted)" />
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>
-                <p style={{ margin: 0, fontSize: 12, fontWeight: 500, color: isDark ? "#e5e7eb" : "#374151", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                <p style={{ margin: 0, fontSize: 12, fontWeight: 500, color: "var(--text-primary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                     {video.title || video.snippet?.title || "Sem título"}
                 </p>
-                <p style={{ margin: "2px 0 0", fontSize: 11, color: isDark ? "#6b7280" : "#9ca3af" }}>
+                <p style={{ margin: "2px 0 0", fontSize: 11, color: "var(--text-muted)" }}>
                     YouTube · {video.date || video.snippet?.publishedAt?.split("T")[0] || "—"}
                 </p>
             </div>
             <div style={{ textAlign: "right", flexShrink: 0 }}>
-                <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: isDark ? "#f9fafb" : "#111827" }}>
+                <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: "var(--text-primary)", fontFamily: "var(--font-display)" }}>
                     {formatNumber(views)}
                 </p>
-                <p style={{ margin: 0, fontSize: 11, color: isDark ? "#6b7280" : "#9ca3af" }}>views</p>
+                <p style={{ margin: 0, fontSize: 11, color: "var(--text-muted)" }}>views</p>
             </div>
         </div>
     );
 }
 
-function InsightTip({ tip, isDark }) {
+/**
+ * InsightTip — dica inteligente de canal
+ */
+function InsightTip({ tip }) {
     return (
         <div style={{
-            display: "flex", gap: 10,
-            padding: "11px 13px",
-            background: isDark ? "rgba(124,58,237,0.08)" : "#f5f3ff",
-            border: `1px solid ${isDark ? "rgba(124,58,237,0.2)" : "#ddd6fe"}`,
-            borderRadius: 10,
-            marginBottom: 8,
+            display: "flex", gap: 10, alignItems: "flex-start",
+            padding: "10px 12px",
+            background: "var(--accent-coral-3)",
+            border: "1px solid rgba(232,65,42,0.15)",
+            borderRadius: "var(--radius-md)",
+            marginBottom: 7,
         }}>
-            <span style={{ fontSize: 16, flexShrink: 0 }}>{tip.icon}</span>
-            <p style={{ margin: 0, fontSize: 12, color: isDark ? "#d1d5db" : "#4b5563", lineHeight: 1.55 }}>{tip.text}</p>
+            <Zap size={14} color="var(--accent-coral-2)" style={{ flexShrink: 0, marginTop: 2 }} />
+            <p style={{ margin: 0, fontSize: 12, color: "var(--text-secondary)", lineHeight: 1.55, fontFamily: "var(--font-body)" }}>
+                {tip.text}
+            </p>
         </div>
     );
 }
 
-function Card({ children, isDark, style = {} }) {
+// ─── Card wrapper simples ─────────────────────────────────────────────────────
+function Card({ children, style = {} }) {
     return (
-        <div style={{
-            background: isDark ? "rgba(255,255,255,0.03)" : "#fff",
-            border: `1px solid ${isDark ? "rgba(255,255,255,0.08)" : "#e5e7eb"}`,
-            borderRadius: 16,
-            padding: "18px 20px",
-            ...style,
-        }}>
+        <div className="vc-card" style={{ padding: "18px 20px", ...style }}>
             {children}
         </div>
     );
 }
 
-function CardHeader({ title, action, onAction, isDark }) {
+function CardHeader({ title, action, onAction }) {
     return (
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
-            <h2 style={{ margin: 0, fontSize: 11, fontWeight: 700, color: isDark ? "#9ca3af" : "#6b7280", textTransform: "uppercase", letterSpacing: "0.07em" }}>
-                {title}
-            </h2>
+            <span className="vc-metric-label" style={{ marginBottom: 0 }}>{title}</span>
             {action && (
-                <button onClick={onAction} style={{ fontSize: 12, color: "#7c3aed", background: "none", border: "none", cursor: "pointer", fontWeight: 600, padding: 0, fontFamily: "inherit" }}>
+                <button
+                    onClick={onAction}
+                    style={{
+                        fontSize: 12, fontWeight: 600, color: "var(--accent-coral-2)",
+                        background: "none", border: "none", cursor: "pointer",
+                        padding: 0, fontFamily: "var(--font-display)", letterSpacing: "-0.01em",
+                    }}
+                >
                     {action}
                 </button>
             )}
@@ -192,83 +230,79 @@ function CardHeader({ title, action, onAction, isDark }) {
     );
 }
 
-// ─── Onboarding (novo usuário, sem canal) ────────────────────────────────────
-function OnboardingState({ user, isDark, onNavigateProfile }) {
+// ─── Onboarding (usuário sem canal) ──────────────────────────────────────────
+function OnboardingState({ user, onNavigateProfile }) {
     const steps = [
         {
-            num: 1, done: true, icon: "✅",
+            num: 1, done: true,
             title: "Conta criada",
             desc: "Você está dentro. Bem-vindo ao ViralCuts!",
         },
         {
-            num: 2, done: false, icon: "🔗",
+            num: 2, done: false,
             title: "Conectar YouTube",
-            desc: "Autorize o acesso para ver analytics e fazer uploads automáticos 24h por dia.",
+            desc: "Autorize o acesso para ver analytics e fazer uploads automáticos.",
             cta: "Conectar agora →",
             onCta: onNavigateProfile,
         },
         {
-            num: 3, done: false, icon: "📹",
+            num: 3, done: false, disabled: true,
             title: "Enviar primeiro vídeo",
-            desc: "Agende um vídeo para ver a mágica acontecer. Disponível após conectar o YouTube.",
-            disabled: true,
+            desc: "Agende um vídeo para ver a mágica acontecer.",
         },
     ];
 
     return (
         <div>
-            <p style={{ margin: "0 0 4px", fontSize: 13, color: isDark ? "#6b7280" : "#9ca3af" }}>
-                {getGreeting()}, {user?.name?.split(" ")[0] || "criador"} 👋
+            <p style={{ margin: "0 0 4px", fontSize: 13, color: "var(--text-muted)", fontFamily: "var(--font-body)" }}>
+                {getGreeting()}, {user?.name?.split(" ")[0] || "criador"}
             </p>
-            <h1 style={{ margin: "0 0 6px", fontSize: 28, fontWeight: 900, color: isDark ? "#f9fafb" : "#111827" }}>
+            <h1 style={{ margin: "0 0 6px", fontFamily: "var(--font-display)", fontSize: 28, fontWeight: 700, color: "var(--text-primary)", letterSpacing: "-0.03em" }}>
                 Vamos começar
             </h1>
-            <p style={{ margin: "0 0 28px", fontSize: 14, color: isDark ? "#6b7280" : "#9ca3af" }}>
+            <p style={{ margin: "0 0 28px", fontSize: 14, color: "var(--text-muted)", fontFamily: "var(--font-body)" }}>
                 3 passos para ativar o ViralCuts no seu canal.
             </p>
 
-            <div style={{ maxWidth: 520 }}>
+            <div style={{ maxWidth: 520, display: "flex", flexDirection: "column", gap: 10 }}>
                 {steps.map((s) => (
-                    <div key={s.num} style={{
-                        display: "flex", gap: 14,
-                        padding: "18px 20px",
-                        borderRadius: 14,
-                        border: `1px solid ${s.done ? (isDark ? "rgba(52,211,153,0.2)" : "#bbf7d0") : (isDark ? "rgba(255,255,255,0.08)" : "#e5e7eb")}`,
-                        background: s.done
-                            ? (isDark ? "rgba(52,211,153,0.07)" : "#f0fdf4")
-                            : (isDark ? "rgba(255,255,255,0.03)" : "#fafafa"),
-                        marginBottom: 12,
-                        opacity: s.disabled ? 0.45 : 1,
-                    }}>
+                    <div
+                        key={s.num}
+                        style={{
+                            display: "flex", gap: 14,
+                            padding: "18px 20px",
+                            borderRadius: "var(--radius-lg)",
+                            border: `1px solid ${s.done ? "rgba(0,201,167,0.25)" : "var(--border-subtle)"}`,
+                            background: s.done ? "var(--accent-teal-3)" : "var(--bg-card)",
+                            opacity: s.disabled ? 0.4 : 1,
+                        }}
+                    >
                         <div style={{
-                            width: 42, height: 42, borderRadius: 12, flexShrink: 0,
-                            background: s.done
-                                ? (isDark ? "rgba(52,211,153,0.15)" : "#dcfce7")
-                                : (isDark ? "rgba(124,58,237,0.15)" : "#f3f0ff"),
+                            width: 40, height: 40, borderRadius: "var(--radius-md)", flexShrink: 0,
+                            background: s.done ? "rgba(0,201,167,0.2)" : "var(--bg-elevated)",
                             display: "flex", alignItems: "center", justifyContent: "center",
-                            fontSize: 20,
                         }}>
-                            {s.icon}
+                            {s.done
+                                ? <CheckCircle size={20} color="var(--accent-teal)" />
+                                : <span style={{ fontSize: 15, fontWeight: 700, color: "var(--text-muted)", fontFamily: "var(--font-display)" }}>{s.num}</span>
+                            }
                         </div>
                         <div style={{ flex: 1 }}>
-                            <p style={{ margin: "0 0 2px", fontSize: 11, fontWeight: 600, color: isDark ? "#6b7280" : "#9ca3af", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                            <p style={{ margin: "0 0 2px", fontSize: 11, fontWeight: 600, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.07em" }}>
                                 Passo {s.num}
                             </p>
-                            <p style={{ margin: "0 0 4px", fontSize: 14, fontWeight: 700, color: isDark ? "#f3f4f6" : "#111827" }}>
+                            <p style={{ margin: "0 0 4px", fontSize: 14, fontWeight: 600, color: "var(--text-primary)", fontFamily: "var(--font-display)" }}>
                                 {s.title}
                             </p>
-                            <p style={{ margin: 0, fontSize: 12, color: isDark ? "#6b7280" : "#6b7280", lineHeight: 1.55 }}>
+                            <p style={{ margin: 0, fontSize: 12, color: "var(--text-secondary)", lineHeight: 1.55 }}>
                                 {s.desc}
                             </p>
                             {s.cta && !s.disabled && (
-                                <button onClick={s.onCta} style={{
-                                    marginTop: 12, fontSize: 12, fontWeight: 700,
-                                    color: isDark ? "#a78bfa" : "#7c3aed",
-                                    background: isDark ? "rgba(124,58,237,0.15)" : "#f3f0ff",
-                                    border: `1px solid ${isDark ? "rgba(124,58,237,0.3)" : "#ddd6fe"}`,
-                                    borderRadius: 8, padding: "7px 14px", cursor: "pointer",
-                                    fontFamily: "inherit",
-                                }}>
+                                <button
+                                    onClick={s.onCta}
+                                    className="vc-btn vc-btn-primary vc-btn-sm"
+                                    style={{ marginTop: 12 }}
+                                >
                                     {s.cta}
                                 </button>
                             )}
@@ -280,158 +314,161 @@ function OnboardingState({ user, isDark, onNavigateProfile }) {
     );
 }
 
-// ─── Dashboard (canal conectado) ─────────────────────────────────────────────
-function ConnectedDashboard({ user, state, supabase, isDark, navigate }) {
-    const token = state.auth?.youtubeToken;
+// ─── Dashboard principal (canal conectado) ────────────────────────────────────
+function ConnectedDashboard({ user, state, supabase, navigate }) {
     const channelStats = state.channelStats;
     const uploadQueue = supabase.uploadQueue || state.uploadQueue || [];
     const history = supabase.history || state.history || {};
 
-    // Stats
+    // Stats calculados
     const totalPublished = Object.values(history).reduce(
         (acc, day) => acc + (day?.completedItems?.length || 0), 0
     );
     const scheduledCount = uploadQueue.filter((v) => v.scheduledAt)?.length || 0;
     const subscribers = channelStats?.statistics?.subscriberCount
-        ? formatNumber(Number(channelStats.statistics.subscriberCount))
-        : "—";
+        ? formatNumber(Number(channelStats.statistics.subscriberCount)) : "—";
     const totalViews = channelStats?.statistics?.viewCount
-        ? formatNumber(Number(channelStats.statistics.viewCount))
-        : "—";
+        ? formatNumber(Number(channelStats.statistics.viewCount)) : "—";
 
-    // Recent videos from recentUploads or history
+    // Vídeos recentes
     const recentVideos = useMemo(() => {
-        if (state.recentUploads?.length) return state.recentUploads.slice(0, 4);
+        if (state.recentUploads?.length) return state.recentUploads.slice(0, 5);
         const all = Object.entries(history)
             .sort(([a], [b]) => b.localeCompare(a))
             .flatMap(([date, day]) =>
                 (day?.completedItems || []).map((v) => ({ ...v, date }))
             );
-        return all.slice(0, 4);
+        return all.slice(0, 5);
     }, [state.recentUploads, history]);
 
-    // Smart insights
+    // Insights
     const insights = useMemo(() => {
         const tips = [];
         if (totalPublished < 3)
-            tips.push({ icon: "🎯", text: "Você está começando! Tente publicar ao menos 1 vídeo por semana para ganhar tração." });
+            tips.push({ text: "Publique ao menos 1 vídeo por semana para o algoritmo ganhar tração no seu canal." });
         if (scheduledCount === 0)
-            tips.push({ icon: "📅", text: "Nenhum vídeo agendado. Agendar com antecedência aumenta a consistência do canal." });
+            tips.push({ text: "Nenhum vídeo agendado. Consistência é o fator nº 1 para crescimento." });
         if (uploadQueue.length > 0)
-            tips.push({ icon: "🚀", text: `Você tem ${uploadQueue.length} vídeo(s) na fila. Revise os detalhes antes do upload.` });
+            tips.push({ text: `${uploadQueue.length} vídeo(s) na fila aguardando. Revise títulos e descrições antes do envio.` });
         if (tips.length === 0)
-            tips.push({ icon: "✨", text: "Canal com bom ritmo! Continue consistente para crescer." });
-        return tips.slice(0, 3);
+            tips.push({ text: "Canal em bom ritmo! Continue com consistência para acelerar o crescimento." });
+        return tips.slice(0, 2);
     }, [totalPublished, scheduledCount, uploadQueue.length]);
 
-    // Next scheduled
     const nextScheduled = uploadQueue
         .filter((v) => v.scheduledAt)
         .sort((a, b) => new Date(a.scheduledAt) - new Date(b.scheduledAt))[0];
 
-    const stats = [
-        { icon: <Eye size={15} />, label: "Visualizações", value: totalViews, delta: "total acumulado" },
-        { icon: <Users size={15} />, label: "Inscritos", value: subscribers, delta: "total" },
-        { icon: <Rocket size={15} />, label: "Na fila", value: uploadQueue.length, delta: scheduledCount > 0 ? `${scheduledCount} agendado(s)` : "nenhum agendado" },
-        { icon: <TrendingUp size={15} />, label: "Publicados", value: totalPublished, delta: "pelo ViralCuts" },
-    ];
-
     return (
         <div>
-            {/* Header */}
+            {/* ── Header ──────────────────────────────────────────── */}
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 24, flexWrap: "wrap", gap: 12 }}>
                 <div>
-                    <p style={{ margin: "0 0 3px", fontSize: 13, color: isDark ? "#6b7280" : "#9ca3af" }}>
-                        {getGreeting()}, {user?.name?.split(" ")[0] || "criador"} 👋
+                    <p style={{ margin: "0 0 2px", fontSize: 12, color: "var(--text-muted)", fontFamily: "var(--font-body)" }}>
+                        {getGreeting()}, {user?.name?.split(" ")[0] || "criador"}
                     </p>
-                    <h1 style={{ margin: 0, fontSize: 28, fontWeight: 900, color: isDark ? "#f9fafb" : "#111827" }}>
-                        Dashboard
+                    <h1 style={{ margin: 0, fontFamily: "var(--font-display)", fontSize: 26, fontWeight: 700, color: "var(--text-primary)", letterSpacing: "-0.03em", lineHeight: 1.2 }}>
+                        {channelStats?.title || "Dashboard"}
                     </h1>
-                    {channelStats?.title && (
-                        <p style={{ margin: "4px 0 0", fontSize: 13, color: isDark ? "#7c3aed" : "#6d28d9", fontWeight: 600 }}>
-                            📺 {channelStats.title}
-                        </p>
-                    )}
                 </div>
+
                 <button
                     onClick={() => navigate("/dashboard/videos")}
-                    style={{
-                        display: "flex", alignItems: "center", gap: 7,
-                        padding: "10px 18px",
-                        background: "linear-gradient(135deg,#7c3aed,#2563eb)",
-                        border: "none", borderRadius: 12,
-                        color: "#fff", fontSize: 13, fontWeight: 700,
-                        cursor: "pointer", fontFamily: "inherit", flexShrink: 0,
-                    }}
+                    className="vc-btn vc-btn-primary"
                 >
-                    <Plus size={15} /> Novo upload
+                    <Plus size={15} />
+                    Novo upload
                 </button>
             </div>
 
-            {/* Stats */}
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 12, marginBottom: 20 }}>
-                {stats.map((s, i) => (
-                    <StatCard key={i} {...s} isDark={isDark} />
-                ))}
+            {/* ── Métricas ────────────────────────────────────────── */}
+            <div className="vc-grid-metrics" style={{ marginBottom: 20 }}>
+                <MetricCard
+                    icon={Eye}
+                    label="Visualizações"
+                    value={totalViews}
+                    delta="total acumulado"
+                    accent="neutral"
+                />
+                <MetricCard
+                    icon={Users}
+                    label="Inscritos"
+                    value={subscribers}
+                    delta="total"
+                    accent="amber"
+                />
+                <MetricCard
+                    icon={Rocket}
+                    label="Na fila"
+                    value={uploadQueue.length}
+                    delta={scheduledCount > 0 ? `${scheduledCount} agendado(s)` : "nenhum agendado"}
+                    accent="coral"
+                />
+                <MetricCard
+                    icon={TrendingUp}
+                    label="Publicados"
+                    value={totalPublished}
+                    delta="pelo ViralCuts"
+                    accent="teal"
+                />
             </div>
 
-            {/* 2-col layout */}
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 300px", gap: 16 }}>
+            {/* ── Layout 2 colunas ────────────────────────────────── */}
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 280px", gap: 16, alignItems: "start" }}>
 
-                {/* Left */}
+                {/* Coluna esquerda */}
                 <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
 
                     {/* Fila de uploads */}
-                    <Card isDark={isDark}>
+                    <Card>
                         <CardHeader
                             title="Fila de uploads"
                             action="Ver todos →"
                             onAction={() => navigate("/dashboard/videos")}
-                            isDark={isDark}
                         />
                         {uploadQueue.length > 0
                             ? uploadQueue.slice(0, 3).map((item, i) => (
                                 <QueueItem
                                     key={item.id || i}
                                     item={item}
-                                    isDark={isDark}
                                     onNavigate={() => navigate("/dashboard/videos")}
                                 />
                             ))
                             : (
-                                <div style={{ textAlign: "center", padding: "24px 0" }}>
-                                    <Rocket size={32} color={isDark ? "#374151" : "#d1d5db"} style={{ marginBottom: 8 }} />
-                                    <p style={{ margin: 0, fontSize: 13, color: isDark ? "#4b5563" : "#9ca3af" }}>
-                                        Nenhum vídeo na fila.{" "}
-                                        <span
-                                            onClick={() => navigate("/dashboard/videos")}
-                                            style={{ color: "#7c3aed", cursor: "pointer", fontWeight: 600 }}
-                                        >
-                                            Agendar agora →
-                                        </span>
+                                <div style={{ textAlign: "center", padding: "28px 0" }}>
+                                    <div style={{ width: 40, height: 40, borderRadius: "var(--radius-md)", background: "var(--bg-elevated)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 10px" }}>
+                                        <Rocket size={20} color="var(--text-muted)" />
+                                    </div>
+                                    <p style={{ margin: "0 0 12px", fontSize: 13, color: "var(--text-muted)", fontFamily: "var(--font-body)" }}>
+                                        Nenhum vídeo na fila
                                     </p>
+                                    <button
+                                        onClick={() => navigate("/dashboard/videos")}
+                                        className="vc-btn vc-btn-secondary vc-btn-sm"
+                                    >
+                                        Agendar agora →
+                                    </button>
                                 </div>
                             )
                         }
                     </Card>
 
-                    {/* Vídeos recentes */}
-                    <Card isDark={isDark}>
+                    {/* Publicados recentemente */}
+                    <Card>
                         <CardHeader
                             title="Publicados recentemente"
                             action="Ver analytics →"
                             onAction={() => navigate("/dashboard/analytics")}
-                            isDark={isDark}
                         />
                         {recentVideos.length > 0
                             ? recentVideos.map((v, i) => (
-                                <RecentVideo key={v.id || i} video={v} isDark={isDark} />
+                                <RecentVideoRow key={v.id || i} video={v} />
                             ))
                             : (
-                                <div style={{ textAlign: "center", padding: "24px 0" }}>
-                                    <Video size={32} color={isDark ? "#374151" : "#d1d5db"} style={{ marginBottom: 8 }} />
-                                    <p style={{ margin: 0, fontSize: 13, color: isDark ? "#4b5563" : "#9ca3af" }}>
-                                        Nenhum vídeo publicado ainda.
+                                <div style={{ textAlign: "center", padding: "28px 0" }}>
+                                    <Video size={32} color="var(--border-default)" style={{ marginBottom: 8, opacity: 0.6 }} />
+                                    <p style={{ margin: 0, fontSize: 13, color: "var(--text-muted)" }}>
+                                        Nenhum vídeo publicado ainda
                                     </p>
                                 </div>
                             )
@@ -439,54 +476,48 @@ function ConnectedDashboard({ user, state, supabase, isDark, navigate }) {
                     </Card>
                 </div>
 
-                {/* Right */}
-                <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                {/* Coluna direita */}
+                <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
 
                     {/* Próximo agendado */}
                     {nextScheduled ? (
                         <div style={{
-                            background: "linear-gradient(135deg,rgba(124,58,237,0.15),rgba(37,99,235,0.15))",
-                            border: `1px solid ${isDark ? "rgba(124,58,237,0.25)" : "#ddd6fe"}`,
-                            borderRadius: 16, padding: "18px 20px",
+                            background: "var(--accent-coral-3)",
+                            border: "1px solid rgba(232,65,42,0.2)",
+                            borderRadius: "var(--radius-lg)",
+                            padding: "16px 18px",
                         }}>
-                            <p style={{ margin: "0 0 3px", fontSize: 10, color: "#a78bfa", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.07em" }}>
-                                Próximo upload
-                            </p>
-                            <p style={{ margin: "0 0 4px", fontSize: 14, fontWeight: 700, color: isDark ? "#f3f4f6" : "#111827", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                            <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 10 }}>
+                                <div style={{ width: 5, height: 5, borderRadius: "50%", background: "var(--accent-coral)", animation: "vc-pulse 1.4s ease-in-out infinite" }} />
+                                <span className="text-label" style={{ color: "var(--accent-coral-2)", fontSize: "0.625rem" }}>
+                                    Próximo upload
+                                </span>
+                            </div>
+                            <p style={{ margin: "0 0 3px", fontSize: 13, fontWeight: 600, color: "var(--text-primary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontFamily: "var(--font-display)" }}>
                                 {nextScheduled.title}
                             </p>
-                            <p style={{ margin: "0 0 14px", fontSize: 12, color: isDark ? "#6b7280" : "#9ca3af" }}>
+                            <p style={{ margin: "0 0 14px", fontSize: 11, color: "var(--text-secondary)" }}>
+                                <Clock size={10} style={{ marginRight: 4, verticalAlign: "middle" }} />
                                 {nextScheduled.platform || "YouTube"} · {new Date(nextScheduled.scheduledAt).toLocaleString("pt-BR", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}
                             </p>
                             <button
                                 onClick={() => navigate("/dashboard/videos")}
-                                style={{
-                                    width: "100%", padding: "8px 0",
-                                    background: "rgba(124,58,237,0.25)",
-                                    border: "1px solid rgba(124,58,237,0.4)",
-                                    borderRadius: 10, color: "#a78bfa",
-                                    fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "inherit",
-                                }}
+                                className="vc-btn vc-btn-secondary vc-btn-sm"
+                                style={{ width: "100%", justifyContent: "center" }}
                             >
                                 Gerenciar uploads
                             </button>
                         </div>
                     ) : (
-                        <Card isDark={isDark}>
+                        <Card>
                             <div style={{ textAlign: "center", padding: "8px 0" }}>
-                                <Calendar size={28} color={isDark ? "#374151" : "#d1d5db"} style={{ marginBottom: 8 }} />
-                                <p style={{ margin: "0 0 10px", fontSize: 13, fontWeight: 600, color: isDark ? "#9ca3af" : "#6b7280" }}>
+                                <Calendar size={28} color="var(--border-strong)" style={{ marginBottom: 8 }} />
+                                <p style={{ margin: "0 0 10px", fontSize: 13, fontWeight: 500, color: "var(--text-muted)" }}>
                                     Sem uploads agendados
                                 </p>
                                 <button
                                     onClick={() => navigate("/dashboard/calendar")}
-                                    style={{
-                                        fontSize: 12, fontWeight: 700,
-                                        color: isDark ? "#a78bfa" : "#7c3aed",
-                                        background: isDark ? "rgba(124,58,237,0.15)" : "#f3f0ff",
-                                        border: `1px solid ${isDark ? "rgba(124,58,237,0.3)" : "#ddd6fe"}`,
-                                        borderRadius: 8, padding: "7px 14px", cursor: "pointer", fontFamily: "inherit",
-                                    }}
+                                    className="vc-btn vc-btn-secondary vc-btn-sm"
                                 >
                                     Agendar pelo calendário →
                                 </button>
@@ -495,34 +526,61 @@ function ConnectedDashboard({ user, state, supabase, isDark, navigate }) {
                     )}
 
                     {/* Insights */}
-                    <Card isDark={isDark}>
-                        <CardHeader title="Insights do canal" isDark={isDark} />
+                    <Card>
+                        <CardHeader title="Insights" />
                         {insights.map((tip, i) => (
-                            <InsightTip key={i} tip={tip} isDark={isDark} />
+                            <InsightTip key={i} tip={tip} />
                         ))}
                     </Card>
 
                     {/* Link rápido para analytics */}
                     <button
                         onClick={() => navigate("/dashboard/analytics")}
+                        className="vc-card"
                         style={{
                             display: "flex", alignItems: "center", justifyContent: "space-between",
-                            width: "100%", padding: "14px 18px",
-                            background: isDark ? "rgba(255,255,255,0.03)" : "#fafafa",
-                            border: `1px solid ${isDark ? "rgba(255,255,255,0.08)" : "#e5e7eb"}`,
-                            borderRadius: 14, cursor: "pointer", fontFamily: "inherit",
+                            width: "100%", padding: "13px 16px",
+                            background: "none", border: "1px solid var(--border-subtle)",
+                            cursor: "pointer", textAlign: "left",
                         }}
                     >
                         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                            <BarChart2 size={18} color={isDark ? "#a78bfa" : "#7c3aed"} />
-                            <span style={{ fontSize: 13, fontWeight: 600, color: isDark ? "#d1d5db" : "#374151" }}>
-                                Ver analytics completos
+                            <BarChart2 size={17} color="var(--accent-amber)" />
+                            <span style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)", fontFamily: "var(--font-display)" }}>
+                                Analytics completos
                             </span>
                         </div>
-                        <ArrowRight size={15} color={isDark ? "#6b7280" : "#9ca3af"} />
+                        <ArrowRight size={15} color="var(--text-muted)" />
+                    </button>
+
+                    {/* Atalho para Criação IA */}
+                    <button
+                        onClick={() => navigate("/dashboard/creation")}
+                        className="vc-card"
+                        style={{
+                            display: "flex", alignItems: "center", justifyContent: "space-between",
+                            width: "100%", padding: "13px 16px",
+                            background: "var(--accent-coral-3)", border: "1px solid rgba(232,65,42,0.2)",
+                            cursor: "pointer", textAlign: "left",
+                        }}
+                    >
+                        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                            <Sparkles size={17} color="var(--accent-coral-2)" />
+                            <span style={{ fontSize: 13, fontWeight: 600, color: "var(--accent-coral-2)", fontFamily: "var(--font-display)" }}>
+                                Otimizar com IA
+                            </span>
+                        </div>
+                        <ArrowRight size={15} color="var(--accent-coral-2)" />
                     </button>
                 </div>
             </div>
+
+            <style>{`
+                @keyframes vc-pulse {
+                    0%, 100% { opacity: 1; transform: scale(1); }
+                    50%       { opacity: 0.5; transform: scale(0.8); }
+                }
+            `}</style>
         </div>
     );
 }
