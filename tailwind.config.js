@@ -1,53 +1,70 @@
-module.exports = {
+/** @type {import('tailwindcss').Config} */
+export default {
   content: [
     "./index.html",
-    "./src/**/*.{js,jsx,ts,tsx}"
+    "./src/**/*.{js,ts,jsx,tsx}",
   ],
   theme: {
     extend: {
       fontFamily: {
-        sans: ['Outfit', 'sans-serif'],
+        sans: ["Inter", "ui-sans-serif", "system-ui", "sans-serif"],
+        display: ["Space Grotesk", "ui-sans-serif", "system-ui", "sans-serif"],
+        mono: ["Space Grotesk", "ui-monospace", "monospace"],
       },
       colors: {
-        // Semantic Colors for Scalability
-        surface: {
-          950: '#020617', // Deepest background (body)
-          900: '#0f172a', // Sidebar/Header
-          800: '#1e293b', // Cards
-          700: '#334155', // Borders
-          600: '#475569', // Muted text
+        // Paleta ViralCuts
+        coral: {
+          DEFAULT: "#e8412a",
+          light: "#ff5a42",
+          subtle: "rgba(232,65,42,0.12)",
         },
-        primary: {
-          DEFAULT: '#3b82f6', // Brand Blue
-          hover: '#2563eb',
-          light: '#60a5fa',
-          glow: 'rgba(59, 130, 246, 0.5)'
+        amber: {
+          DEFAULT: "#f0a500",
+          light: "#ffc12b",
+          subtle: "rgba(240,165,0,0.12)",
         },
-        success: {
-          DEFAULT: '#10b981', // Emerald
-          glow: 'rgba(16, 185, 129, 0.5)'
+        teal: {
+          DEFAULT: "#00c9a7",
+          subtle: "rgba(0,201,167,0.12)",
         },
-        // Legacy support (gradual migration)
-        viral: {
-          900: '#0f172a',
-          800: '#1e293b',
-          700: '#334155',
-          600: '#475569',
-          500: '#3b82f6',
-          400: '#60a5fa',
-          300: '#93c5fd',
-          neon: '#3b82f6',
-          pink: '#6366f1',
-        }
+      },
+      borderRadius: {
+        sm: "4px",
+        md: "8px",
+        lg: "12px",
+        xl: "16px",
       },
       animation: {
-        'shimmer': 'shimmer 2s infinite',
-        'pulse-glow': 'pulse-glow 2s ease-in-out infinite',
-        'slide-up': 'slide-up 0.3s ease-out',
-      }
+        "timeline-pulse": "vc-timeline-pulse 3s ease-in-out infinite",
+        "fade-in": "vc-fade-in 0.25s ease forwards",
+        "scale-in": "vc-scale-in 0.2s ease forwards",
+        "pulse-dot": "vc-pulse 1.4s ease-in-out infinite",
+      },
+      keyframes: {
+        "vc-timeline-pulse": {
+          "0%, 100%": { opacity: "0.6" },
+          "50%": { opacity: "1" },
+        },
+        "vc-fade-in": {
+          from: { opacity: "0", transform: "translateY(6px)" },
+          to: { opacity: "1", transform: "translateY(0)" },
+        },
+        "vc-scale-in": {
+          from: { opacity: "0", transform: "scale(0.96)" },
+          to: { opacity: "1", transform: "scale(1)" },
+        },
+        "vc-pulse": {
+          "0%, 100%": { opacity: "1", transform: "scale(1)" },
+          "50%": { opacity: "0.5", transform: "scale(0.8)" },
+        },
+      },
+      boxShadow: {
+        coral: "0 4px 20px rgba(232,65,42,0.25)",
+        amber: "0 4px 20px rgba(240,165,0,0.20)",
+        card: "0 1px 3px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,255,255,0.06)",
+        elevated: "0 4px 16px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.08)",
+      },
     },
   },
-  plugins: [
-    require("tailwindcss-animate")
-  ],
+  plugins: [],
 };

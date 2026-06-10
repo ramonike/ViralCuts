@@ -15,9 +15,8 @@ export default function LoginPage() {
     const location = useLocation();
     const { signIn, isAuthenticated } = useAuth();
     const { theme, toggleTheme } = useTheme();
-    const isDark = theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+    const isDark = theme === "dark" || (theme === "system" && window.matchMedia("(prefers-color-scheme: dark)").matches);
 
-    // Redirecionar se já estiver autenticado
     useEffect(() => {
         if (isAuthenticated) {
             const from = location.state?.from?.pathname || "/dashboard";
@@ -25,22 +24,13 @@ export default function LoginPage() {
         }
     }, [isAuthenticated, navigate, location]);
 
-    // Mensagem de sucesso vinda do registro ou reset de senha
     const successMessage = location.state?.message;
 
     const validateForm = () => {
         const errors = {};
-        
-        if (!email) {
-            errors.email = "Email é obrigatório";
-        } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-            errors.email = "Email inválido";
-        }
-        
-        if (!password) {
-            errors.password = "Senha é obrigatória";
-        }
-        
+        if (!email) errors.email = "Email é obrigatório";
+        else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) errors.email = "Email inválido";
+        if (!password) errors.password = "Senha é obrigatória";
         setFieldErrors(errors);
         return Object.keys(errors).length === 0;
     };
@@ -49,233 +39,251 @@ export default function LoginPage() {
         e?.preventDefault();
         e?.stopPropagation();
         setError("");
-        
         if (!validateForm()) return;
-
         setLoading(true);
-
         try {
-            console.log('[LoginPage] Calling signIn...');
             const result = await signIn(email, password);
-            console.log('[LoginPage] signIn result:', result);
-
             if (result.success) {
-                console.log('[LoginPage] Login successful, navigating to dashboard...');
-                // Redirecionar para a página anterior ou dashboard
                 const from = location.state?.from?.pathname || "/dashboard";
-                
-                // Usar window.location como fallback se navigate não funcionar
-                try {
-                    navigate(from, { replace: true });
-                    // Se ainda estiver na mesma página após 100ms, forçar redirect
-                    setTimeout(() => {
-                        if (window.location.pathname === '/login') {
-                            console.log('[LoginPage] Navigate failed, using window.location');
-                            window.location.href = from;
-                        }
-                    }, 100);
-                } catch (navError) {
-                    console.error('[LoginPage] Navigate error:', navError);
-                    window.location.href = from;
-                }
+                navigate(from, { replace: true });
+                setTimeout(() => {
+                    if (window.location.pathname === "/login") window.location.href = from;
+                }, 100);
             } else {
-                // Traduzir mensagens de erro comuns
-                let errorMessage = result.error;
-                if (result.error?.includes("Invalid credentials") || result.error?.includes("invalid")) {
-                    errorMessage = "Email ou senha incorretos";
-                } else if (result.error?.includes("rate limit") || result.error?.includes("Too many")) {
-                    errorMessage = "Muitas tentativas. Aguarde alguns minutos.";
-                } else if (result.error?.includes("not found")) {
-                    errorMessage = "Usuário não encontrado";
-                }
-                setError(errorMessage || "Erro ao fazer login");
+                let msg = result.error;
+                if (msg?.includes("Invalid credentials") || msg?.includes("invalid")) msg = "Email ou senha incorretos";
+                else if (msg?.includes("rate limit") || msg?.includes("Too many")) msg = "Muitas tentativas. Aguarde alguns minutos.";
+                else if (msg?.includes("not found")) msg = "Usuário não encontrado";
+                setError(msg || "Erro ao fazer login");
                 setLoading(false);
             }
         } catch (err) {
-            console.error("Login error:", err);
             setError("Erro ao conectar com o servidor. Tente novamente.");
             setLoading(false);
         }
     };
 
-    const handleKeyDown = (e) => {
-        if (e.key === "Enter") {
-            handleLogin(e);
-        }
-    };
-
     return (
-        <div className={`min-h-screen flex ${isDark ? 'bg-slate-900' : 'bg-gray-50'}`}>
-            {/* Theme Toggle Button */}
+        <div data-theme={isDark ? "dark" : "light"} style={{ minHeight: "100vh", background: "var(--bg-primary)", display: "flex" }}>
+
+            {/* Theme toggle */}
             <button
                 onClick={toggleTheme}
-                className={`fixed top-4 right-4 z-50 p-2.5 rounded-lg border transition-all ${
-                    isDark 
-                        ? 'bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-700 hover:text-white' 
-                        : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50 hover:text-gray-900 shadow-sm'
-                }`}
-                title={isDark ? 'Mudar para tema claro' : 'Mudar para tema escuro'}
+                style={{
+                    position: "fixed", top: 16, right: 16, zIndex: 50,
+                    padding: "8px",
+                    background: "var(--bg-elevated)",
+                    border: "1px solid var(--border-default)",
+                    borderRadius: "var(--radius-md)",
+                    color: "var(--text-secondary)",
+                    cursor: "pointer",
+                    transition: "all 0.15s",
+                }}
             >
-                {isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+                {isDark ? <Sun size={16} /> : <Moon size={16} />}
             </button>
 
-            {/* Lado esquerdo - Branding */}
-            <div className={`hidden lg:flex lg:w-1/2 items-center justify-center p-12 ${isDark ? 'bg-slate-800' : 'bg-white border-r border-gray-200'}`}>
-                <div className="max-w-md">
-                    <Link to="/" className={`inline-flex items-center gap-2 mb-8 transition-colors ${isDark ? 'text-slate-400 hover:text-white' : 'text-gray-500 hover:text-gray-900'}`}>
-                        <ArrowLeft className="w-4 h-4" />
-                        Voltar ao início
+            {/* ── Brand panel (desktop only) ──────────────────────── */}
+            <div style={{
+                width: "44%",
+                background: "var(--bg-secondary)",
+                borderRight: "1px solid var(--border-subtle)",
+                display: "flex",
+                flexDirection: "column",
+                padding: "48px",
+                position: "relative",
+                overflow: "hidden",
+            }}
+                className="hidden lg:flex"
+            >
+                {/* Grid decorativo — frame rate vibes */}
+                <div style={{
+                    position: "absolute", inset: 0,
+                    backgroundImage: "linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px)",
+                    backgroundSize: "40px 40px",
+                    pointerEvents: "none",
+                }} />
+                {/* Glow coral */}
+                <div style={{
+                    position: "absolute", bottom: -100, right: -100,
+                    width: 400, height: 400,
+                    background: "radial-gradient(circle, rgba(232,65,42,0.12) 0%, transparent 70%)",
+                    pointerEvents: "none",
+                }} />
+
+                {/* Conteúdo */}
+                <div style={{ position: "relative", zIndex: 1 }}>
+                    <Link to="/" style={{ display: "inline-flex", alignItems: "center", gap: 8, textDecoration: "none", marginBottom: 48 }}>
+                        <div className="vc-logo-mark">VC</div>
+                        <span style={{ fontFamily: "var(--font-display)", fontWeight: 700, fontSize: "1rem", color: "var(--text-primary)", letterSpacing: "-0.03em" }}>
+                            ViralCuts
+                        </span>
                     </Link>
-                    <h1 className={`text-4xl font-bold mb-4 ${isDark ? 'text-white' : 'text-gray-900'}`}>ViralCuts</h1>
-                    <p className={`text-lg mb-8 ${isDark ? 'text-slate-400' : 'text-gray-600'}`}>
-                        Gerencie seus vídeos, acompanhe métricas e cresça seu canal com inteligência.
+
+                    <h2 style={{
+                        fontFamily: "var(--font-display)", fontWeight: 700, fontSize: "2.25rem",
+                        color: "var(--text-primary)", letterSpacing: "-0.04em", lineHeight: 1.05,
+                        margin: "0 0 16px",
+                    }}>
+                        Distribua mais.<br />
+                        <span style={{ color: "var(--accent-coral)" }}>Edite menos.</span>
+                    </h2>
+                    <p style={{ margin: "0 0 40px", fontSize: "1rem", color: "var(--text-secondary)", lineHeight: 1.6 }}>
+                        O hub de automação e distribuição multicanais para criadores de Shorts.
                     </p>
-                    <div className="space-y-4">
-                        <div className={`flex items-center gap-3 ${isDark ? 'text-slate-300' : 'text-gray-700'}`}>
-                            <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                            <span>Upload automático para múltiplas plataformas</span>
+
+                    {/* Features list */}
+                    {[
+                        "Upload automático em lote para YouTube, TikTok e Reels",
+                        "Títulos e descrições otimizados por IA com 1 clique",
+                        "Timeline visual com horários de pico do seu canal",
+                    ].map((feat, i) => (
+                        <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 10, marginBottom: 14 }}>
+                            <div style={{
+                                width: 18, height: 18, borderRadius: 3, flexShrink: 0, marginTop: 1,
+                                background: "var(--accent-coral-3)",
+                                border: "1px solid rgba(232,65,42,0.25)",
+                                display: "flex", alignItems: "center", justifyContent: "center",
+                            }}>
+                                <div style={{ width: 4, height: 4, borderRadius: 1, background: "var(--accent-coral)" }} />
+                            </div>
+                            <span style={{ fontSize: "0.875rem", color: "var(--text-secondary)", lineHeight: 1.5 }}>{feat}</span>
                         </div>
-                        <div className={`flex items-center gap-3 ${isDark ? 'text-slate-300' : 'text-gray-700'}`}>
-                            <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                            <span>Analytics detalhados do seu canal</span>
+                    ))}
+                </div>
+
+                {/* Stat strip na base */}
+                <div style={{ position: "relative", zIndex: 1, marginTop: "auto", display: "flex", gap: 32 }}>
+                    {[["1.2K+", "Criadores"], ["50M+", "Views geradas"], ["350+", "Canais"]].map(([v, l]) => (
+                        <div key={l}>
+                            <div style={{ fontFamily: "var(--font-display)", fontWeight: 700, fontSize: "1.375rem", color: "var(--text-primary)", letterSpacing: "-0.04em" }}>{v}</div>
+                            <div style={{ fontSize: "0.6875rem", color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.06em", fontWeight: 600 }}>{l}</div>
                         </div>
-                        <div className={`flex items-center gap-3 ${isDark ? 'text-slate-300' : 'text-gray-700'}`}>
-                            <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                            <span>Agendamento inteligente de publicações</span>
-                        </div>
-                    </div>
+                    ))}
                 </div>
             </div>
 
-            {/* Lado direito - Formulário */}
-            <div className="flex-1 flex items-center justify-center p-8">
-                <div className="w-full max-w-md">
-                    {/* Mobile: Link voltar */}
-                    <Link to="/" className={`lg:hidden inline-flex items-center gap-2 mb-8 transition-colors ${isDark ? 'text-slate-400 hover:text-white' : 'text-gray-500 hover:text-gray-900'}`}>
-                        <ArrowLeft className="w-4 h-4" />
-                        Voltar
+            {/* ── Form panel ─────────────────────────────────────── */}
+            <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", padding: "48px 32px" }}>
+                <div style={{ width: "100%", maxWidth: 380 }}>
+
+                    {/* Mobile back */}
+                    <Link to="/" style={{
+                        display: "inline-flex", alignItems: "center", gap: 6,
+                        fontSize: "0.8125rem", color: "var(--text-muted)",
+                        textDecoration: "none", marginBottom: 32,
+                        fontFamily: "var(--font-body)",
+                    }} className="lg:hidden">
+                        <ArrowLeft size={14} /> Voltar
                     </Link>
 
-                    <div className="mb-8">
-                        <h2 className={`text-2xl font-bold mb-2 ${isDark ? 'text-white' : 'text-gray-900'}`}>Bem-vindo de volta</h2>
-                        <p className={isDark ? 'text-slate-400' : 'text-gray-600'}>Entre na sua conta para continuar</p>
+                    {/* Heading */}
+                    <div style={{ marginBottom: 32 }}>
+                        <h1 style={{
+                            margin: "0 0 6px", fontFamily: "var(--font-display)", fontWeight: 700,
+                            fontSize: "1.625rem", color: "var(--text-primary)", letterSpacing: "-0.03em",
+                        }}>
+                            Bem-vindo de volta
+                        </h1>
+                        <p style={{ margin: 0, fontSize: "0.9375rem", color: "var(--text-muted)" }}>
+                            Entre na sua conta para continuar
+                        </p>
                     </div>
 
-                    {/* Mensagem de sucesso */}
+                    {/* Success */}
                     {successMessage && (
-                        <div className="mb-6 p-4 bg-green-500/10 border border-green-500/20 rounded-lg">
-                            <p className="text-green-400 text-sm">{successMessage}</p>
+                        <div className="vc-toast vc-toast-teal" style={{ marginBottom: 20 }}>
+                            <p style={{ margin: 0, fontSize: "0.875rem" }}>{successMessage}</p>
                         </div>
                     )}
 
-                    {/* Mensagem de erro */}
+                    {/* Error */}
                     {error && (
-                        <div className="mb-6 p-4 bg-red-500/10 border border-red-500/20 rounded-lg flex items-start gap-3">
-                            <AlertCircle className="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5" />
-                            <p className="text-red-400 text-sm">{error}</p>
+                        <div className="vc-toast vc-toast-coral" style={{ marginBottom: 20 }}>
+                            <AlertCircle size={16} style={{ flexShrink: 0, marginTop: 1 }} />
+                            <p style={{ margin: 0, fontSize: "0.875rem" }}>{error}</p>
                         </div>
                     )}
 
-                    <form onSubmit={handleLogin} className="space-y-5">
+                    {/* Form */}
+                    <form onSubmit={handleLogin} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
                         {/* Email */}
                         <div>
-                            <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-slate-300' : 'text-gray-700'}`}>
-                                Email
-                            </label>
-                            <div className="relative">
-                                <Mail className={`absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 ${isDark ? 'text-slate-500' : 'text-gray-400'}`} />
+                            <label className="vc-label">Email</label>
+                            <div className="vc-input-wrap">
+                                <Mail size={16} className="vc-input-icon-left" />
                                 <input
                                     type="email"
                                     value={email}
-                                    onChange={(e) => {
-                                        setEmail(e.target.value);
-                                        setFieldErrors(prev => ({ ...prev, email: "" }));
-                                    }}
-                                    onKeyDown={handleKeyDown}
+                                    onChange={(e) => { setEmail(e.target.value); setFieldErrors(p => ({ ...p, email: "" })); }}
+                                    onKeyDown={(e) => e.key === "Enter" && handleLogin(e)}
                                     placeholder="seu@email.com"
-                                    className={`w-full pl-11 pr-4 py-3 border rounded-lg focus:outline-none focus:ring-2 transition-all ${
-                                        fieldErrors.email 
-                                            ? "border-red-500 focus:ring-red-500/20" 
-                                            : isDark 
-                                                ? "bg-slate-800 border-slate-700 text-white placeholder-slate-500 focus:ring-blue-500/20 focus:border-blue-500"
-                                                : "bg-white border-gray-300 text-gray-900 placeholder-gray-400 focus:ring-blue-500/20 focus:border-blue-500"
-                                    }`}
-                                    disabled={loading}
+                                    className={`vc-input has-icon-left${fieldErrors.email ? " error" : ""}`}
                                 />
                             </div>
                             {fieldErrors.email && (
-                                <p className="mt-1.5 text-sm text-red-400">{fieldErrors.email}</p>
+                                <p style={{ margin: "5px 0 0", fontSize: "0.75rem", color: "var(--accent-coral)" }}>{fieldErrors.email}</p>
                             )}
                         </div>
 
-                        {/* Senha */}
+                        {/* Password */}
                         <div>
-                            <div className="flex items-center justify-between mb-2">
-                                <label className={`block text-sm font-medium ${isDark ? 'text-slate-300' : 'text-gray-700'}`}>
-                                    Senha
-                                </label>
-                                <Link 
-                                    to="/forgot-password" 
-                                    className="text-sm text-blue-400 hover:text-blue-300 transition-colors"
-                                >
-                                    Esqueceu a senha?
+                            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
+                                <label className="vc-label" style={{ marginBottom: 0 }}>Senha</label>
+                                <Link to="/forgot-password" style={{ fontSize: "0.75rem", color: "var(--accent-coral-2)", textDecoration: "none", fontWeight: 500 }}>
+                                    Esqueceu?
                                 </Link>
                             </div>
-                            <div className="relative">
-                                <Lock className={`absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 ${isDark ? 'text-slate-500' : 'text-gray-400'}`} />
+                            <div className="vc-input-wrap">
+                                <Lock size={16} className="vc-input-icon-left" />
                                 <input
                                     type={showPassword ? "text" : "password"}
                                     value={password}
-                                    onChange={(e) => {
-                                        setPassword(e.target.value);
-                                        setFieldErrors(prev => ({ ...prev, password: "" }));
-                                    }}
-                                    onKeyDown={handleKeyDown}
+                                    onChange={(e) => { setPassword(e.target.value); setFieldErrors(p => ({ ...p, password: "" })); }}
+                                    onKeyDown={(e) => e.key === "Enter" && handleLogin(e)}
                                     placeholder="••••••••"
-                                    className={`w-full pl-11 pr-12 py-3 border rounded-lg focus:outline-none focus:ring-2 transition-all ${
-                                        fieldErrors.password 
-                                            ? "border-red-500 focus:ring-red-500/20" 
-                                            : isDark 
-                                                ? "bg-slate-800 border-slate-700 text-white placeholder-slate-500 focus:ring-blue-500/20 focus:border-blue-500"
-                                                : "bg-white border-gray-300 text-gray-900 placeholder-gray-400 focus:ring-blue-500/20 focus:border-blue-500"
-                                    }`}
-                                    disabled={loading}
+                                    className={`vc-input has-icon-left${fieldErrors.password ? " error" : ""}`}
+                                    style={{ paddingRight: 40 }}
                                 />
                                 <button
                                     type="button"
                                     onClick={() => setShowPassword(!showPassword)}
-                                    className={`absolute right-3 top-1/2 -translate-y-1/2 transition-colors ${isDark ? 'text-slate-500 hover:text-slate-300' : 'text-gray-400 hover:text-gray-600'}`}
+                                    style={{
+                                        position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)",
+                                        background: "none", border: "none", color: "var(--text-muted)", cursor: "pointer", padding: 0,
+                                    }}
                                 >
-                                    {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                                    {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                                 </button>
                             </div>
                             {fieldErrors.password && (
-                                <p className="mt-1.5 text-sm text-red-400">{fieldErrors.password}</p>
+                                <p style={{ margin: "5px 0 0", fontSize: "0.75rem", color: "var(--accent-coral)" }}>{fieldErrors.password}</p>
                             )}
                         </div>
 
-                        {/* Botão de login */}
+                        {/* Submit */}
                         <button
                             type="submit"
                             disabled={loading}
-                            className="w-full py-3 bg-blue-600 hover:bg-blue-500 disabled:bg-blue-600/50 disabled:cursor-not-allowed text-white font-medium rounded-lg transition-colors flex items-center justify-center gap-2"
+                            className="vc-btn vc-btn-primary"
+                            style={{ justifyContent: "center", marginTop: 4 }}
                         >
                             {loading ? (
-                                <>
-                                    <Loader2 className="w-5 h-5 animate-spin" />
-                                    Entrando...
-                                </>
+                                <><Loader2 size={16} style={{ animation: "spin 1s linear infinite" }} /> Entrando...</>
                             ) : (
                                 "Entrar"
                             )}
                         </button>
                     </form>
 
-                    {/* Link para cadastro */}
-                    <p className={`mt-8 text-center ${isDark ? 'text-slate-400' : 'text-gray-600'}`}>
-                        Não tem uma conta?{" "}
-                        <Link to="/register" className="text-blue-400 hover:text-blue-300 font-medium transition-colors">
-                            Criar conta
+                    {/* Divider */}
+                    <div className="vc-divider" style={{ margin: "24px 0" }}>ou</div>
+
+                    {/* Register */}
+                    <p style={{ margin: 0, textAlign: "center", fontSize: "0.875rem", color: "var(--text-muted)" }}>
+                        Não tem conta?{" "}
+                        <Link to="/register" style={{ color: "var(--accent-coral-2)", fontWeight: 600, textDecoration: "none" }}>
+                            Criar conta grátis
                         </Link>
                     </p>
                 </div>
