@@ -9,53 +9,221 @@ import { PageLayout } from "../components/layout/PageLayout";
 import { useNotification } from "../contexts/NotificationContext";
 import { useTheme } from "../contexts/ThemeContext";
 import { fetchScheduledUploads, rescheduleUpload, cancelScheduledUpload } from "../api/youtube";
-import { CalendarDays, Clock, CheckCircle2, TrendingUp, Plus } from "lucide-react";
+import {
+    CalendarDays, Clock, CheckCircle2, TrendingUp,
+    Plus, GitBranch, Video, Loader2
+} from "lucide-react";
 
-// ─── Resumo semanal ───────────────────────────────────────────────────────────
-function WeeklySummary({ queue, isDark }) {
+// ─── Stat Card do Pipeline ────────────────────────────────────────────────────
+function PipelineStat({ icon: Icon, label, value, accent = "neutral" }) {
+    return (
+        <div className={`vc-metric-card metric-${accent}`}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
+                <div style={{
+                    width: 32, height: 32, borderRadius: "var(--radius-md)",
+                    background: "var(--bg-elevated)",
+                    display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
+                }}>
+                    <Icon size={15} style={{
+                        color: accent === "coral" ? "var(--accent-coral)"
+                            : accent === "amber" ? "var(--accent-amber)"
+                                : accent === "teal" ? "var(--accent-teal)"
+                                    : "var(--text-muted)"
+                    }} />
+                </div>
+                <span className="vc-metric-label" style={{ marginBottom: 0 }}>{label}</span>
+            </div>
+            <div className="vc-metric-value">{value}</div>
+        </div>
+    );
+}
+
+// ─── Fila lateral redesenhada ─────────────────────────────────────────────────
+function QueueSidebar({ queue, onScheduleNow, loadingScheduled }) {
     const now = new Date();
-    const startOfWeek = new Date(now);
-    startOfWeek.setDate(now.getDate() - now.getDay());
-    startOfWeek.setHours(0, 0, 0, 0);
-    const endOfWeek = new Date(startOfWeek);
-    endOfWeek.setDate(startOfWeek.getDate() + 7);
 
-    const thisWeek = queue.filter(v => {
-        const d = new Date(v.scheduledAt || v.publishAt);
-        return d >= startOfWeek && d < endOfWeek;
-    });
+    const upcoming = queue
+        .filter(v => {
+            const d = new Date(v.scheduledAt || v.publishAt);
+            return d > now && v.status !== "done" && v.status !== "success" && v.status !== "published";
+        })
+        .sort((a, b) => new Date(a.scheduledAt || a.publishAt) - new Date(b.scheduledAt || b.publishAt));
 
-    const posted = queue.filter(v => v.status === "done" || v.status === "success" || v.status === "published");
-    const upcoming = queue.filter(v => {
-        const d = new Date(v.scheduledAt || v.publishAt);
-        return d > now && v.status !== "done" && v.status !== "success";
-    });
-    const today = queue.filter(v => {
-        const d = new Date(v.scheduledAt || v.publishAt);
-        const t = new Date();
-        return d.toDateString() === t.toDateString();
-    });
+    const posted = queue.filter(v =>
+        v.status === "done" || v.status === "success" || v.status === "published"
+    );
 
-    const items = [
-        { icon: <CalendarDays className="w-4 h-4 text-primary" />, label: "Esta semana", value: thisWeek.length, bg: "bg-primary/10 border-primary/20" },
-        { icon: <Clock className="w-4 h-4 text-amber-400" />, label: "Hoje", value: today.length, bg: "bg-amber-500/10 border-amber-500/20" },
-        { icon: <TrendingUp className="w-4 h-4 text-blue-400" />, label: "Próximos", value: upcoming.length, bg: "bg-blue-500/10 border-blue-500/20" },
-        { icon: <CheckCircle2 className="w-4 h-4 text-green-400" />, label: "Publicados", value: posted.length, bg: "bg-green-500/10 border-green-500/20" },
-    ];
+    const [tab, setTab] = useState("upcoming");
+
+    const items = tab === "upcoming" ? upcoming : posted;
+
+    const platformDot = (p = "") => {
+        const s = p.toLowerCase();
+        if (s.includes("youtube")) return "youtube";
+        if (s.includes("tiktok")) return "tiktok";
+        if (s.includes("instagram")) return "instagram";
+        return "online";
+    };
 
     return (
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
-            {items.map((item, i) => (
-                <div key={i} className={`rounded-xl border px-4 py-3 flex items-center gap-3 ${item.bg} ${isDark ? "" : "bg-opacity-50"}`}>
-                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${isDark ? "bg-surface-800/60" : "bg-white/60"}`}>
-                        {item.icon}
+        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            {/* CTA Agendar */}
+            <button
+                onClick={onScheduleNow}
+                className="vc-btn vc-btn-primary"
+                style={{ width: "100%", justifyContent: "center" }}
+            >
+                <Plus size={15} /> Agendar vídeo agora
+            </button>
+
+            {/* Painel de fila */}
+            <div className="vc-card">
+                {/* Header */}
+                <div style={{
+                    padding: "14px 16px 0",
+                    display: "flex", alignItems: "center", justifyContent: "space-between",
+                    marginBottom: 12,
+                }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                        <GitBranch size={14} style={{ color: "var(--accent-coral)" }} />
+                        <span className="vc-metric-label" style={{ marginBottom: 0 }}>
+                            Fila de uploads
+                        </span>
                     </div>
-                    <div>
-                        <p className={`text-xl font-black ${isDark ? "text-white" : "text-gray-900"}`}>{item.value}</p>
-                        <p className={`text-[11px] ${isDark ? "text-slate-500" : "text-gray-500"}`}>{item.label}</p>
-                    </div>
+                    <span className="vc-badge vc-badge-muted">
+                        {queue.length} {queue.length === 1 ? "item" : "itens"}
+                    </span>
                 </div>
-            ))}
+
+                {/* Tabs */}
+                <div style={{
+                    display: "flex", gap: 4,
+                    padding: "0 12px 12px",
+                    borderBottom: "1px solid var(--border-subtle)",
+                }}>
+                    {[
+                        { key: "upcoming", label: "Próximos", count: upcoming.length },
+                        { key: "posted", label: "Postados", count: posted.length },
+                    ].map(t => (
+                        <button
+                            key={t.key}
+                            onClick={() => setTab(t.key)}
+                            style={{
+                                flex: 1, padding: "6px 8px",
+                                borderRadius: "var(--radius-sm)",
+                                background: tab === t.key ? "var(--accent-coral-3)" : "transparent",
+                                border: `1px solid ${tab === t.key ? "rgba(232,65,42,0.2)" : "transparent"}`,
+                                color: tab === t.key ? "var(--accent-coral-2)" : "var(--text-muted)",
+                                fontSize: "0.75rem", fontWeight: 600,
+                                fontFamily: "var(--font-display)",
+                                cursor: "pointer", transition: "all 0.15s",
+                                letterSpacing: "-0.01em",
+                            }}
+                        >
+                            {t.label}
+                            {t.count > 0 && (
+                                <span style={{
+                                    marginLeft: 5, fontSize: "0.625rem",
+                                    background: tab === t.key ? "var(--accent-coral)" : "var(--bg-elevated)",
+                                    color: tab === t.key ? "#fff" : "var(--text-muted)",
+                                    padding: "1px 5px", borderRadius: 10, fontWeight: 700,
+                                }}>{t.count}</span>
+                            )}
+                        </button>
+                    ))}
+                </div>
+
+                {/* Lista */}
+                <div style={{ padding: "10px 12px 14px", minHeight: 160 }}>
+                    {loadingScheduled ? (
+                        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: "32px 0" }}>
+                            <Loader2 size={20} style={{ color: "var(--text-muted)", animation: "spin 1s linear infinite" }} />
+                        </div>
+                    ) : items.length > 0 ? (
+                        items.slice(0, 6).map((item, i) => {
+                            const statusMap = {
+                                agendado: "vc-badge-coral",
+                                scheduled: "vc-badge-coral",
+                                publicando: "vc-badge-amber",
+                                processing: "vc-badge-amber",
+                                done: "vc-badge-teal",
+                                success: "vc-badge-teal",
+                                published: "vc-badge-teal",
+                                error: "vc-badge-coral",
+                            };
+                            const badgeClass = statusMap[item.status] || "vc-badge-muted";
+                            const dot = platformDot(item.platform);
+
+                            return (
+                                <div key={item.id || i} style={{
+                                    display: "flex", alignItems: "center", gap: 10,
+                                    padding: "9px 10px",
+                                    borderRadius: "var(--radius-md)",
+                                    background: "var(--bg-tertiary)",
+                                    border: "1px solid var(--border-subtle)",
+                                    marginBottom: i < items.length - 1 ? 7 : 0,
+                                }}>
+                                    <div style={{
+                                        width: 32, height: 18, borderRadius: 3, flexShrink: 0,
+                                        background: "var(--bg-elevated)",
+                                        display: "flex", alignItems: "center", justifyContent: "center",
+                                    }}>
+                                        <Video size={12} style={{ color: "var(--text-muted)" }} />
+                                    </div>
+                                    <div style={{ flex: 1, minWidth: 0 }}>
+                                        <p style={{
+                                            margin: 0, fontSize: "0.8125rem", fontWeight: 600,
+                                            fontFamily: "var(--font-display)",
+                                            color: "var(--text-primary)",
+                                            overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+                                            letterSpacing: "-0.01em",
+                                        }}>
+                                            {item.title || "Sem título"}
+                                        </p>
+                                        <div style={{ display: "flex", alignItems: "center", gap: 5, marginTop: 2 }}>
+                                            <div className={`vc-platform-dot ${dot}`} />
+                                            <span style={{ fontSize: "0.6875rem", color: "var(--text-muted)" }}>
+                                                {item.scheduledAt
+                                                    ? new Date(item.scheduledAt).toLocaleString("pt-BR", {
+                                                        day: "2-digit", month: "short",
+                                                        hour: "2-digit", minute: "2-digit",
+                                                    })
+                                                    : "—"
+                                                }
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <span className={`vc-badge ${badgeClass}`} style={{ flexShrink: 0, fontSize: "0.5625rem" }}>
+                                        {item.status === "done" || item.status === "success" || item.status === "published"
+                                            ? "Publicado"
+                                            : item.status === "processing" || item.status === "publicando"
+                                                ? "Enviando"
+                                                : "Agendado"
+                                        }
+                                    </span>
+                                </div>
+                            );
+                        })
+                    ) : (
+                        <div style={{ textAlign: "center", padding: "28px 0" }}>
+                            <div style={{
+                                width: 40, height: 40, borderRadius: "var(--radius-md)",
+                                background: "var(--bg-elevated)",
+                                display: "flex", alignItems: "center", justifyContent: "center",
+                                margin: "0 auto 12px",
+                            }}>
+                                <CalendarDays size={18} style={{ color: "var(--text-muted)" }} />
+                            </div>
+                            <p style={{ margin: "0 0 4px", fontSize: "0.875rem", fontWeight: 600, color: "var(--text-secondary)" }}>
+                                {tab === "upcoming" ? "Nenhum vídeo agendado" : "Nenhum publicado ainda"}
+                            </p>
+                            <p style={{ margin: 0, fontSize: "0.75rem", color: "var(--text-muted)" }}>
+                                {tab === "upcoming" ? "Clique em Agendar vídeo agora" : "Os publicados aparecerão aqui"}
+                            </p>
+                        </div>
+                    )}
+                </div>
+            </div>
         </div>
     );
 }
@@ -68,14 +236,14 @@ export default function CalendarPage() {
     const { theme } = useTheme();
     const isDark = theme === "dark" || (theme === "system" && window.matchMedia("(prefers-color-scheme: dark)").matches);
 
-    const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
+    const [isScheduleModalOpen, setScheduleModalOpen] = useState(false);
     const [selectedScheduleDate, setSelectedScheduleDate] = useState(null);
     const [selectedVideo, setSelectedVideo] = useState(null);
-    const [isVideoModalOpen, setIsVideoModalOpen] = useState(false);
+    const [isVideoModalOpen, setVideoModalOpen] = useState(false);
     const [scheduledUploads, setScheduledUploads] = useState([]);
     const [loadingScheduled, setLoadingScheduled] = useState(false);
 
-    // Carrega uploads agendados do backend
+    // ── Carregar do backend ────────────────────────────────────────────────────
     const loadScheduledUploads = useCallback(async () => {
         if (!supabase.user) return;
         setLoadingScheduled(true);
@@ -102,14 +270,41 @@ export default function CalendarPage() {
 
     useEffect(() => { loadScheduledUploads(); }, [loadScheduledUploads]);
 
-    // Fila combinada: backend + local (sem duplicatas)
+    // ── Fila combinada: backend + local (sem duplicatas) ──────────────────────
     const combinedQueue = useMemo(() => {
         const localQueue = supabase.user ? supabase.uploadQueue : state.uploadQueue;
         const backendIds = new Set(scheduledUploads.map(u => u.id));
         return [...scheduledUploads, ...localQueue.filter(item => !backendIds.has(item.id))];
     }, [supabase.user, supabase.uploadQueue, state.uploadQueue, scheduledUploads]);
 
-    // Actions híbridas
+    // ── Stats derivadas ────────────────────────────────────────────────────────
+    const now = new Date();
+    const startOfWeek = new Date(now);
+    startOfWeek.setDate(now.getDate() - now.getDay());
+    startOfWeek.setHours(0, 0, 0, 0);
+    const endOfWeek = new Date(startOfWeek);
+    endOfWeek.setDate(startOfWeek.getDate() + 7);
+
+    const statsWeek = combinedQueue.filter(v => {
+        const d = new Date(v.scheduledAt || v.publishAt);
+        return d >= startOfWeek && d < endOfWeek;
+    }).length;
+
+    const statsToday = combinedQueue.filter(v => {
+        const d = new Date(v.scheduledAt || v.publishAt);
+        return d.toDateString() === now.toDateString();
+    }).length;
+
+    const statsUpcoming = combinedQueue.filter(v => {
+        const d = new Date(v.scheduledAt || v.publishAt);
+        return d > now && v.status !== "done" && v.status !== "success" && v.status !== "published";
+    }).length;
+
+    const statsPosted = combinedQueue.filter(v =>
+        v.status === "done" || v.status === "success" || v.status === "published"
+    ).length;
+
+    // ── Actions híbridas ──────────────────────────────────────────────────────
     const hybridActions = {
         ...actions,
         addToUploadQueue: async (item) => {
@@ -132,18 +327,13 @@ export default function CalendarPage() {
 
     const handleScheduleVideo = (date) => {
         setSelectedScheduleDate(date);
-        setIsScheduleModalOpen(true);
+        setScheduleModalOpen(true);
     };
 
     const handleScheduleSubmit = async (videoData) => {
         await hybridActions.addToUploadQueue(videoData);
-        setIsScheduleModalOpen(false);
+        setScheduleModalOpen(false);
         setSelectedScheduleDate(null);
-    };
-
-    const handleEditVideo = (video) => {
-        setSelectedVideo(video);
-        setIsVideoModalOpen(true);
     };
 
     const handleRescheduleVideo = async (videoId, newScheduledAt) => {
@@ -151,9 +341,7 @@ export default function CalendarPage() {
             await rescheduleUpload(videoId, newScheduledAt);
             await loadScheduledUploads();
             success("Vídeo reagendado com sucesso!");
-        } catch {
-            showError("Erro ao reagendar vídeo");
-        }
+        } catch { showError("Erro ao reagendar vídeo"); }
     };
 
     const handleDeleteVideo = async (videoId) => {
@@ -163,9 +351,7 @@ export default function CalendarPage() {
                 await cancelScheduledUpload(videoId);
                 await loadScheduledUploads();
                 success("Agendamento cancelado com sucesso!");
-            } catch {
-                showError("Erro ao cancelar agendamento");
-            }
+            } catch { showError("Erro ao cancelar agendamento"); }
         } else {
             const queueItem = (supabase.user ? supabase.uploadQueue : state.uploadQueue).find(i => i.id === videoId);
             if (queueItem) {
@@ -181,55 +367,108 @@ export default function CalendarPage() {
     };
 
     return (
-        <PageLayout
-            title="Calendário"
-            subtitle="Agende publicações e acompanhe seu histórico de posts."
-            maxWidth="7xl"
-        >
-            {/* Resumo semanal */}
-            <WeeklySummary queue={combinedQueue} isDark={isDark} />
+        <PageLayout maxWidth="7xl" spacing="standard">
 
-            {/* Grid principal */}
-            <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-
-                {/* Calendário — 2/3 da tela */}
-                <div className="xl:col-span-2">
-                    <ModernCalendar
-                        history={supabase.user ? supabase.history : state.history}
-                        uploadQueue={combinedQueue}
-                        onScheduleVideo={handleScheduleVideo}
-                        onEditVideo={handleEditVideo}
-                        onDeleteVideo={handleDeleteVideo}
-                        onViewVideo={(video) => { setSelectedVideo(video); setIsVideoModalOpen(true); }}
-                        loading={loadingScheduled}
-                    />
+            {/* ── Page header ───────────────────────────────────── */}
+            <div style={{
+                display: "flex", alignItems: "flex-end",
+                justifyContent: "space-between", flexWrap: "wrap",
+                gap: 12, marginBottom: 20,
+            }}>
+                <div>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+                        <GitBranch size={18} style={{ color: "var(--accent-coral)" }} />
+                        <h1 style={{
+                            margin: 0,
+                            fontFamily: "var(--font-display)", fontWeight: 700,
+                            fontSize: "1.875rem", letterSpacing: "-0.035em",
+                            color: "var(--text-primary)", lineHeight: 1,
+                        }}>
+                            Pipeline
+                        </h1>
+                    </div>
+                    <p style={{ margin: 0, fontSize: "0.9375rem", color: "var(--text-muted)" }}>
+                        Agendamento e distribuição multicanal dos seus Shorts
+                    </p>
                 </div>
 
-                {/* Fila de uploads — 1/3 da tela */}
-                <div className="xl:col-span-1">
-                    {/* Botão de agendar rápido */}
-                    <button
-                        onClick={() => { setSelectedScheduleDate(new Date()); setIsScheduleModalOpen(true); }}
-                        className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-primary hover:bg-primary/90 text-white text-sm font-bold transition-colors mb-4"
-                    >
-                        <Plus className="w-4 h-4" />
-                        Agendar vídeo agora
-                    </button>
-
-                    {/* Fila — sem passar isLoading do supabase (causa skeleton infinito) */}
-                    <UploadQueuePanel
-                        uploadQueue={combinedQueue}
-                        markQueueStatus={hybridActions.markQueueStatus}
-                        removeQueueItem={hybridActions.removeQueueItem}
-                        isLoading={loadingScheduled}
-                    />
-                </div>
+                <button
+                    onClick={() => { setSelectedScheduleDate(new Date()); setScheduleModalOpen(true); }}
+                    className="vc-btn vc-btn-primary"
+                >
+                    <Plus size={15} /> Agendar vídeo
+                </button>
             </div>
 
-            {/* Modais */}
+            {/* ── Stats ─────────────────────────────────────────── */}
+            <div className="vc-grid-metrics" style={{ marginBottom: 20 }}>
+                <PipelineStat icon={CalendarDays} label="Esta semana" value={statsWeek} accent="coral" />
+                <PipelineStat icon={Clock} label="Hoje" value={statsToday} accent="amber" />
+                <PipelineStat icon={TrendingUp} label="Próximos" value={statsUpcoming} accent="neutral" />
+                <PipelineStat icon={CheckCircle2} label="Publicados" value={statsPosted} accent="teal" />
+            </div>
+
+            {/* ── Grid principal ─────────────────────────────────── */}
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 300px", gap: 20, alignItems: "start" }}>
+
+                {/* Calendário — mantém componente existente, envolto em card */}
+                <div className="vc-card" style={{ overflow: "hidden", padding: 0 }}>
+                    {/* Cabeçalho do card */}
+                    <div style={{
+                        padding: "14px 20px",
+                        borderBottom: "1px solid var(--border-subtle)",
+                        display: "flex", alignItems: "center", justifyContent: "space-between",
+                        position: "relative",
+                    }}>
+                        {/* Traço coral no topo */}
+                        <div style={{
+                            position: "absolute", top: 0, left: 0, right: 0,
+                            height: 2, background: "var(--accent-coral)",
+                        }} />
+                        <div>
+                            <span className="vc-metric-label" style={{ marginBottom: 2 }}>Calendário</span>
+                            <p style={{ margin: 0, fontSize: "0.75rem", color: "var(--text-muted)" }}>
+                                Agendamentos e histórico
+                            </p>
+                        </div>
+                        <div style={{ display: "flex", gap: 12, fontSize: "0.6875rem", color: "var(--text-muted)" }}>
+                            <span style={{ display: "flex", alignItems: "center", gap: 5 }}>
+                                <div style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--accent-teal)" }} />
+                                Publicado
+                            </span>
+                            <span style={{ display: "flex", alignItems: "center", gap: 5 }}>
+                                <div style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--accent-coral)" }} />
+                                Agendado
+                            </span>
+                        </div>
+                    </div>
+
+                    {/* ModernCalendar — preservado sem alterações */}
+                    <div style={{ padding: "0 4px 4px" }}>
+                        <ModernCalendar
+                            history={supabase.user ? supabase.history : state.history}
+                            uploadQueue={combinedQueue}
+                            onScheduleVideo={handleScheduleVideo}
+                            onEditVideo={(video) => { setSelectedVideo(video); setVideoModalOpen(true); }}
+                            onDeleteVideo={handleDeleteVideo}
+                            onViewVideo={(video) => { setSelectedVideo(video); setVideoModalOpen(true); }}
+                            loading={loadingScheduled}
+                        />
+                    </div>
+                </div>
+
+                {/* Sidebar — fila redesenhada */}
+                <QueueSidebar
+                    queue={combinedQueue}
+                    onScheduleNow={() => { setSelectedScheduleDate(new Date()); setScheduleModalOpen(true); }}
+                    loadingScheduled={loadingScheduled}
+                />
+            </div>
+
+            {/* ── Modais ─────────────────────────────────────────── */}
             <ScheduleVideoModal
                 isOpen={isScheduleModalOpen}
-                onClose={() => { setIsScheduleModalOpen(false); setSelectedScheduleDate(null); }}
+                onClose={() => { setScheduleModalOpen(false); setSelectedScheduleDate(null); }}
                 selectedDate={selectedScheduleDate}
                 onSchedule={handleScheduleSubmit}
             />
@@ -237,7 +476,7 @@ export default function CalendarPage() {
             <VideoDetailModal
                 video={selectedVideo}
                 isOpen={isVideoModalOpen}
-                onClose={() => { setIsVideoModalOpen(false); setSelectedVideo(null); }}
+                onClose={() => { setVideoModalOpen(false); setSelectedVideo(null); }}
                 onReschedule={handleRescheduleVideo}
                 onDelete={handleDeleteVideo}
                 onEdit={actions.updateVideoMetadata}
