@@ -1,37 +1,24 @@
 import React, { useState, useRef, useMemo } from 'react';
-import { 
-    X, 
-    Calendar, 
-    Clock, 
-    Upload, 
-    Video, 
-    Settings, 
-    Eye,
-    EyeOff,
-    Globe,
-    Lock,
-    Sparkles,
-    FileVideo,
-    Trash2,
-    AlertCircle,
-    MapPin
+import {
+    X, Clock, Upload, Video, Settings, Eye, EyeOff,
+    Globe, Lock, Sparkles, FileVideo, Trash2, AlertCircle,
+    MapPin, Loader2, CheckCircle, Zap, Calendar
 } from 'lucide-react';
-import { Button } from '../ui/button';
-import { Input } from '../ui/input';
+
+// ─── Dados ────────────────────────────────────────────────────────────────────
 
 const PLATFORMS = [
-    { id: 'youtube-shorts', name: 'YouTube Shorts', icon: '🎬', color: 'from-red-500 to-red-600' },
-    { id: 'tiktok', name: 'TikTok', icon: '🎵', color: 'from-pink-500 to-purple-600' },
-    { id: 'instagram-reels', name: 'Instagram Reels', icon: '📸', color: 'from-purple-500 to-pink-500' }
+    { id: 'youtube-shorts', name: 'YouTube Shorts', dot: 'youtube' },
+    { id: 'tiktok', name: 'TikTok', dot: 'tiktok' },
+    { id: 'instagram-reels', name: 'Instagram Reels', dot: 'instagram' },
 ];
 
 const PRIVACY_OPTIONS = [
-    { value: 'public', label: 'Público', icon: Globe, description: 'Visível para todos' },
-    { value: 'unlisted', label: 'Não listado', icon: EyeOff, description: 'Apenas com link' },
-    { value: 'private', label: 'Privado', icon: Lock, description: 'Apenas você' }
+    { value: 'public', label: 'Público', icon: Globe, desc: 'Visível para todos' },
+    { value: 'unlisted', label: 'Não listado', icon: EyeOff, desc: 'Apenas com link' },
+    { value: 'private', label: 'Privado', icon: Lock, desc: 'Apenas você' },
 ];
 
-// Common timezones for Brazil and international users
 const TIMEZONES = [
     { value: 'America/Sao_Paulo', label: 'Brasília (BRT)', offset: '-03:00' },
     { value: 'America/Manaus', label: 'Manaus (AMT)', offset: '-04:00' },
@@ -43,500 +30,631 @@ const TIMEZONES = [
     { value: 'Asia/Tokyo', label: 'Tóquio (JST)', offset: '+09:00' },
 ];
 
-/**
- * Get the user's local timezone
- */
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+
 function getLocalTimezone() {
     const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
-    const found = TIMEZONES.find(t => t.value === tz);
-    return found ? tz : 'America/Sao_Paulo';
+    return TIMEZONES.find(t => t.value === tz) ? tz : 'America/Sao_Paulo';
 }
 
-/**
- * Validate if a date/time is in the future
- */
-function isValidFutureDateTime(date, time, timezone) {
-    const dateTimeStr = `${date}T${time}:00`;
-    const scheduledDate = new Date(dateTimeStr);
-    const now = new Date();
-    
-    // Add 5 minutes buffer for processing
-    const minTime = new Date(now.getTime() + 5 * 60 * 1000);
-    
-    return scheduledDate > minTime;
+function isValidFuture(date, time) {
+    const dt = new Date(`${date}T${time}:00`);
+    return dt > new Date(Date.now() + 5 * 60 * 1000);
 }
 
-/**
- * Format date for display
- */
-function formatScheduledDateTime(date, time, timezone) {
-    const dateTimeStr = `${date}T${time}:00`;
-    const scheduledDate = new Date(dateTimeStr);
-    
-    return scheduledDate.toLocaleString('pt-BR', {
-        weekday: 'long',
-        day: 'numeric',
-        month: 'long',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-        timeZone: timezone,
+function formatDateTime(date, time, tz) {
+    return new Date(`${date}T${time}:00`).toLocaleString('pt-BR', {
+        weekday: 'long', day: 'numeric', month: 'long',
+        hour: '2-digit', minute: '2-digit', timeZone: tz,
     });
 }
+
+// ─── Sub-componentes ──────────────────────────────────────────────────────────
+
+function SectionLabel({ children }) {
+    return (
+        <div className="vc-metric-label" style={{ marginBottom: 8 }}>{children}</div>
+    );
+}
+
+function ModalInput({ value, onChange, placeholder, className = '', style = {} }) {
+    return (
+        <input
+            value={value}
+            onChange={onChange}
+            placeholder={placeholder}
+            className={`vc-input ${className}`}
+            style={style}
+        />
+    );
+}
+
+// ─── AI Generate Button ───────────────────────────────────────────────────────
+
+function AIGenerateButton({ onClick, loading, disabled }) {
+    return (
+        <button
+            type="button"
+            onClick={onClick}
+            disabled={disabled || loading}
+            style={{
+                display: 'inline-flex', alignItems: 'center', gap: 6,
+                padding: '5px 12px',
+                background: loading ? 'var(--bg-elevated)' : 'var(--accent-coral-3)',
+                border: '1px solid rgba(232,65,42,0.25)',
+                borderRadius: 'var(--radius-sm)',
+                color: loading ? 'var(--text-muted)' : 'var(--accent-coral-2)',
+                fontSize: '0.6875rem', fontWeight: 600,
+                fontFamily: 'var(--font-display)',
+                letterSpacing: '0.04em', textTransform: 'uppercase',
+                cursor: disabled || loading ? 'not-allowed' : 'pointer',
+                transition: 'all 0.15s',
+                opacity: disabled ? 0.45 : 1,
+            }}
+        >
+            {loading
+                ? <><Loader2 size={11} style={{ animation: 'spin 1s linear infinite' }} /> Gerando...</>
+                : <><Zap size={11} /> Otimizar com IA</>
+            }
+        </button>
+    );
+}
+
+// ─── Main Modal ───────────────────────────────────────────────────────────────
 
 export function ScheduleVideoModal({ isOpen, onClose, selectedDate, onSchedule }) {
-    const [formData, setFormData] = useState({
-        title: '',
-        description: '',
-        platform: 'youtube-shorts',
-        privacyStatus: 'public',
+    const emptyForm = {
+        title: '', description: '', tags: '',
+        platform: 'youtube-shorts', privacyStatus: 'public',
         scheduledDate: selectedDate || new Date().toISOString().split('T')[0],
-        scheduledTime: '12:00',
-        timezone: getLocalTimezone(),
-        useNativeScheduling: true,
-        tags: '',
-        file: null
-    });
-    
+        scheduledTime: '12:00', timezone: getLocalTimezone(),
+        useNativeScheduling: true, file: null,
+    };
+
+    const [form, setForm] = useState(emptyForm);
     const [dragActive, setDragActive] = useState(false);
-    const [validationError, setValidationError] = useState(null);
-    const fileInputRef = useRef(null);
+    const [validationErr, setValidErr] = useState('');
+    const [aiLoading, setAiLoading] = useState(false);
+    // Track which step is active for guided flow
+    const [step, setStep] = useState(1); // 1=arquivo 2=metadados 3=agendamento
+    const fileRef = useRef(null);
 
-    // Update scheduled date when selectedDate prop changes
-    React.useEffect(() => {
-        if (selectedDate) {
-            setFormData(prev => ({ ...prev, scheduledDate: selectedDate }));
-        }
-    }, [selectedDate]);
-
-    // Validate scheduled time whenever date/time changes
-    const isScheduleValid = useMemo(() => {
-        return isValidFutureDateTime(
-            formData.scheduledDate, 
-            formData.scheduledTime, 
-            formData.timezone
-        );
-    }, [formData.scheduledDate, formData.scheduledTime, formData.timezone]);
-
-    // Get minimum date (today)
-    const minDate = useMemo(() => {
-        return new Date().toISOString().split('T')[0];
-    }, []);
-
-    // Get maximum date (1 year from now - YouTube limit)
+    const minDate = useMemo(() => new Date().toISOString().split('T')[0], []);
     const maxDate = useMemo(() => {
-        const max = new Date();
-        max.setFullYear(max.getFullYear() + 1);
-        return max.toISOString().split('T')[0];
+        const d = new Date(); d.setFullYear(d.getFullYear() + 1);
+        return d.toISOString().split('T')[0];
     }, []);
+
+    React.useEffect(() => {
+        if (selectedDate) setForm(p => ({ ...p, scheduledDate: selectedDate }));
+    }, [selectedDate]);
 
     if (!isOpen) return null;
 
-    const handleInputChange = (field, value) => {
-        setFormData(prev => ({ ...prev, [field]: value }));
-        setValidationError(null);
+    const set = (field, value) => {
+        setForm(p => ({ ...p, [field]: value }));
+        setValidErr('');
     };
 
-    const handleFileSelect = (file) => {
-        if (file && file.type.startsWith('video/')) {
-            setFormData(prev => ({
-                ...prev,
-                file,
-                title: prev.title || file.name.replace(/\.[^/.]+$/, '')
-            }));
+    const handleFile = (file) => {
+        if (file?.type.startsWith('video/')) {
+            setForm(p => ({ ...p, file, title: p.title || file.name.replace(/\.[^/.]+$/, '') }));
+            setStep(2); // avança passo ao escolher arquivo
         }
     };
 
-    const handleDrop = (e) => {
-        e.preventDefault();
-        setDragActive(false);
-        const file = e.dataTransfer.files[0];
-        handleFileSelect(file);
+    // Simula chamada de IA — substituir pelo hook real quando disponível
+    const handleAIGenerate = async () => {
+        if (!form.title && !form.file) return;
+        setAiLoading(true);
+        await new Promise(r => setTimeout(r, 1200));
+        const topic = form.title || form.file?.name?.replace(/\.[^/.]+$/, '') || 'vídeo';
+        setForm(p => ({
+            ...p,
+            description: `Descubra tudo sobre ${topic}! Neste vídeo você vai aprender os principais pontos e dicas exclusivas. Não esqueça de curtir e se inscrever! 🔥`,
+            tags: `${topic}, dicas, tutorial, viral, shorts`,
+        }));
+        setAiLoading(false);
     };
 
-    const handleDragOver = (e) => {
-        e.preventDefault();
-        setDragActive(true);
-    };
-
-    const handleDragLeave = (e) => {
-        e.preventDefault();
-        setDragActive(false);
-    };
+    const isScheduleValid = isValidFuture(form.scheduledDate, form.scheduledTime);
 
     const handleSubmit = () => {
-        if (!formData.title || (!formData.file && formData.platform === 'youtube-shorts')) {
-            setValidationError('Preencha todos os campos obrigatórios');
-            return;
-        }
+        if (!form.title) { setValidErr('Título é obrigatório'); return; }
+        if (!form.file && form.platform === 'youtube-shorts') { setValidErr('Selecione um arquivo de vídeo'); return; }
+        if (!isScheduleValid) { setValidErr('O horário deve ser pelo menos 5 minutos no futuro'); return; }
 
-        if (!isScheduleValid) {
-            setValidationError('O horário agendado deve ser no futuro (mínimo 5 minutos)');
-            return;
-        }
-
-        // Create scheduled date/time in the selected timezone
-        const scheduledDateTime = new Date(`${formData.scheduledDate}T${formData.scheduledTime}:00`);
-        
+        const dt = new Date(`${form.scheduledDate}T${form.scheduledTime}:00`);
         onSchedule({
-            title: formData.title,
-            description: formData.description,
-            platform: formData.platform,
-            scheduledAt: scheduledDateTime.toISOString(),
-            publishAt: formData.useNativeScheduling ? scheduledDateTime.toISOString() : null,
-            privacyStatus: formData.privacyStatus,
-            tags: formData.tags.split(',').map(tag => tag.trim()).filter(Boolean),
-            file: formData.file,
-            timezone: formData.timezone,
-            source: 'scheduled'
+            title: form.title, description: form.description,
+            platform: form.platform, scheduledAt: dt.toISOString(),
+            publishAt: form.useNativeScheduling ? dt.toISOString() : null,
+            privacyStatus: form.privacyStatus,
+            tags: form.tags.split(',').map(t => t.trim()).filter(Boolean),
+            file: form.file, timezone: form.timezone, source: 'scheduled',
         });
-
-        // Reset form
-        setFormData({
-            title: '',
-            description: '',
-            platform: 'youtube-shorts',
-            privacyStatus: 'public',
-            scheduledDate: new Date().toISOString().split('T')[0],
-            scheduledTime: '12:00',
-            timezone: getLocalTimezone(),
-            useNativeScheduling: true,
-            tags: '',
-            file: null
-        });
-        setValidationError(null);
-        
+        setForm(emptyForm);
+        setStep(1);
+        setValidErr('');
         onClose();
     };
 
-    const selectedPlatform = PLATFORMS.find(p => p.id === formData.platform);
-    const selectedPrivacy = PRIVACY_OPTIONS.find(p => p.value === formData.privacyStatus);
-    const selectedTimezone = TIMEZONES.find(t => t.value === formData.timezone);
+    // Steps config
+    const STEPS = [
+        { num: 1, label: 'Arquivo' },
+        { num: 2, label: 'Metadados' },
+        { num: 3, label: 'Agendamento' },
+    ];
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm animate-in fade-in duration-300">
-            <div className="bg-gradient-to-br from-slate-900 to-slate-800 border border-slate-600/50 rounded-2xl shadow-2xl w-full max-w-2xl max-h-[85vh] overflow-hidden animate-in zoom-in-95 duration-300 m-4">
-                {/* Header */}
-                <div className="bg-gradient-to-r from-blue-900/30 via-purple-900/20 to-blue-900/30 border-b border-slate-600/50 p-6 flex-shrink-0">
-                    <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center shadow-lg">
-                                <Calendar className="w-5 h-5 text-white" />
-                            </div>
-                            <div>
-                                <h2 className="text-xl font-bold text-white">Agendar Vídeo</h2>
-                                <p className="text-sm text-slate-400">
-                                    {formatScheduledDateTime(formData.scheduledDate, formData.scheduledTime, formData.timezone)}
-                                </p>
-                            </div>
+        <div style={{
+            position: 'fixed', inset: 0, zIndex: 50,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            background: 'rgba(0,0,0,0.75)',
+            backdropFilter: 'blur(6px)',
+            padding: 16,
+            animation: 'vc-fade-in 0.2s ease',
+        }}>
+            <div style={{
+                background: 'var(--bg-secondary)',
+                border: '1px solid var(--border-default)',
+                borderRadius: 'var(--radius-xl)',
+                boxShadow: 'var(--shadow-elevated)',
+                width: '100%', maxWidth: 620,
+                maxHeight: '90vh',
+                display: 'flex', flexDirection: 'column',
+                overflow: 'hidden',
+                animation: 'vc-scale-in 0.2s ease',
+            }}>
+
+                {/* ── Header ──────────────────────────────────────── */}
+                <div style={{
+                    padding: '18px 20px 16px',
+                    borderBottom: '1px solid var(--border-subtle)',
+                    flexShrink: 0,
+                    position: 'relative',
+                }}>
+                    {/* Traço coral no topo */}
+                    <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: 'var(--accent-coral)', borderRadius: 'var(--radius-xl) var(--radius-xl) 0 0' }} />
+
+                    <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+                        <div>
+                            <h2 style={{
+                                margin: '0 0 2px',
+                                fontFamily: 'var(--font-display)', fontWeight: 700,
+                                fontSize: '1.125rem', letterSpacing: '-0.025em',
+                                color: 'var(--text-primary)',
+                            }}>Agendar no Pipeline</h2>
+                            <p style={{ margin: 0, fontSize: '0.8125rem', color: 'var(--text-muted)' }}>
+                                {formatDateTime(form.scheduledDate, form.scheduledTime, form.timezone)}
+                            </p>
                         </div>
-                        
                         <button
                             onClick={onClose}
-                            className="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-700/50 transition-colors"
+                            className="vc-btn-icon vc-btn-ghost"
+                            style={{ marginTop: -2 }}
                         >
-                            <X className="w-5 h-5" />
+                            <X size={16} />
                         </button>
+                    </div>
+
+                    {/* Step indicator */}
+                    <div style={{ display: 'flex', gap: 6, marginTop: 14 }}>
+                        {STEPS.map((s) => (
+                            <button
+                                key={s.num}
+                                onClick={() => s.num <= (form.file ? 3 : 1) && setStep(s.num)}
+                                style={{
+                                    flex: 1, padding: '6px 0', borderRadius: 'var(--radius-sm)',
+                                    background: step === s.num ? 'var(--accent-coral-3)' : 'var(--bg-tertiary)',
+                                    border: `1px solid ${step === s.num ? 'rgba(232,65,42,0.25)' : 'var(--border-subtle)'}`,
+                                    cursor: 'pointer', transition: 'all 0.15s',
+                                }}
+                            >
+                                <div style={{
+                                    fontSize: '0.6875rem', fontWeight: 600,
+                                    fontFamily: 'var(--font-display)', letterSpacing: '0.04em',
+                                    textTransform: 'uppercase',
+                                    color: step === s.num ? 'var(--accent-coral-2)' : 'var(--text-muted)',
+                                }}>
+                                    {s.num < step
+                                        ? <><CheckCircle size={10} style={{ display: 'inline', marginRight: 4 }} />{s.label}</>
+                                        : `${s.num}. ${s.label}`
+                                    }
+                                </div>
+                            </button>
+                        ))}
                     </div>
                 </div>
 
-                {/* Content */}
-                <div className="p-6 overflow-y-auto flex-1" style={{ maxHeight: 'calc(85vh - 200px)' }}>
-                    <div className="space-y-6">
-                        {/* File Upload */}
+                {/* ── Body ────────────────────────────────────────── */}
+                <div style={{ overflowY: 'auto', flex: 1, padding: '20px' }}>
+
+                    {/* ─── Passo 1: Arquivo ─────────────────────── */}
+                    {step === 1 && (
                         <div>
-                            <label className="block text-sm font-semibold text-white mb-3">
-                                <Video className="w-4 h-4 inline mr-2" />
-                                Arquivo de Vídeo
-                            </label>
-                            
+                            <SectionLabel>Arquivo de vídeo</SectionLabel>
                             <div
-                                className={`
-                                    relative border-2 border-dashed rounded-xl p-6 transition-all cursor-pointer
-                                    ${dragActive 
-                                        ? 'border-blue-400 bg-blue-500/10' 
-                                        : formData.file 
-                                            ? 'border-green-400 bg-green-500/10'
-                                            : 'border-slate-600 bg-slate-800/30 hover:border-slate-500 hover:bg-slate-800/50'
-                                    }
-                                `}
-                                onDrop={handleDrop}
-                                onDragOver={handleDragOver}
-                                onDragLeave={handleDragLeave}
-                                onClick={() => fileInputRef.current?.click()}
+                                onDrop={(e) => { e.preventDefault(); setDragActive(false); handleFile(e.dataTransfer.files[0]); }}
+                                onDragOver={(e) => { e.preventDefault(); setDragActive(true); }}
+                                onDragLeave={() => setDragActive(false)}
+                                onClick={() => fileRef.current?.click()}
+                                style={{
+                                    border: `2px dashed ${dragActive ? 'var(--accent-coral)' : form.file ? 'var(--accent-teal)' : 'var(--border-default)'}`,
+                                    borderRadius: 'var(--radius-lg)',
+                                    padding: 28, textAlign: 'center', cursor: 'pointer',
+                                    background: dragActive ? 'var(--accent-coral-3)' : form.file ? 'var(--accent-teal-3)' : 'var(--bg-tertiary)',
+                                    transition: 'all 0.15s',
+                                }}
                             >
-                                <input
-                                    ref={fileInputRef}
-                                    type="file"
-                                    accept="video/*"
-                                    className="hidden"
-                                    onChange={(e) => handleFileSelect(e.target.files[0])}
-                                />
-                                
-                                {formData.file ? (
-                                    <div className="flex items-center gap-4">
-                                        <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-green-500/20 to-blue-500/20 border border-green-400/30 flex items-center justify-center">
-                                            <FileVideo className="w-6 h-6 text-green-400" />
+                                <input ref={fileRef} type="file" accept="video/*" style={{ display: 'none' }}
+                                    onChange={(e) => handleFile(e.target.files[0])} />
+
+                                {form.file ? (
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 14, textAlign: 'left' }}>
+                                        <div style={{
+                                            width: 48, height: 48, borderRadius: 'var(--radius-md)',
+                                            background: 'var(--bg-elevated)',
+                                            display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+                                        }}>
+                                            <FileVideo size={22} style={{ color: 'var(--accent-teal)' }} />
                                         </div>
-                                        <div className="flex-1 min-w-0">
-                                            <p className="font-medium text-white truncate">{formData.file.name}</p>
-                                            <p className="text-sm text-slate-400">
-                                                {(formData.file.size / (1024 * 1024)).toFixed(1)} MB
+                                        <div style={{ flex: 1, minWidth: 0 }}>
+                                            <p style={{ margin: '0 0 3px', fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '0.9375rem', color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', letterSpacing: '-0.01em' }}>
+                                                {form.file.name}
+                                            </p>
+                                            <p style={{ margin: 0, fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                                                {(form.file.size / (1024 * 1024)).toFixed(1)} MB
                                             </p>
                                         </div>
                                         <button
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                setFormData(prev => ({ ...prev, file: null }));
-                                            }}
-                                            className="p-2 rounded-lg text-slate-400 hover:text-red-400 hover:bg-red-400/10 transition-colors"
+                                            onClick={(e) => { e.stopPropagation(); set('file', null); setStep(1); }}
+                                            className="vc-btn-icon vc-btn-ghost"
+                                            style={{ color: 'var(--accent-coral)', flexShrink: 0 }}
                                         >
-                                            <Trash2 className="w-4 h-4" />
+                                            <Trash2 size={15} />
                                         </button>
                                     </div>
                                 ) : (
-                                    <div className="text-center">
-                                        <Upload className="w-8 h-8 mx-auto mb-3 text-slate-500" />
-                                        <p className="text-white font-medium mb-1">
-                                            Arraste um vídeo ou clique para selecionar
+                                    <>
+                                        <div style={{
+                                            width: 52, height: 52, borderRadius: 'var(--radius-md)',
+                                            background: 'var(--bg-elevated)',
+                                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                            margin: '0 auto 14px',
+                                        }}>
+                                            <Upload size={22} style={{ color: 'var(--text-muted)' }} />
+                                        </div>
+                                        <p style={{ margin: '0 0 6px', fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '0.9375rem', color: 'var(--text-primary)', letterSpacing: '-0.01em' }}>
+                                            Arraste o vídeo ou clique para selecionar
                                         </p>
-                                        <p className="text-sm text-slate-400">
-                                            Suporta MP4, MOV, AVI e outros formatos
+                                        <p style={{ margin: 0, fontSize: '0.8125rem', color: 'var(--text-muted)' }}>
+                                            MP4, MOV, AVI — máximo 2GB
                                         </p>
+                                    </>
+                                )}
+                            </div>
+
+                            {form.file && (
+                                <button
+                                    onClick={() => setStep(2)}
+                                    className="vc-btn vc-btn-primary"
+                                    style={{ width: '100%', justifyContent: 'center', marginTop: 16 }}
+                                >
+                                    Continuar para metadados →
+                                </button>
+                            )}
+                        </div>
+                    )}
+
+                    {/* ─── Passo 2: Metadados ───────────────────── */}
+                    {step === 2 && (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
+
+                            {/* Título com IA */}
+                            <div>
+                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                                    <SectionLabel>Título *</SectionLabel>
+                                    <AIGenerateButton
+                                        onClick={handleAIGenerate}
+                                        loading={aiLoading}
+                                        disabled={!form.file && !form.title}
+                                    />
+                                </div>
+                                <ModalInput
+                                    value={form.title}
+                                    onChange={(e) => set('title', e.target.value)}
+                                    placeholder="Ex: 5 Curiosidades Incríveis Sobre Gatos"
+                                />
+                            </div>
+
+                            {/* Descrição */}
+                            <div>
+                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                                    <SectionLabel>Descrição</SectionLabel>
+                                    {aiLoading && <span style={{ fontSize: '0.6875rem', color: 'var(--accent-coral-2)', fontFamily: 'var(--font-display)' }}>Gerando...</span>}
+                                </div>
+                                <textarea
+                                    value={form.description}
+                                    onChange={(e) => set('description', e.target.value)}
+                                    placeholder="Descrição do vídeo... (a IA pode gerar automaticamente)"
+                                    rows={3}
+                                    className="vc-input"
+                                    style={{ resize: 'none', lineHeight: 1.6 }}
+                                />
+                            </div>
+
+                            {/* Tags */}
+                            <div>
+                                <SectionLabel>Tags</SectionLabel>
+                                <ModalInput
+                                    value={form.tags}
+                                    onChange={(e) => set('tags', e.target.value)}
+                                    placeholder="gatos, curiosidades, animais (separadas por vírgula)"
+                                />
+                                {/* Preview das tags */}
+                                {form.tags && (
+                                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 8 }}>
+                                        {form.tags.split(',').filter(t => t.trim()).map((tag, i) => (
+                                            <span key={i} className="vc-badge vc-badge-muted" style={{ textTransform: 'none', letterSpacing: 0 }}>
+                                                #{tag.trim()}
+                                            </span>
+                                        ))}
                                     </div>
                                 )}
                             </div>
-                        </div>
 
-                        {/* Title and Description */}
-                        <div className="grid grid-cols-1 gap-4">
+                            {/* Plataformas */}
                             <div>
-                                <label className="block text-sm font-semibold text-white mb-2">
-                                    Título do Vídeo *
-                                </label>
-                                <Input
-                                    value={formData.title}
-                                    onChange={(e) => handleInputChange('title', e.target.value)}
-                                    placeholder="Ex: 5 Curiosidades Incríveis Sobre Gatos"
-                                    className="bg-slate-800/50 border-slate-600 text-white placeholder:text-slate-500"
-                                />
-                            </div>
-                            
-                            <div>
-                                <label className="block text-sm font-semibold text-white mb-2">
-                                    Descrição (Opcional)
-                                </label>
-                                <textarea
-                                    value={formData.description}
-                                    onChange={(e) => handleInputChange('description', e.target.value)}
-                                    placeholder="Adicione uma descrição para o seu vídeo..."
-                                    rows={3}
-                                    className="w-full bg-slate-800/50 border border-slate-600 rounded-lg px-3 py-2 text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-                                />
-                            </div>
-                        </div>
-
-                        {/* Platform and Time */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                                <label className="block text-sm font-semibold text-white mb-2">
-                                    Plataforma
-                                </label>
-                                <div className="space-y-2">
-                                    {PLATFORMS.map(platform => (
+                                <SectionLabel>Plataforma</SectionLabel>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                                    {PLATFORMS.map(p => (
                                         <button
-                                            key={platform.id}
-                                            onClick={() => handleInputChange('platform', platform.id)}
-                                            className={`
-                                                w-full flex items-center gap-3 p-3 rounded-lg border transition-all
-                                                ${formData.platform === platform.id
-                                                    ? 'border-blue-400 bg-blue-500/10 text-white'
-                                                    : 'border-slate-600 bg-slate-800/30 text-slate-400 hover:border-slate-500 hover:text-white'
-                                                }
-                                            `}
+                                            key={p.id}
+                                            onClick={() => set('platform', p.id)}
+                                            style={{
+                                                display: 'flex', alignItems: 'center', gap: 12,
+                                                padding: '10px 14px',
+                                                background: form.platform === p.id ? 'var(--accent-coral-3)' : 'var(--bg-tertiary)',
+                                                border: `1px solid ${form.platform === p.id ? 'rgba(232,65,42,0.25)' : 'var(--border-subtle)'}`,
+                                                borderRadius: 'var(--radius-md)', cursor: 'pointer',
+                                                transition: 'all 0.15s',
+                                            }}
                                         >
-                                            <div className={`w-8 h-8 rounded-lg bg-gradient-to-br ${platform.color} flex items-center justify-center text-sm`}>
-                                                {platform.icon}
-                                            </div>
-                                            <span className="font-medium">{platform.name}</span>
+                                            <div className={`vc-platform-dot ${p.dot}`} style={{ width: 10, height: 10 }} />
+                                            <span style={{
+                                                fontFamily: 'var(--font-display)', fontWeight: 600,
+                                                fontSize: '0.875rem', letterSpacing: '-0.01em',
+                                                color: form.platform === p.id ? 'var(--accent-coral-2)' : 'var(--text-secondary)',
+                                            }}>{p.name}</span>
+                                            {form.platform === p.id && (
+                                                <CheckCircle size={14} style={{ marginLeft: 'auto', color: 'var(--accent-coral-2)' }} />
+                                            )}
                                         </button>
                                     ))}
                                 </div>
                             </div>
-                            
-                            <div className="space-y-4">
-                                {/* Date Picker */}
-                                <div>
-                                    <label className="block text-sm font-semibold text-white mb-2">
-                                        <Calendar className="w-4 h-4 inline mr-1" />
-                                        Data
-                                    </label>
-                                    <input
-                                        type="date"
-                                        value={formData.scheduledDate}
-                                        min={minDate}
-                                        max={maxDate}
-                                        onChange={(e) => handleInputChange('scheduledDate', e.target.value)}
-                                        className="w-full bg-slate-800/50 border border-slate-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent [color-scheme:dark]"
-                                    />
-                                </div>
 
-                                {/* Time Picker */}
+                            {/* Privacidade — só YouTube */}
+                            {form.platform === 'youtube-shorts' && (
                                 <div>
-                                    <label className="block text-sm font-semibold text-white mb-2">
-                                        <Clock className="w-4 h-4 inline mr-1" />
-                                        Horário
-                                    </label>
-                                    <input
-                                        type="time"
-                                        value={formData.scheduledTime}
-                                        onChange={(e) => handleInputChange('scheduledTime', e.target.value)}
-                                        className="w-full bg-slate-800/50 border border-slate-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent [color-scheme:dark]"
-                                    />
-                                </div>
-
-                                {/* Timezone Selector */}
-                                <div>
-                                    <label className="block text-sm font-semibold text-white mb-2">
-                                        <MapPin className="w-4 h-4 inline mr-1" />
-                                        Fuso Horário
-                                    </label>
-                                    <select
-                                        value={formData.timezone}
-                                        onChange={(e) => handleInputChange('timezone', e.target.value)}
-                                        className="w-full bg-slate-800/50 border border-slate-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent [color-scheme:dark]"
-                                    >
-                                        {TIMEZONES.map(tz => (
-                                            <option key={tz.value} value={tz.value}>
-                                                {tz.label} (UTC{tz.offset})
-                                            </option>
-                                        ))}
-                                    </select>
-                                </div>
-
-                                {/* Validation Warning */}
-                                {!isScheduleValid && (
-                                    <div className="flex items-center gap-2 p-2 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
-                                        <AlertCircle className="w-4 h-4 text-yellow-400 flex-shrink-0" />
-                                        <span className="text-xs text-yellow-400">
-                                            O horário deve ser pelo menos 5 minutos no futuro
-                                        </span>
+                                    <SectionLabel>Privacidade</SectionLabel>
+                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 8 }}>
+                                        {PRIVACY_OPTIONS.map(opt => {
+                                            const Icon = opt.icon;
+                                            return (
+                                                <button
+                                                    key={opt.value}
+                                                    onClick={() => set('privacyStatus', opt.value)}
+                                                    style={{
+                                                        display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6,
+                                                        padding: '12px 8px',
+                                                        background: form.privacyStatus === opt.value ? 'var(--accent-coral-3)' : 'var(--bg-tertiary)',
+                                                        border: `1px solid ${form.privacyStatus === opt.value ? 'rgba(232,65,42,0.25)' : 'var(--border-subtle)'}`,
+                                                        borderRadius: 'var(--radius-md)', cursor: 'pointer',
+                                                        transition: 'all 0.15s',
+                                                    }}
+                                                >
+                                                    <Icon size={16} style={{ color: form.privacyStatus === opt.value ? 'var(--accent-coral-2)' : 'var(--text-muted)' }} />
+                                                    <div>
+                                                        <div style={{ fontSize: '0.75rem', fontWeight: 600, fontFamily: 'var(--font-display)', color: form.privacyStatus === opt.value ? 'var(--accent-coral-2)' : 'var(--text-secondary)', letterSpacing: '-0.01em' }}>
+                                                            {opt.label}
+                                                        </div>
+                                                        <div style={{ fontSize: '0.625rem', color: 'var(--text-muted)', marginTop: 1 }}>
+                                                            {opt.desc}
+                                                        </div>
+                                                    </div>
+                                                </button>
+                                            );
+                                        })}
                                     </div>
-                                )}
-                            </div>
-                        </div>
 
-                        {/* Privacy Settings */}
-                        {formData.platform === 'youtube-shorts' && (
-                            <div>
-                                <label className="block text-sm font-semibold text-white mb-3">
-                                    <Settings className="w-4 h-4 inline mr-2" />
-                                    Configurações de Privacidade
-                                </label>
-                                
-                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
-                                    {PRIVACY_OPTIONS.map(option => {
-                                        const Icon = option.icon;
-                                        return (
-                                            <button
-                                                key={option.value}
-                                                onClick={() => handleInputChange('privacyStatus', option.value)}
-                                                className={`
-                                                    flex flex-col items-center gap-2 p-3 rounded-lg border transition-all
-                                                    ${formData.privacyStatus === option.value
-                                                        ? 'border-blue-400 bg-blue-500/10 text-white'
-                                                        : 'border-slate-600 bg-slate-800/30 text-slate-400 hover:border-slate-500 hover:text-white'
-                                                    }
-                                                `}
-                                            >
-                                                <Icon className="w-5 h-5" />
-                                                <div className="text-center">
-                                                    <div className="font-medium text-sm">{option.label}</div>
-                                                    <div className="text-xs opacity-75">{option.description}</div>
-                                                </div>
-                                            </button>
-                                        );
-                                    })}
-                                </div>
-
-                                {/* Native Scheduling Option */}
-                                <div className="bg-slate-800/30 border border-slate-600/50 rounded-lg p-4">
-                                    <label className="flex items-start gap-3 cursor-pointer">
+                                    {/* Agendamento nativo */}
+                                    <label style={{
+                                        display: 'flex', alignItems: 'flex-start', gap: 12,
+                                        marginTop: 12, padding: '12px 14px',
+                                        background: 'var(--bg-tertiary)',
+                                        border: '1px solid var(--border-subtle)',
+                                        borderRadius: 'var(--radius-md)', cursor: 'pointer',
+                                    }}>
                                         <input
                                             type="checkbox"
-                                            checked={formData.useNativeScheduling}
-                                            onChange={(e) => handleInputChange('useNativeScheduling', e.target.checked)}
-                                            className="mt-1 w-4 h-4 rounded border-slate-600 bg-slate-700 text-blue-500 focus:ring-blue-500 focus:ring-offset-0"
+                                            checked={form.useNativeScheduling}
+                                            onChange={(e) => set('useNativeScheduling', e.target.checked)}
+                                            style={{ marginTop: 2, accentColor: 'var(--accent-coral)', flexShrink: 0 }}
                                         />
                                         <div>
-                                            <div className="flex items-center gap-2 mb-1">
-                                                <Sparkles className="w-4 h-4 text-blue-400" />
-                                                <span className="font-medium text-white">Usar agendamento nativo do YouTube</span>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 3 }}>
+                                                <Sparkles size={13} style={{ color: 'var(--accent-coral-2)' }} />
+                                                <span style={{ fontSize: '0.8125rem', fontWeight: 600, fontFamily: 'var(--font-display)', color: 'var(--text-primary)', letterSpacing: '-0.01em' }}>
+                                                    Agendamento nativo do YouTube
+                                                </span>
                                             </div>
-                                            <p className="text-sm text-slate-400">
-                                                {formData.useNativeScheduling
-                                                    ? '✅ Vídeo será enviado agora e publicado automaticamente pelo YouTube no horário agendado'
-                                                    : '⚠️ Vídeo ficará na fila e será enviado apenas no horário agendado (requer dashboard aberto)'
+                                            <p style={{ margin: 0, fontSize: '0.75rem', color: 'var(--text-muted)', lineHeight: 1.55 }}>
+                                                {form.useNativeScheduling
+                                                    ? 'Vídeo enviado agora e publicado automaticamente pelo YouTube no horário definido'
+                                                    : 'Vídeo fica na fila e é enviado apenas no horário agendado (requer dashboard aberto)'
                                                 }
                                             </p>
                                         </div>
                                     </label>
                                 </div>
-                            </div>
-                        )}
+                            )}
 
-                        {/* Tags */}
-                        <div>
-                            <label className="block text-sm font-semibold text-white mb-2">
-                                Tags (Opcional)
-                            </label>
-                            <Input
-                                value={formData.tags}
-                                onChange={(e) => handleInputChange('tags', e.target.value)}
-                                placeholder="gatos, curiosidades, animais (separadas por vírgula)"
-                                className="bg-slate-800/50 border-slate-600 text-white placeholder:text-slate-500"
-                            />
+                            <button
+                                onClick={() => setStep(3)}
+                                disabled={!form.title}
+                                className="vc-btn vc-btn-primary"
+                                style={{ width: '100%', justifyContent: 'center', opacity: !form.title ? 0.4 : 1 }}
+                            >
+                                Definir horário →
+                            </button>
                         </div>
-                    </div>
+                    )}
+
+                    {/* ─── Passo 3: Agendamento ─────────────────── */}
+                    {step === 3 && (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
+
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+                                {/* Data */}
+                                <div>
+                                    <SectionLabel>Data</SectionLabel>
+                                    <input
+                                        type="date"
+                                        value={form.scheduledDate}
+                                        min={minDate} max={maxDate}
+                                        onChange={(e) => set('scheduledDate', e.target.value)}
+                                        className="vc-input"
+                                        style={{ colorScheme: 'dark' }}
+                                    />
+                                </div>
+
+                                {/* Horário */}
+                                <div>
+                                    <SectionLabel>Horário</SectionLabel>
+                                    <input
+                                        type="time"
+                                        value={form.scheduledTime}
+                                        onChange={(e) => set('scheduledTime', e.target.value)}
+                                        className="vc-input"
+                                        style={{ colorScheme: 'dark' }}
+                                    />
+                                </div>
+                            </div>
+
+                            {/* Fuso */}
+                            <div>
+                                <SectionLabel>Fuso horário</SectionLabel>
+                                <select
+                                    value={form.timezone}
+                                    onChange={(e) => set('timezone', e.target.value)}
+                                    className="vc-input"
+                                    style={{ colorScheme: 'dark' }}
+                                >
+                                    {TIMEZONES.map(tz => (
+                                        <option key={tz.value} value={tz.value}>
+                                            {tz.label} (UTC{tz.offset})
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            {/* Validação */}
+                            {!isScheduleValid && (
+                                <div className="vc-toast vc-toast-amber" style={{ padding: '10px 14px' }}>
+                                    <AlertCircle size={15} style={{ flexShrink: 0, marginTop: 1 }} />
+                                    <p style={{ margin: 0, fontSize: '0.8125rem' }}>
+                                        O horário deve ser pelo menos 5 minutos no futuro
+                                    </p>
+                                </div>
+                            )}
+
+                            {/* Resumo do agendamento */}
+                            {isScheduleValid && (
+                                <div style={{
+                                    padding: '14px 16px',
+                                    background: 'var(--accent-teal-3)',
+                                    border: '1px solid rgba(0,201,167,0.2)',
+                                    borderRadius: 'var(--radius-md)',
+                                }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                                        <CheckCircle size={14} style={{ color: 'var(--accent-teal)', flexShrink: 0 }} />
+                                        <span style={{ fontSize: '0.75rem', fontWeight: 600, fontFamily: 'var(--font-display)', color: 'var(--accent-teal)', letterSpacing: '0.04em', textTransform: 'uppercase' }}>
+                                            Pronto para agendar
+                                        </span>
+                                    </div>
+                                    <p style={{ margin: 0, fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
+                                        <strong style={{ color: 'var(--text-primary)', fontFamily: 'var(--font-display)' }}>{form.title}</strong>
+                                        {' '}será publicado no{' '}
+                                        {PLATFORMS.find(p => p.id === form.platform)?.name}
+                                        {' '}em{' '}
+                                        <strong style={{ color: 'var(--text-primary)' }}>
+                                            {formatDateTime(form.scheduledDate, form.scheduledTime, form.timezone)}
+                                        </strong>
+                                    </p>
+                                </div>
+                            )}
+                        </div>
+                    )}
                 </div>
 
-                {/* Footer */}
-                <div className="border-t border-slate-600/50 p-4 bg-slate-800/30 flex-shrink-0">
-                    <div className="flex items-center justify-between">
-                        <div className="text-sm text-slate-400">
-                            {validationError ? (
-                                <span className="flex items-center gap-2 text-red-400">
-                                    <AlertCircle className="w-4 h-4" />
-                                    {validationError}
+                {/* ── Footer ──────────────────────────────────────── */}
+                <div style={{
+                    padding: '14px 20px',
+                    borderTop: '1px solid var(--border-subtle)',
+                    background: 'var(--bg-tertiary)',
+                    flexShrink: 0,
+                    display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
+                }}>
+                    {/* Erro de validação */}
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                        {validationErr ? (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                <AlertCircle size={14} style={{ color: 'var(--accent-coral)', flexShrink: 0 }} />
+                                <span style={{ fontSize: '0.8125rem', color: 'var(--accent-coral)' }}>{validationErr}</span>
+                            </div>
+                        ) : step === 3 && form.file ? (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--accent-teal)', flexShrink: 0 }} />
+                                <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                                    {(form.file.size / (1024 * 1024)).toFixed(1)} MB · {PLATFORMS.find(p => p.id === form.platform)?.name}
                                 </span>
-                            ) : formData.file ? (
-                                <span className="flex items-center gap-2">
-                                    <div className="w-2 h-2 rounded-full bg-green-400"></div>
-                                    Arquivo selecionado
-                                </span>
-                            ) : null}
-                        </div>
-                        
-                        <div className="flex gap-3">
-                            <Button
-                                onClick={onClose}
-                                variant="outline"
-                                className="border-slate-600 text-slate-400 hover:text-white hover:border-slate-500"
-                            >
-                                Cancelar
-                            </Button>
-                            <Button
+                            </div>
+                        ) : null}
+                    </div>
+
+                    <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
+                        {step > 1 && (
+                            <button onClick={() => setStep(s => s - 1)} className="vc-btn vc-btn-secondary vc-btn-sm">
+                                ← Voltar
+                            </button>
+                        )}
+                        <button onClick={onClose} className="vc-btn vc-btn-ghost vc-btn-sm">
+                            Cancelar
+                        </button>
+                        {step === 3 ? (
+                            <button
                                 onClick={handleSubmit}
-                                disabled={!formData.title || (!formData.file && formData.platform === 'youtube-shorts') || !isScheduleValid}
-                                className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                                disabled={!form.title || (!form.file && form.platform === 'youtube-shorts') || !isScheduleValid}
+                                className="vc-btn vc-btn-primary vc-btn-sm"
                             >
-                                <Calendar className="w-4 h-4 mr-2" />
-                                Agendar Vídeo
-                            </Button>
-                        </div>
+                                <Calendar size={14} /> Agendar
+                            </button>
+                        ) : (
+                            <button
+                                onClick={() => setStep(s => Math.min(s + 1, 3))}
+                                disabled={step === 1 && !form.file || step === 2 && !form.title}
+                                className="vc-btn vc-btn-primary vc-btn-sm"
+                            >
+                                Próximo →
+                            </button>
+                        )}
                     </div>
                 </div>
             </div>
         </div>
     );
 }
+
+export default ScheduleVideoModal;

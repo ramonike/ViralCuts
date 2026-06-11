@@ -1,4 +1,4 @@
-import { Home, Video, Calendar, Settings, TrendingUp, LogOut, HelpCircle, User, Sparkles, Upload, Sun, Moon } from 'lucide-react';
+import { Home, Video, Settings, TrendingUp, LogOut, User, Sparkles, Sun, Moon, GitBranch } from 'lucide-react';
 import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTheme } from '../../contexts/ThemeContext';
@@ -25,12 +25,23 @@ export const SidebarLeft = () => {
             ? location.pathname === '/dashboard'
             : location.pathname.startsWith(path);
 
-    const navItems = [
+    // Pipeline está em destaque — é o coração do produto
+    const navMain = [
         { icon: Home, label: 'Dashboard', path: '/dashboard' },
-        { icon: TrendingUp, label: 'Analytics', path: '/dashboard/analytics' },
+        {
+            icon: GitBranch,
+            label: 'Pipeline',       // era "Calendário"
+            path: '/dashboard/calendar',
+            highlight: true,         // acento visual especial
+        },
         { icon: Video, label: 'Vídeos', path: '/dashboard/videos' },
         { icon: Sparkles, label: 'Criação IA', path: '/dashboard/creation' },
-        { icon: Calendar, label: 'Calendário', path: '/dashboard/calendar' },
+        { icon: TrendingUp, label: 'Analytics', path: '/dashboard/analytics' },
+    ];
+
+    const navAccount = [
+        { icon: User, label: 'Perfil', path: '/dashboard/profile' },
+        { icon: Settings, label: 'Configurações', path: '/dashboard/settings' },
     ];
 
     return (
@@ -45,18 +56,51 @@ export const SidebarLeft = () => {
             <nav className="vc-nav">
                 <div className="vc-nav-section">
                     <div className="vc-nav-label">Menu</div>
-                    {navItems.map((item) => {
+
+                    {navMain.map((item) => {
                         const active = isActive(item.path);
                         const Icon = item.icon;
+
+                        // Pipeline tem tratamento especial quando inativo —
+                        // um leve destaque âmbar para chamar atenção
+                        const isPipeline = item.highlight;
+
                         return (
                             <NavLink
                                 key={item.path}
                                 to={item.path}
                                 end={item.path === '/dashboard'}
                                 className={`vc-nav-item${active ? ' active' : ''}`}
+                                style={!active && isPipeline ? {
+                                    color: 'var(--accent-amber)',
+                                    background: 'var(--accent-amber-3)',
+                                    borderColor: 'rgba(240,165,0,0.15)',
+                                } : {}}
                             >
-                                <Icon className="nav-icon" />
+                                <Icon
+                                    className="nav-icon"
+                                    style={!active && isPipeline ? { color: 'var(--accent-amber)', opacity: 1 } : {}}
+                                />
                                 <span>{item.label}</span>
+
+                                {/* Badge "core" no Pipeline quando não está ativo */}
+                                {isPipeline && !active && (
+                                    <span style={{
+                                        marginLeft: 'auto',
+                                        fontSize: '0.5625rem',
+                                        fontWeight: 700,
+                                        fontFamily: 'var(--font-display)',
+                                        letterSpacing: '0.05em',
+                                        textTransform: 'uppercase',
+                                        color: 'var(--accent-amber)',
+                                        background: 'rgba(240,165,0,0.15)',
+                                        border: '1px solid rgba(240,165,0,0.25)',
+                                        padding: '1px 5px',
+                                        borderRadius: 3,
+                                    }}>
+                                        Core
+                                    </span>
+                                )}
                             </NavLink>
                         );
                     })}
@@ -64,59 +108,39 @@ export const SidebarLeft = () => {
 
                 <div className="vc-nav-section">
                     <div className="vc-nav-label">Conta</div>
-                    <NavLink
-                        to="/dashboard/profile"
-                        className={`vc-nav-item${isActive('/dashboard/profile') ? ' active' : ''}`}
-                    >
-                        <User className="nav-icon" />
-                        <span>Perfil</span>
-                    </NavLink>
-                    <NavLink
-                        to="/dashboard/settings"
-                        className={`vc-nav-item${isActive('/dashboard/settings') ? ' active' : ''}`}
-                    >
-                        <Settings className="nav-icon" />
-                        <span>Configurações</span>
-                    </NavLink>
+                    {navAccount.map((item) => {
+                        const Icon = item.icon;
+                        return (
+                            <NavLink
+                                key={item.path}
+                                to={item.path}
+                                className={`vc-nav-item${isActive(item.path) ? ' active' : ''}`}
+                            >
+                                <Icon className="nav-icon" />
+                                <span>{item.label}</span>
+                            </NavLink>
+                        );
+                    })}
                 </div>
             </nav>
 
             {/* Footer */}
             <div className="vc-sidebar-footer">
-                {/* Theme toggle */}
-                <button
-                    onClick={toggleTheme}
-                    className="vc-nav-item"
-                    style={{ width: '100%', marginBottom: 4 }}
-                >
-                    {isDark
-                        ? <Sun className="nav-icon" />
-                        : <Moon className="nav-icon" />
-                    }
+                <button onClick={toggleTheme} className="vc-nav-item" style={{ width: '100%', marginBottom: 4 }}>
+                    {isDark ? <Sun className="nav-icon" /> : <Moon className="nav-icon" />}
                     <span>{isDark ? 'Tema claro' : 'Tema escuro'}</span>
                 </button>
 
-                {/* Logout */}
-                <button
-                    onClick={handleSignOut}
-                    className="vc-nav-item"
-                    style={{
-                        width: '100%',
-                        color: 'var(--accent-coral-2)',
-                        marginBottom: 12,
-                    }}
-                >
+                <button onClick={handleSignOut} className="vc-nav-item"
+                    style={{ width: '100%', color: 'var(--accent-coral-2)', marginBottom: 12 }}>
                     <LogOut className="nav-icon" style={{ opacity: 1 }} />
                     <span>Sair</span>
                 </button>
 
-                {/* User chip */}
                 <div className="vc-user-chip">
                     <div className="vc-avatar">{initials}</div>
                     <div style={{ minWidth: 0 }}>
-                        <div className="vc-user-name" style={{
-                            overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                        }}>
+                        <div className="vc-user-name" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                             {user?.name || 'Criador'}
                         </div>
                         <div className="vc-user-plan">Pro</div>

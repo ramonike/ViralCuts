@@ -7,7 +7,7 @@ import { PageLayout } from "../components/layout/PageLayout";
 import {
     Rocket, Calendar, TrendingUp, Eye, Users, Play,
     Plus, ArrowRight, Video, BarChart2, Sparkles,
-    CheckCircle, Zap, Upload
+    CheckCircle, Zap, Upload, GitBranch
 } from "lucide-react";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -24,6 +24,47 @@ const formatNumber = (n) => {
     if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`;
     return String(n);
 };
+
+// ─── Pipeline CTA Banner ──────────────────────────────────────────────────────
+// Aparece quando há vídeos na fila sem agendamento — guia o usuário pro coração do produto
+function PipelineCTABanner({ unscheduledCount, navigate }) {
+    if (unscheduledCount === 0) return null;
+    return (
+        <div style={{
+            display: 'flex', alignItems: 'center', gap: 14,
+            padding: '14px 18px',
+            background: 'var(--accent-amber-3)',
+            border: '1px solid rgba(240,165,0,0.25)',
+            borderRadius: 'var(--radius-lg)',
+            marginBottom: 16,
+            cursor: 'pointer',
+        }}
+            onClick={() => navigate('/dashboard/calendar')}
+        >
+            <div style={{
+                width: 36, height: 36, borderRadius: 'var(--radius-md)',
+                background: 'rgba(240,165,0,0.2)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+            }}>
+                <GitBranch size={18} style={{ color: 'var(--accent-amber)' }} />
+            </div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+                <p style={{
+                    margin: '0 0 2px',
+                    fontFamily: 'var(--font-display)', fontWeight: 700,
+                    fontSize: '0.9375rem', letterSpacing: '-0.02em',
+                    color: 'var(--text-primary)',
+                }}>
+                    {unscheduledCount} vídeo{unscheduledCount > 1 ? 's' : ''} pronto{unscheduledCount > 1 ? 's' : ''} para agendar
+                </p>
+                <p style={{ margin: 0, fontSize: '0.8125rem', color: 'var(--text-secondary)' }}>
+                    Abra o Pipeline e defina os horários de publicação multicanal →
+                </p>
+            </div>
+            <ArrowRight size={16} style={{ color: 'var(--accent-amber)', flexShrink: 0 }} />
+        </div>
+    );
+}
 
 // ─── TodayTimeline — Signature Element ───────────────────────────────────────
 function TodayTimeline({ uploadQueue }) {
@@ -347,6 +388,12 @@ function ConnectedDashboard({ user, state, supabase, navigate }) {
                 <StatCard label="Na fila" value={uploadQueue.length} delta={`${scheduledCount} agendado(s)`} accent="coral" />
                 <StatCard label="Publicados" value={totalPublished} delta="via ViralCuts" accent="neutral" />
             </div>
+
+            {/* Pipeline CTA — guia usuários com vídeos sem agendamento */}
+            <PipelineCTABanner
+                unscheduledCount={uploadQueue.filter(v => !v.scheduledAt).length}
+                navigate={navigate}
+            />
 
             {/* Timeline */}
             <TodayTimeline uploadQueue={uploadQueue} />
