@@ -10,12 +10,13 @@ export async function fetchUsers(page = 1, pageSize = 20, search = '') {
         params.append('search', search);
     }
 
-    const response = await fetch(`${API_URL}${API_ENDPOINTS.ADMIN.USERS}?${params}`, {
+    const response = await fetch(`${API_ENDPOINTS.ADMIN.USERS}?${params}`, {
         credentials: 'include',
     });
 
     if (!response.ok) {
-        throw new Error('Failed to fetch users');
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || 'Failed to fetch users');
     }
 
     return response.json();

@@ -60,6 +60,16 @@ admin.get("/users", async (c) => {
           role: true,
           createdAt: true,
           image: true,
+          sessions: {
+            where: {
+              expiresAt: {
+                gt: new Date(),
+              },
+            },
+            select: {
+              id: true,
+            },
+          },
         },
         orderBy: { createdAt: "desc" },
         skip: (page - 1) * pageSize,

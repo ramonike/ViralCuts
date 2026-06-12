@@ -102,13 +102,13 @@ export default function AdminPage() {
                     </div>
                     <div className="glass-card rounded-xl p-6">
                         <div className="flex items-center gap-4">
-                            <div className="p-3 bg-amber-500/10 rounded-xl">
-                                <XCircle className="w-6 h-6 text-amber-500" />
+                            <div className="p-3 bg-emerald-500/10 rounded-xl">
+                                <User className="w-6 h-6 text-emerald-500" />
                             </div>
                             <div>
-                                <p className="text-slate-400 text-xs uppercase font-bold">Pendente</p>
+                                <p className="text-slate-400 text-xs uppercase font-bold">Online Agora</p>
                                 <p className="text-2xl font-black text-white">
-                                    {users.filter(u => !u.emailVerified).length}
+                                    {users.filter(u => u.sessions && u.sessions.length > 0).length}
                                 </p>
                             </div>
                         </div>
@@ -162,6 +162,9 @@ export default function AdminPage() {
                                                 Status
                                             </th>
                                             <th className="px-6 py-4 text-left text-xs font-bold text-slate-400 uppercase tracking-wider">
+                                                Sessão
+                                            </th>
+                                            <th className="px-6 py-4 text-left text-xs font-bold text-slate-400 uppercase tracking-wider">
                                                 Cadastro
                                             </th>
                                         </tr>
@@ -196,6 +199,18 @@ export default function AdminPage() {
                                                         <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-500/10 text-amber-400 border border-amber-500/20">
                                                             <XCircle className="w-3 h-3" />
                                                             Pendente
+                                                        </span>
+                                                    )}
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap">
+                                                    {user.sessions && user.sessions.length > 0 ? (
+                                                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                                                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse mr-1"></span>
+                                                            Online
+                                                        </span>
+                                                    ) : (
+                                                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-slate-800 text-slate-400 border border-slate-700/50">
+                                                            Offline
                                                         </span>
                                                     )}
                                                 </td>
