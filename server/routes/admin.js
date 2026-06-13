@@ -1,7 +1,6 @@
 /**
- * Admin Routes — v2
- * Protegido: apenas role = 'admin'
- * Adicionado: sessão real, canais YouTube, contagem de uploads
+ * Admin Routes — v2.1
+ * - onlineNow: usuários únicos com sessão atualizada nos últimos 30 min
  */
 
 import { Hono } from "hono";
@@ -10,7 +9,6 @@ import { prisma } from "../db/prisma.js";
 
 const admin = new Hono();
 
-// ── Middleware de proteção ────────────────────────────────────────────────────
 admin.use("/*", authMiddleware);
 admin.use("/*", async (c, next) => {
   const user = c.get("user");
@@ -54,29 +52,22 @@ admin.get("/users", async (c) => {
           role: true,
           createdAt: true,
           image: true,
-
-          // Sessões: usamos para calcular "último acesso" real
           sessions: {
             select: { expiresAt: true, updatedAt: true, createdAt: true },
             orderBy: { updatedAt: "desc" },
             take: 1,
           },
-
-          // Contas OAuth: filtraremos por providerId = "youtube" no JS
           accounts: {
             where: { providerId: "youtube" },
             select: {
               id: true,
-              accountId: true,   // = channelId do YouTube
+              accountId: true,
               accessTokenExpiresAt: true,
               scope: true,
               createdAt: true,
-              // idToken guarda o nome do canal que salvamos no callback
               idToken: true,
             },
           },
-
-          // Total de uploads (vídeos agendados/publicados)
           _count: {
             select: { uploads: true },
           },
@@ -89,48 +80,36 @@ admin.get("/users", async (c) => {
     ]);
 
     const now = Date.now();
+    const thirtyMinAgo = new Date(now - 30 * 60 * 1000);
 
-    // ── Calcular status de sessão real ────────────────────────────────────
-    // "Online" = tem sessão não expirada
-    // "Ativo recentemente" = última sessão expirou há menos de 24h
-    // "Inativo" = mais de 24h sem sessão
     const enriched = users.map((u) => {
       const lastSession = u.sessions?.[0];
 
-      let sessionStatus = "offline"; // sem sessão alguma
+      let sessionStatus = "offline";
       let lastSeenAt = null;
 
       if (lastSession) {
+        const updatedAt = new Date(lastSession.updatedAt || lastSession.createdAt);
         const expiresAt = new Date(lastSession.expiresAt).getTime();
-        const lastUpdate = new Date(lastSession.updatedAt || lastSession.createdAt).getTime();
         lastSeenAt = lastSession.updatedAt || lastSession.createdAt;
 
-        if (expiresAt > now) {
-          sessionStatus = "online"; // sessão ainda válida
-        } else if (now - expiresAt < 24 * 60 * 60 * 1000) {
-          sessionStatus = "recent"; // expirou há menos de 24h
+        if (expiresAt > now && updatedAt >= thirtyMinAgo) {
+          sessionStatus = "online";   // sessão válida + ativa nos últimos 30min
+        } else if (expiresAt > now) {
+          sessionStatus = "recent";   // sessão válida mas inativa há mais de 30min
         } else {
           sessionStatus = "offline";
         }
       }
 
-      // ── Canais YouTube conectados ─────────────────────────────────────
-      const youtubeAccounts = (u.accounts || []).map((acc) => {
-        const tokenExpired = acc.accessTokenExpiresAt
-          ? new Date(acc.accessTokenExpiresAt).getTime() < now
-          : true;
-
-        // idToken foi reutilizado para salvar o channelTitle no callback
-        // (ver sugestão no youtube.js abaixo)
-        const channelName = acc.idToken || acc.accountId;
-
-        return {
-          channelId: acc.accountId,
-          channelName,
-          connected: !tokenExpired,
-          connectedAt: acc.createdAt,
-        };
-      });
+      const youtubeAccounts = (u.accounts || []).map((acc) => ({
+        channelId: acc.accountId,
+        channelName: acc.idToken || acc.accountId,
+        connected: acc.accessTokenExpiresAt
+          ? new Date(acc.accessTokenExpiresAt).getTime() > now
+          : false,
+        connectedAt: acc.createdAt,
+      }));
 
       return {
         id: u.id,
@@ -147,13 +126,7 @@ admin.get("/users", async (c) => {
       };
     });
 
-    return c.json({
-      users: enriched,
-      total,
-      page,
-      pageSize,
-      totalPages: Math.ceil(total / pageSize),
-    });
+    return c.json({ users: enriched, total, page, pageSize, totalPages: Math.ceil(total / pageSize) });
   } catch (error) {
     console.error("[Admin] Error fetching users:", error);
     return c.json({ error: "Erro ao buscar usuários" }, 500);
@@ -164,22 +137,27 @@ admin.get("/users", async (c) => {
 admin.get("/stats", async (c) => {
   try {
     const now = new Date();
-    const onlineThreshold = new Date(now.getTime() - 0); // sessão ainda válida
+    const thirtyMinAgo = new Date(Date.now() - 30 * 60 * 1000);
 
-    const [totalUsers, verifiedUsers, totalUploads, activeSessions, youtubeConnected] =
+    const [totalUsers, verifiedUsers, totalUploads, onlineNow, youtubeConnected] =
       await Promise.all([
         prisma.user.count(),
         prisma.user.count({ where: { emailVerified: true } }),
         prisma.upload.count().catch(() => 0),
-        // Sessões com expiresAt no futuro = usuários online agora
-        prisma.session.count({
-          where: { expiresAt: { gt: onlineThreshold } },
-        }).catch(() => 0),
-        // Usuários com ao menos 1 conta YouTube conectada
+
+        // Usuários únicos com sessão válida E atualizada nos últimos 30 min
+        prisma.session.groupBy({
+          by: ["userId"],
+          where: {
+            expiresAt: { gt: now },
+            updatedAt: { gt: thirtyMinAgo },
+          },
+        }).then(r => r.length).catch(() => 0),
+
         prisma.account.groupBy({
           by: ["userId"],
           where: { providerId: "youtube" },
-        }).then((r) => r.length).catch(() => 0),
+        }).then(r => r.length).catch(() => 0),
       ]);
 
     return c.json({
@@ -187,7 +165,7 @@ admin.get("/stats", async (c) => {
       verifiedUsers,
       pendingUsers: totalUsers - verifiedUsers,
       totalUploads,
-      onlineNow: activeSessions,
+      onlineNow,
       youtubeConnected,
     });
   } catch (error) {
