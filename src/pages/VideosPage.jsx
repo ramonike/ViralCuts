@@ -313,7 +313,10 @@ export default function ChannelPage() {
                     mode="bar"
                     accounts={connectedAccounts}
                     activeId={activeAccountId}
-                    onSwitch={(id) => actions.switchAccount(id)}
+                    onSwitch={(id) => {
+                        actions.switchAccount(id);
+                        supabase.switchToAccount?.(id);
+                    }}
                     onAddChannel={() => window.location.href = "/dashboard/profile"}
                 />
             )}

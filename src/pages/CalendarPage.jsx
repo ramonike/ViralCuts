@@ -240,6 +240,48 @@ export default function CalendarPage() {
     const connectedAccounts = state.auth?.connectedAccounts || [];
     const activeAccountId = state.auth?.activeAccountId;
 
+    // Quando o usuário troca de canal, sincroniza o filtro do Supabase
+    const handleSwitchAccount = useCallback((accountId) => {
+        actions.switchAccount(accountId);        // troca no state local (history/queue por canal)
+        supabase.switchToAccount?.(accountId);   // refiltro no Supabase sem nova requisição
+    }, [actions, supabase]);
+
+    // ── Fila combinada filtrada pelo canal ativo ───────────────────────────────
+    // Se só há 1 canal, mostra tudo. Com múltiplos canais, filtra por channelId.
+    const shouldFilter = connectedAccounts.length > 1 && activeAccountId;
+
+    const combinedQueue = useMemo(() => {
+        const localQueue = supabase.user ? supabase.uploadQueue : state.uploadQueue;
+        const backendIds = new Set(scheduledUploads.map(u => u.id));
+        const merged = [...scheduledUploads, ...localQueue.filter(item => !backendIds.has(item.id))];
+
+        if (!shouldFilter) return merged;
+
+        // Filtra por channelId quando disponível; itens sem channelId são
+        // exibidos no canal ativo (compatibilidade com uploads antigos)
+        return merged.filter(item =>
+            !item.channelId || item.channelId === activeAccountId
+        );
+    }, [supabase.user, supabase.uploadQueue, state.uploadQueue, scheduledUploads, shouldFilter, activeAccountId]);
+
+    // ── Histórico filtrado pelo canal ativo ───────────────────────────────────
+    const filteredHistory = useMemo(() => {
+        const raw = supabase.user ? supabase.history : state.history;
+        if (!shouldFilter) return raw;
+
+        // Filtra os completedItems de cada dia pelo canal ativo
+        const result = {};
+        Object.entries(raw || {}).forEach(([date, day]) => {
+            const items = (day?.completedItems || []).filter(item =>
+                !item.channelId || item.channelId === activeAccountId
+            );
+            if (items.length > 0) {
+                result[date] = { ...day, completedItems: items, uploads: items.length };
+            }
+        });
+        return result;
+    }, [supabase.user, supabase.history, state.history, shouldFilter, activeAccountId]);
+
     const [isScheduleModalOpen, setScheduleModalOpen] = useState(false);
     const [selectedScheduleDate, setSelectedScheduleDate] = useState(null);
     const [selectedVideo, setSelectedVideo] = useState(null);
@@ -273,13 +315,6 @@ export default function CalendarPage() {
     }, [supabase.user]);
 
     useEffect(() => { loadScheduledUploads(); }, [loadScheduledUploads]);
-
-    // ── Fila combinada: backend + local (sem duplicatas) ──────────────────────
-    const combinedQueue = useMemo(() => {
-        const localQueue = supabase.user ? supabase.uploadQueue : state.uploadQueue;
-        const backendIds = new Set(scheduledUploads.map(u => u.id));
-        return [...scheduledUploads, ...localQueue.filter(item => !backendIds.has(item.id))];
-    }, [supabase.user, supabase.uploadQueue, state.uploadQueue, scheduledUploads]);
 
     // ── Stats derivadas ────────────────────────────────────────────────────────
     const now = new Date();
@@ -335,7 +370,10 @@ export default function CalendarPage() {
     };
 
     const handleScheduleSubmit = async (videoData) => {
-        await hybridActions.addToUploadQueue(videoData);
+        await hybridActions.addToUploadQueue({
+            ...videoData,
+            channelId: activeAccountId || null,
+        });
         setScheduleModalOpen(false);
         setSelectedScheduleDate(null);
     };
@@ -403,7 +441,7 @@ export default function CalendarPage() {
                             mode="compact"
                             accounts={connectedAccounts}
                             activeId={activeAccountId}
-                            onSwitch={(id) => actions.switchAccount(id)}
+                            onSwitch={handleSwitchAccount}
                             onAddChannel={() => window.location.href = "/dashboard/profile"}
                         />
                     )}
@@ -463,7 +501,7 @@ export default function CalendarPage() {
                     {/* ModernCalendar — preservado sem alterações */}
                     <div style={{ padding: "0 4px 4px" }}>
                         <ModernCalendar
-                            history={supabase.user ? supabase.history : state.history}
+                            history={filteredHistory}
                             uploadQueue={combinedQueue}
                             onScheduleVideo={handleScheduleVideo}
                             onEditVideo={(video) => { setSelectedVideo(video); setVideoModalOpen(true); }}
