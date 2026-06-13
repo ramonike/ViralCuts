@@ -1,16 +1,20 @@
-import React, { useState, useRef, useMemo } from "react";
+/**
+ * ChannelPage (era VideosPage) — v2
+ * Renomeada para "Canal" — biblioteca dos vídeos já publicados no YouTube
+ * Upload imediato movido para o modal do Pipeline
+ * Ferramentas externas removidas
+ */
+import React, { useState, useMemo } from "react";
 import {
-    Upload, Play, Eye, ThumbsUp, Clock, Search,
-    RefreshCw, ExternalLink, MoreVertical, Filter,
-    Youtube, Sparkles, ArrowUpRight, Video, X
+    Eye, ThumbsUp, Clock, Search, RefreshCw,
+    Play, Youtube, X, ExternalLink, TrendingUp,
+    BarChart2, Video, ArrowUpRight
 } from "lucide-react";
 import { useDashboardState } from "../hooks/useDashboardState";
 import { useSupabaseDashboard } from "../hooks/useSupabaseDashboard";
-import { SharedUploadQueue } from "../components/shared/SharedUploadQueue";
 import { PageLayout } from "../components/layout/PageLayout";
-import { useTheme } from "../contexts/ThemeContext";
 
-// ─── Helpers ─────────────────────────────────────────────────────────────────
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 const formatNum = (n) => {
     if (!n) return "0";
     const v = parseInt(n);
@@ -21,259 +25,364 @@ const formatNum = (n) => {
 
 const formatDate = (iso) => {
     if (!iso) return "—";
-    return new Date(iso).toLocaleDateString("pt-BR", { day: "2-digit", month: "short", year: "numeric" });
+    return new Date(iso).toLocaleDateString("pt-BR", {
+        day: "2-digit", month: "short", year: "numeric",
+    });
 };
 
-const AI_TOOLS = [
-    { id: "vizard", name: "Vizard.ai", desc: "Cortes com IA", url: "https://vizard.ai/workspace", emoji: "🎬", color: "from-purple-500/20 to-pink-500/20 border-purple-500/30" },
-    { id: "opus", name: "OpusClip", desc: "Shorts virais", url: "https://www.opus.pro/", emoji: "✂️", color: "from-blue-500/20 to-cyan-500/20 border-blue-500/30" },
-    { id: "klap", name: "Klap", desc: "Edição automática", url: "https://klap.app/", emoji: "⚡", color: "from-green-500/20 to-emerald-500/20 border-green-500/30" },
-    { id: "submagic", name: "Submagic", desc: "Legendas", url: "https://www.submagic.co/", emoji: "💬", color: "from-orange-500/20 to-red-500/20 border-orange-500/30" },
-];
-
-// ─── Upload Zone ─────────────────────────────────────────────────────────────
-function UploadZone({ onUpload, isDark }) {
-    const [dragging, setDragging] = useState(false);
-    const [privacy, setPrivacy] = useState("private");
-    const fileRef = useRef(null);
-
-    const handleDrop = (e) => {
-        e.preventDefault();
-        setDragging(false);
-        const file = e.dataTransfer.files?.[0];
-        if (file?.type.startsWith("video/")) onUpload(file, privacy);
-    };
-
-    return (
-        <div
-            className={`rounded-2xl border-2 border-dashed transition-all cursor-pointer ${dragging
-                    ? "border-primary bg-primary/10 scale-[1.01]"
-                    : isDark ? "border-surface-600 hover:border-primary/50 bg-surface-800/30" : "border-gray-300 hover:border-primary/50 bg-gray-50"
-                }`}
-            onClick={() => fileRef.current?.click()}
-            onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
-            onDragLeave={() => setDragging(false)}
-            onDrop={handleDrop}
-        >
-            <input ref={fileRef} type="file" accept="video/*" className="hidden" onChange={(e) => {
-                const f = e.target.files?.[0];
-                if (f) { onUpload(f, privacy); e.target.value = ""; }
-            }} />
-            <div className="flex flex-col items-center justify-center py-10 px-6 text-center">
-                <div className={`w-14 h-14 rounded-2xl flex items-center justify-center mb-4 transition-transform ${dragging ? "scale-110" : ""} ${isDark ? "bg-primary/10" : "bg-primary/10"}`}>
-                    <Upload className="w-6 h-6 text-primary" />
-                </div>
-                <p className={`text-sm font-semibold mb-1 ${isDark ? "text-white" : "text-gray-800"}`}>
-                    {dragging ? "Solte o vídeo aqui" : "Enviar vídeo agora para o YouTube"}
-                </p>
-                <p className={`text-xs mb-1 ${isDark ? "text-slate-500" : "text-gray-400"}`}>MP4, MOV, AVI até 256GB · Publicação imediata</p>
-                <p className={`text-[11px] mb-4 ${isDark ? "text-slate-600" : "text-gray-400"}`}>Para agendar com data e hora, use a aba <strong>Calendário</strong></p>
-                <div className="flex items-center gap-2" onClick={e => e.stopPropagation()}>
-                    <span className={`text-xs ${isDark ? "text-slate-400" : "text-gray-500"}`}>Privacidade:</span>
-                    <select
-                        value={privacy}
-                        onChange={e => setPrivacy(e.target.value)}
-                        className={`text-xs rounded-lg px-2 py-1 border focus:outline-none ${isDark ? "bg-surface-900 border-surface-600 text-slate-300" : "bg-white border-gray-200 text-gray-700"}`}
-                    >
-                        <option value="private">🔒 Privado</option>
-                        <option value="public">🌍 Público</option>
-                        <option value="unlisted">🔗 Não listado</option>
-                    </select>
-                </div>
-            </div>
-        </div>
-    );
-}
-
 // ─── Video Card ───────────────────────────────────────────────────────────────
-function VideoCard({ video, isDark }) {
-    // Estrutura flat: { id, title, publishedAt, thumbnail, thumbnails, viewCount, likeCount, url }
+function VideoCard({ video }) {
     const videoId = typeof video.id === "object" ? video.id?.videoId : video.id;
     const thumb = video.thumbnail || video.thumbnails?.medium?.url || video.thumbnails?.default?.url;
     const title = video.title || "Sem título";
     const viewCount = video.viewCount ?? 0;
     const likeCount = video.likeCount ?? 0;
-    const publishedAt = video.publishedAt;
     const videoUrl = video.url || `https://youtube.com/watch?v=${videoId}`;
+    const [imgError, setImgError] = useState(false);
 
     return (
-        <div className={`rounded-xl border overflow-hidden group transition-all hover:scale-[1.01] ${isDark ? "bg-surface-800/50 border-surface-700/50 hover:border-primary/30" : "bg-white border-gray-200 hover:border-primary/30"} shadow-sm`}>
+        <div
+            className="vc-card"
+            style={{ padding: 0, overflow: "hidden", cursor: "default" }}
+        >
             {/* Thumbnail */}
-            <div className="relative aspect-video bg-surface-900 overflow-hidden">
-                {thumb ? (
-                    <img src={thumb} alt={title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+            <div style={{
+                position: "relative",
+                aspectRatio: "16/9",
+                background: "var(--bg-elevated)",
+                overflow: "hidden",
+            }}>
+                {thumb && !imgError ? (
+                    <img
+                        src={thumb}
+                        alt={title}
+                        onError={() => setImgError(true)}
+                        style={{
+                            width: "100%", height: "100%",
+                            objectFit: "cover",
+                            transition: "transform 0.3s ease",
+                        }}
+                        onMouseEnter={e => e.target.style.transform = "scale(1.04)"}
+                        onMouseLeave={e => e.target.style.transform = "scale(1)"}
+                    />
                 ) : (
-                    <div className="w-full h-full flex items-center justify-center">
-                        <Video className="w-8 h-8 text-slate-600" />
+                    <div style={{
+                        width: "100%", height: "100%",
+                        display: "flex", alignItems: "center", justifyContent: "center",
+                    }}>
+                        <Video size={28} style={{ color: "var(--text-muted)" }} />
                     </div>
                 )}
-                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all flex items-center justify-center">
-                    <a href={videoUrl} target="_blank" rel="noopener noreferrer"
-                        className="w-10 h-10 rounded-full bg-white/90 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"
-                        onClick={e => e.stopPropagation()}>
-                        <Play className="w-4 h-4 text-slate-900 ml-0.5" />
-                    </a>
-                </div>
+
+                {/* Play overlay */}
+                <a
+                    href={videoUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={e => e.stopPropagation()}
+                    style={{
+                        position: "absolute", inset: 0,
+                        display: "flex", alignItems: "center", justifyContent: "center",
+                        background: "rgba(0,0,0,0)",
+                        transition: "background 0.2s",
+                        textDecoration: "none",
+                    }}
+                    onMouseEnter={e => {
+                        e.currentTarget.style.background = "rgba(0,0,0,0.4)";
+                        e.currentTarget.querySelector(".play-btn").style.opacity = "1";
+                    }}
+                    onMouseLeave={e => {
+                        e.currentTarget.style.background = "rgba(0,0,0,0)";
+                        e.currentTarget.querySelector(".play-btn").style.opacity = "0";
+                    }}
+                >
+                    <div className="play-btn" style={{
+                        width: 40, height: 40, borderRadius: "50%",
+                        background: "rgba(255,255,255,0.92)",
+                        display: "flex", alignItems: "center", justifyContent: "center",
+                        opacity: 0, transition: "opacity 0.2s",
+                        boxShadow: "0 2px 12px rgba(0,0,0,0.3)",
+                    }}>
+                        <Play size={16} style={{ color: "#111", marginLeft: 2, fill: "#111" }} />
+                    </div>
+                </a>
             </div>
 
             {/* Info */}
-            <div className="p-3">
-                <p className={`text-sm font-medium line-clamp-2 mb-2 leading-tight ${isDark ? "text-white" : "text-gray-900"}`}>
+            <div style={{ padding: "12px 14px" }}>
+                <p style={{
+                    margin: "0 0 8px",
+                    fontFamily: "var(--font-display)",
+                    fontWeight: 600,
+                    fontSize: "0.875rem",
+                    color: "var(--text-primary)",
+                    letterSpacing: "-0.01em",
+                    lineHeight: 1.4,
+                    display: "-webkit-box",
+                    WebkitLineClamp: 2,
+                    WebkitBoxOrient: "vertical",
+                    overflow: "hidden",
+                }}>
                     {title}
                 </p>
-                <div className={`flex items-center gap-3 text-xs ${isDark ? "text-slate-500" : "text-gray-400"}`}>
-                    <span className="flex items-center gap-1"><Eye className="w-3 h-3" />{formatNum(viewCount)}</span>
-                    <span className="flex items-center gap-1"><ThumbsUp className="w-3 h-3" />{formatNum(likeCount)}</span>
-                    <span className="flex items-center gap-1 ml-auto"><Clock className="w-3 h-3" />{formatDate(publishedAt)}</span>
+
+                <div style={{
+                    display: "flex", alignItems: "center",
+                    gap: 12, flexWrap: "wrap",
+                }}>
+                    <span style={{
+                        display: "flex", alignItems: "center", gap: 4,
+                        fontSize: "0.75rem", color: "var(--text-muted)",
+                    }}>
+                        <Eye size={12} /> {formatNum(viewCount)}
+                    </span>
+                    <span style={{
+                        display: "flex", alignItems: "center", gap: 4,
+                        fontSize: "0.75rem", color: "var(--text-muted)",
+                    }}>
+                        <ThumbsUp size={12} /> {formatNum(likeCount)}
+                    </span>
+                    <span style={{
+                        display: "flex", alignItems: "center", gap: 4,
+                        fontSize: "0.75rem", color: "var(--text-muted)",
+                        marginLeft: "auto",
+                    }}>
+                        <Clock size={12} /> {formatDate(video.publishedAt)}
+                    </span>
                 </div>
             </div>
         </div>
     );
 }
 
-// ─── Ferramentas IA ───────────────────────────────────────────────────────────
-function AIToolsBar({ isDark }) {
+// ─── Channel Stats Strip ──────────────────────────────────────────────────────
+function ChannelStrip({ channelStats }) {
+    if (!channelStats) return null;
+
+    const stats = channelStats.statistics || {};
+    const items = [
+        { label: "Inscritos", value: formatNum(stats.subscriberCount), accent: "teal" },
+        { label: "Visualizações", value: formatNum(stats.viewCount), accent: "amber" },
+        { label: "Vídeos", value: formatNum(stats.videoCount), accent: "coral" },
+    ];
+
     return (
-        <div className={`rounded-xl border p-4 ${isDark ? "bg-surface-800/30 border-surface-700/50" : "bg-gray-50 border-gray-200"}`}>
-            <div className="flex items-center gap-2 mb-3">
-                <Sparkles className="w-4 h-4 text-purple-400" />
-                <span className={`text-xs font-bold uppercase tracking-wider ${isDark ? "text-slate-400" : "text-gray-500"}`}>Ferramentas de edição</span>
-            </div>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                {AI_TOOLS.map(tool => (
-                    <a key={tool.id} href={tool.url} target="_blank" rel="noopener noreferrer"
-                        className={`flex items-center gap-2 p-2.5 rounded-lg border bg-gradient-to-br ${tool.color} hover:scale-[1.02] transition-all`}>
-                        <span className="text-base">{tool.emoji}</span>
-                        <div>
-                            <p className={`text-xs font-semibold ${isDark ? "text-white" : "text-gray-800"}`}>{tool.name}</p>
-                            <p className={`text-[10px] ${isDark ? "text-slate-400" : "text-gray-500"}`}>{tool.desc}</p>
-                        </div>
-                        <ArrowUpRight className="w-3 h-3 text-slate-400 ml-auto" />
-                    </a>
-                ))}
-            </div>
+        <div style={{
+            display: "flex", gap: 12, flexWrap: "wrap", marginBottom: 20,
+        }}>
+            {items.map(item => (
+                <div
+                    key={item.label}
+                    className={`vc-metric-card metric-${item.accent}`}
+                    style={{ flex: "1 1 140px", padding: "14px 16px" }}
+                >
+                    <div className="vc-metric-label">{item.label}</div>
+                    <div className="vc-metric-value" style={{ fontSize: "1.5rem" }}>
+                        {item.value}
+                    </div>
+                </div>
+            ))}
         </div>
     );
 }
 
-// ─── Main Page ────────────────────────────────────────────────────────────────
-export default function VideosPage() {
-    const { state, actions } = useDashboardState();
-    const supabase = useSupabaseDashboard();
-    const { theme } = useTheme();
-    const isDark = theme === "dark" || (theme === "system" && window.matchMedia("(prefers-color-scheme: dark)").matches);
-
-    const [search, setSearch] = useState("");
-    const [filter, setFilter] = useState("all"); // all | public | private | unlisted
-
-    // Vídeos reais do canal
-    const allVideos = state.recentUploads || [];
-
-    const filteredVideos = useMemo(() => {
-        return allVideos.filter(v => {
-            const title = v.title || "";
-            const matchSearch = title.toLowerCase().includes(search.toLowerCase());
-            const matchFilter = filter === "all";
-            return matchSearch && matchFilter;
-        });
-    }, [allVideos, search, filter]);
-
-    const handleUpload = (file, privacy) => {
-        const item = {
-            title: file.name.replace(/\.[^/.]+$/, ""),
-            source: "upload",
-            platform: "YouTube",
-            file,
-            privacyStatus: privacy,
-        };
-        if (supabase.user) {
-            supabase.actions.addToQueue(item).catch(() => actions.addToUploadQueue(item));
-        } else {
-            actions.addToUploadQueue(item);
-        }
-    };
+// ─── Empty State ──────────────────────────────────────────────────────────────
+function EmptyState({ hasChannel, onNavigateProfile }) {
+    if (!hasChannel) return (
+        <div style={{
+            border: "2px dashed var(--border-default)",
+            borderRadius: "var(--radius-lg)",
+            padding: "56px 24px", textAlign: "center",
+        }}>
+            <div style={{
+                width: 52, height: 52, borderRadius: "var(--radius-md)",
+                background: "var(--bg-elevated)",
+                display: "flex", alignItems: "center", justifyContent: "center",
+                margin: "0 auto 14px",
+            }}>
+                <Youtube size={24} style={{ color: "var(--text-muted)" }} />
+            </div>
+            <p style={{ margin: "0 0 6px", fontFamily: "var(--font-display)", fontWeight: 600, fontSize: "1rem", color: "var(--text-secondary)" }}>
+                Canal não conectado
+            </p>
+            <p style={{ margin: "0 0 16px", fontSize: "0.875rem", color: "var(--text-muted)" }}>
+                Conecte seu YouTube nas configurações para ver seus vídeos aqui
+            </p>
+            {onNavigateProfile && (
+                <button onClick={onNavigateProfile} className="vc-btn vc-btn-primary vc-btn-sm">
+                    Conectar YouTube <ArrowUpRight size={13} />
+                </button>
+            )}
+        </div>
+    );
 
     return (
-        <PageLayout title="Vídeos" subtitle="Gerencie seu canal, faça uploads e acompanhe seus vídeos." maxWidth="7xl">
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <div style={{
+            border: "2px dashed var(--border-subtle)",
+            borderRadius: "var(--radius-lg)",
+            padding: "56px 24px", textAlign: "center",
+        }}>
+            <Video size={28} style={{ color: "var(--text-muted)", marginBottom: 12 }} />
+            <p style={{ margin: 0, fontSize: "0.875rem", color: "var(--text-muted)" }}>
+                Nenhum vídeo encontrado
+            </p>
+        </div>
+    );
+}
 
-                {/* ── Coluna principal ── */}
-                <div className="lg:col-span-8 space-y-6">
+// ─── Main ─────────────────────────────────────────────────────────────────────
+export default function ChannelPage() {
+    const { state, actions } = useDashboardState();
+    const supabase = useSupabaseDashboard();
 
-                    {/* Upload */}
-                    <UploadZone onUpload={handleUpload} isDark={isDark} />
+    const [search, setSearch] = useState("");
+    const [sortBy, setSortBy] = useState("date"); // date | views | likes
 
-                    {/* Biblioteca do canal */}
-                    <div>
-                        <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
-                            <h2 className={`text-base font-bold ${isDark ? "text-white" : "text-gray-900"}`}>
-                                Meus vídeos
-                                {allVideos.length > 0 && <span className={`ml-2 text-xs font-normal ${isDark ? "text-slate-500" : "text-gray-400"}`}>({allVideos.length})</span>}
-                            </h2>
-                            <div className="flex items-center gap-2">
-                                {/* Filtro */}
-                                <select
-                                    value={filter}
-                                    onChange={e => setFilter(e.target.value)}
-                                    className={`text-xs rounded-lg px-2 py-1.5 border focus:outline-none ${isDark ? "bg-surface-800 border-surface-600 text-slate-300" : "bg-white border-gray-200 text-gray-700"}`}
-                                >
-                                    <option value="all">Todos</option>
-                                    <option value="public">Públicos</option>
-                                    <option value="private">Privados</option>
-                                    <option value="unlisted">Não listados</option>
-                                </select>
-                                {/* Busca */}
-                                <div className="relative">
-                                    <Search className="w-3 h-3 absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-500" />
-                                    <input
-                                        value={search}
-                                        onChange={e => setSearch(e.target.value)}
-                                        placeholder="Buscar vídeo..."
-                                        className={`text-xs rounded-lg pl-7 pr-3 py-1.5 border focus:outline-none w-40 ${isDark ? "bg-surface-800 border-surface-600 text-white placeholder:text-slate-500" : "bg-white border-gray-200 text-gray-800"}`}
-                                    />
-                                    {search && <button onClick={() => setSearch("")} className="absolute right-2 top-1/2 -translate-y-1/2"><X className="w-3 h-3 text-slate-500" /></button>}
-                                </div>
-                                {/* Refresh */}
-                                <button
-                                    onClick={() => actions.refreshChannelStats()}
-                                    className={`p-1.5 rounded-lg transition-colors ${isDark ? "bg-surface-800 hover:bg-surface-700 text-slate-400 hover:text-white border border-surface-600" : "bg-white hover:bg-gray-50 text-gray-400 border border-gray-200"}`}
-                                >
-                                    <RefreshCw className="w-3.5 h-3.5" />
-                                </button>
-                            </div>
-                        </div>
+    const allVideos = state.recentUploads || [];
+    const channelStats = state.channelStats;
 
-                        {filteredVideos.length > 0 ? (
-                            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
-                                {filteredVideos.map((video, i) => (
-                                    <VideoCard key={video.id?.videoId || video.id || i} video={video} isDark={isDark} />
-                                ))}
-                            </div>
-                        ) : allVideos.length === 0 ? (
-                            <div className={`rounded-2xl border-2 border-dashed p-12 text-center ${isDark ? "border-surface-700" : "border-gray-200"}`}>
-                                <Youtube className="w-10 h-10 text-slate-600 mx-auto mb-3" />
-                                <p className={`text-sm font-medium mb-1 ${isDark ? "text-slate-400" : "text-gray-500"}`}>Nenhum vídeo encontrado</p>
-                                <p className={`text-xs ${isDark ? "text-slate-600" : "text-gray-400"}`}>Conecte seu YouTube ou sincronize para ver seus vídeos aqui</p>
-                            </div>
-                        ) : (
-                            <div className={`rounded-xl p-8 text-center ${isDark ? "bg-surface-800/30" : "bg-gray-50"}`}>
-                                <p className={`text-sm ${isDark ? "text-slate-500" : "text-gray-400"}`}>Nenhum vídeo corresponde à busca</p>
-                            </div>
+    const hasChannel = !!(
+        state.auth?.youtubeToken &&
+        state.auth?.youtubeTokenExpiresAt > Date.now()
+    );
+
+    const filteredVideos = useMemo(() => {
+        let list = [...allVideos];
+
+        if (search) {
+            list = list.filter(v =>
+                (v.title || "").toLowerCase().includes(search.toLowerCase())
+            );
+        }
+
+        list.sort((a, b) => {
+            if (sortBy === "views") return (parseInt(b.viewCount) || 0) - (parseInt(a.viewCount) || 0);
+            if (sortBy === "likes") return (parseInt(b.likeCount) || 0) - (parseInt(a.likeCount) || 0);
+            return new Date(b.publishedAt || 0) - new Date(a.publishedAt || 0);
+        });
+
+        return list;
+    }, [allVideos, search, sortBy]);
+
+    return (
+        <PageLayout maxWidth="7xl" spacing="standard">
+
+            {/* ── Header ──────────────────────────────────────── */}
+            <div style={{
+                display: "flex", alignItems: "flex-end",
+                justifyContent: "space-between", flexWrap: "wrap",
+                gap: 12, marginBottom: 20,
+            }}>
+                <div>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+                        <Youtube size={18} style={{ color: "var(--accent-coral)" }} />
+                        <h1 style={{
+                            margin: 0,
+                            fontFamily: "var(--font-display)", fontWeight: 700,
+                            fontSize: "1.875rem", letterSpacing: "-0.035em",
+                            color: "var(--text-primary)", lineHeight: 1,
+                        }}>
+                            Canal
+                        </h1>
+                    </div>
+                    <p style={{ margin: 0, fontSize: "0.9375rem", color: "var(--text-muted)" }}>
+                        {channelStats?.title
+                            ? `@${channelStats.title} · biblioteca de vídeos publicados`
+                            : "Biblioteca de vídeos publicados no YouTube"
+                        }
+                    </p>
+                </div>
+
+                <button
+                    onClick={() => actions.refreshChannelStats?.()}
+                    className="vc-btn vc-btn-secondary vc-btn-sm"
+                >
+                    <RefreshCw size={13} /> Sincronizar
+                </button>
+            </div>
+
+            {/* ── Channel stats ─────────────────────────────── */}
+            <ChannelStrip channelStats={channelStats} />
+
+            {/* ── Filtros ───────────────────────────────────── */}
+            {allVideos.length > 0 && (
+                <div style={{
+                    display: "flex", alignItems: "center", gap: 10,
+                    marginBottom: 16, flexWrap: "wrap",
+                }}>
+                    {/* Search */}
+                    <div className="vc-input-wrap" style={{ flex: "1 1 200px", maxWidth: 320 }}>
+                        <Search size={14} className="vc-input-icon-left" />
+                        <input
+                            value={search}
+                            onChange={e => setSearch(e.target.value)}
+                            placeholder="Buscar vídeo..."
+                            className="vc-input has-icon-left"
+                            style={{ paddingRight: search ? 32 : 12 }}
+                        />
+                        {search && (
+                            <button
+                                onClick={() => setSearch("")}
+                                style={{
+                                    position: "absolute", right: 10, top: "50%",
+                                    transform: "translateY(-50%)",
+                                    background: "none", border: "none",
+                                    color: "var(--text-muted)", cursor: "pointer", padding: 0,
+                                }}
+                            >
+                                <X size={14} />
+                            </button>
                         )}
                     </div>
 
-                    {/* Ferramentas IA */}
-                    <AIToolsBar isDark={isDark} />
-                </div>
-
-                {/* ── Sidebar: Fila ── */}
-                <div className="lg:col-span-4">
-                    <div className="sticky top-6">
-                        <SharedUploadQueue />
+                    {/* Sort */}
+                    <div style={{ display: "flex", gap: 6 }}>
+                        {[
+                            { key: "date", label: "Recentes", icon: <Clock size={12} /> },
+                            { key: "views", label: "Mais vistos", icon: <Eye size={12} /> },
+                            { key: "likes", label: "Mais curtidos", icon: <ThumbsUp size={12} /> },
+                        ].map(opt => (
+                            <button
+                                key={opt.key}
+                                onClick={() => setSortBy(opt.key)}
+                                className={`vc-btn vc-btn-sm ${sortBy === opt.key ? "vc-btn-primary" : "vc-btn-secondary"}`}
+                            >
+                                {opt.icon} {opt.label}
+                            </button>
+                        ))}
                     </div>
-                </div>
 
-            </div>
+                    <span style={{
+                        marginLeft: "auto", fontSize: "0.75rem",
+                        color: "var(--text-muted)", fontFamily: "var(--font-display)",
+                        fontWeight: 500,
+                    }}>
+                        {filteredVideos.length} vídeo{filteredVideos.length !== 1 ? "s" : ""}
+                    </span>
+                </div>
+            )}
+
+            {/* ── Grid de vídeos ────────────────────────────── */}
+            {filteredVideos.length > 0 ? (
+                <div style={{
+                    display: "grid",
+                    gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))",
+                    gap: 14,
+                }}>
+                    {filteredVideos.map((video, i) => (
+                        <VideoCard
+                            key={video.id?.videoId || video.id || i}
+                            video={video}
+                        />
+                    ))}
+                </div>
+            ) : (
+                <EmptyState
+                    hasChannel={hasChannel}
+                    onNavigateProfile={() => window.location.href = "/dashboard/profile"}
+                />
+            )}
+
         </PageLayout>
     );
 }

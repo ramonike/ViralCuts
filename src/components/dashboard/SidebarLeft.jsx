@@ -1,4 +1,4 @@
-import { Home, Video, Settings, TrendingUp, LogOut, User, Sparkles, Sun, Moon, GitBranch } from 'lucide-react';
+import { Home, Video, Settings, TrendingUp, LogOut, User, Sparkles, Sun, Moon, GitBranch, Youtube } from 'lucide-react';
 import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTheme } from '../../contexts/ThemeContext';
@@ -34,7 +34,7 @@ export const SidebarLeft = () => {
             path: '/dashboard/calendar',
             highlight: true,         // acento visual especial
         },
-        { icon: Video, label: 'Vídeos', path: '/dashboard/videos' },
+        { icon: Youtube, label: 'Canal', path: '/dashboard/videos' },
         { icon: Sparkles, label: 'Criação IA', path: '/dashboard/creation' },
         { icon: TrendingUp, label: 'Analytics', path: '/dashboard/analytics' },
     ];

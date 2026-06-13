@@ -109,6 +109,7 @@ export function ScheduleVideoModal({ isOpen, onClose, selectedDate, onSchedule }
         scheduledDate: selectedDate || new Date().toISOString().split('T')[0],
         scheduledTime: '12:00', timezone: getLocalTimezone(),
         useNativeScheduling: true, file: null,
+        publishNow: false,  // toggle: publicar agora vs agendar
     };
 
     const [form, setForm] = useState(emptyForm);
@@ -157,21 +158,23 @@ export function ScheduleVideoModal({ isOpen, onClose, selectedDate, onSchedule }
         setAiLoading(false);
     };
 
-    const isScheduleValid = isValidFuture(form.scheduledDate, form.scheduledTime);
+    const isScheduleValid = form.publishNow || isValidFuture(form.scheduledDate, form.scheduledTime);
 
     const handleSubmit = () => {
         if (!form.title) { setValidErr('Título é obrigatório'); return; }
         if (!form.file && form.platform === 'youtube-shorts') { setValidErr('Selecione um arquivo de vídeo'); return; }
         if (!isScheduleValid) { setValidErr('O horário deve ser pelo menos 5 minutos no futuro'); return; }
 
-        const dt = new Date(`${form.scheduledDate}T${form.scheduledTime}:00`);
+        const dt = form.publishNow ? new Date() : new Date(`${form.scheduledDate}T${form.scheduledTime}:00`);
         onSchedule({
             title: form.title, description: form.description,
-            platform: form.platform, scheduledAt: dt.toISOString(),
-            publishAt: form.useNativeScheduling ? dt.toISOString() : null,
+            platform: form.platform, scheduledAt: form.publishNow ? null : dt.toISOString(),
+            publishAt: form.publishNow ? null : (form.useNativeScheduling ? dt.toISOString() : null),
             privacyStatus: form.privacyStatus,
             tags: form.tags.split(',').map(t => t.trim()).filter(Boolean),
-            file: form.file, timezone: form.timezone, source: 'scheduled',
+            file: form.file, timezone: form.timezone,
+            source: form.publishNow ? 'immediate' : 'scheduled',
+            publishNow: form.publishNow,
         });
         setForm(emptyForm);
         setStep(1);
@@ -516,82 +519,140 @@ export function ScheduleVideoModal({ isOpen, onClose, selectedDate, onSchedule }
                     {step === 3 && (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
 
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
-                                {/* Data */}
-                                <div>
-                                    <SectionLabel>Data</SectionLabel>
-                                    <input
-                                        type="date"
-                                        value={form.scheduledDate}
-                                        min={minDate} max={maxDate}
-                                        onChange={(e) => set('scheduledDate', e.target.value)}
-                                        className="vc-input"
-                                        style={{ colorScheme: 'dark' }}
-                                    />
-                                </div>
-
-                                {/* Horário */}
-                                <div>
-                                    <SectionLabel>Horário</SectionLabel>
-                                    <input
-                                        type="time"
-                                        value={form.scheduledTime}
-                                        onChange={(e) => set('scheduledTime', e.target.value)}
-                                        className="vc-input"
-                                        style={{ colorScheme: 'dark' }}
-                                    />
-                                </div>
+                            {/* Toggle: Publicar agora vs Agendar */}
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                                {[
+                                    {
+                                        key: false,
+                                        icon: <Calendar size={18} style={{ color: form.publishNow ? 'var(--text-muted)' : 'var(--accent-coral)' }} />,
+                                        title: 'Agendar',
+                                        desc: 'Escolhe data e hora',
+                                    },
+                                    {
+                                        key: true,
+                                        icon: <Zap size={18} style={{ color: form.publishNow ? 'var(--accent-amber)' : 'var(--text-muted)' }} />,
+                                        title: 'Publicar agora',
+                                        desc: 'Envia imediatamente',
+                                    },
+                                ].map(opt => (
+                                    <button
+                                        key={String(opt.key)}
+                                        onClick={() => set('publishNow', opt.key)}
+                                        style={{
+                                            display: 'flex', flexDirection: 'column', alignItems: 'center',
+                                            gap: 6, padding: '14px 12px',
+                                            background: form.publishNow === opt.key
+                                                ? opt.key ? 'var(--accent-amber-3)' : 'var(--accent-coral-3)'
+                                                : 'var(--bg-tertiary)',
+                                            border: `1px solid ${form.publishNow === opt.key
+                                                ? opt.key ? 'rgba(240,165,0,0.3)' : 'rgba(232,65,42,0.25)'
+                                                : 'var(--border-subtle)'}`,
+                                            borderRadius: 'var(--radius-md)', cursor: 'pointer',
+                                            transition: 'all 0.15s',
+                                        }}
+                                    >
+                                        {opt.icon}
+                                        <span style={{
+                                            fontFamily: 'var(--font-display)', fontWeight: 700,
+                                            fontSize: '0.875rem', letterSpacing: '-0.02em',
+                                            color: form.publishNow === opt.key ? 'var(--text-primary)' : 'var(--text-secondary)',
+                                        }}>{opt.title}</span>
+                                        <span style={{ fontSize: '0.6875rem', color: 'var(--text-muted)' }}>
+                                            {opt.desc}
+                                        </span>
+                                    </button>
+                                ))}
                             </div>
 
-                            {/* Fuso */}
-                            <div>
-                                <SectionLabel>Fuso horário</SectionLabel>
-                                <select
-                                    value={form.timezone}
-                                    onChange={(e) => set('timezone', e.target.value)}
-                                    className="vc-input"
-                                    style={{ colorScheme: 'dark' }}
-                                >
-                                    {TIMEZONES.map(tz => (
-                                        <option key={tz.value} value={tz.value}>
-                                            {tz.label} (UTC{tz.offset})
-                                        </option>
-                                    ))}
-                                </select>
-                            </div>
+                            {/* Campos de data — só aparecem quando "Agendar" está selecionado */}
+                            {!form.publishNow && (
+                                <>
+                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+                                        <div>
+                                            <SectionLabel>Data</SectionLabel>
+                                            <input
+                                                type="date"
+                                                value={form.scheduledDate}
+                                                min={minDate} max={maxDate}
+                                                onChange={(e) => set('scheduledDate', e.target.value)}
+                                                className="vc-input"
+                                                style={{ colorScheme: 'dark' }}
+                                            />
+                                        </div>
+                                        <div>
+                                            <SectionLabel>Horário</SectionLabel>
+                                            <input
+                                                type="time"
+                                                value={form.scheduledTime}
+                                                onChange={(e) => set('scheduledTime', e.target.value)}
+                                                className="vc-input"
+                                                style={{ colorScheme: 'dark' }}
+                                            />
+                                        </div>
+                                    </div>
 
-                            {/* Validação */}
-                            {!isScheduleValid && (
-                                <div className="vc-toast vc-toast-amber" style={{ padding: '10px 14px' }}>
-                                    <AlertCircle size={15} style={{ flexShrink: 0, marginTop: 1 }} />
-                                    <p style={{ margin: 0, fontSize: '0.8125rem' }}>
-                                        O horário deve ser pelo menos 5 minutos no futuro
-                                    </p>
-                                </div>
+                                    <div>
+                                        <SectionLabel>Fuso horário</SectionLabel>
+                                        <select
+                                            value={form.timezone}
+                                            onChange={(e) => set('timezone', e.target.value)}
+                                            className="vc-input"
+                                            style={{ colorScheme: 'dark' }}
+                                        >
+                                            {TIMEZONES.map(tz => (
+                                                <option key={tz.value} value={tz.value}>
+                                                    {tz.label} (UTC{tz.offset})
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </div>
+
+                                    {!isScheduleValid && (
+                                        <div className="vc-toast vc-toast-amber" style={{ padding: '10px 14px' }}>
+                                            <AlertCircle size={15} style={{ flexShrink: 0, marginTop: 1 }} />
+                                            <p style={{ margin: 0, fontSize: '0.8125rem' }}>
+                                                O horário deve ser pelo menos 5 minutos no futuro
+                                            </p>
+                                        </div>
+                                    )}
+                                </>
                             )}
 
-                            {/* Resumo do agendamento */}
+                            {/* Resumo */}
                             {isScheduleValid && (
                                 <div style={{
                                     padding: '14px 16px',
-                                    background: 'var(--accent-teal-3)',
-                                    border: '1px solid rgba(0,201,167,0.2)',
+                                    background: form.publishNow ? 'var(--accent-amber-3)' : 'var(--accent-teal-3)',
+                                    border: `1px solid ${form.publishNow ? 'rgba(240,165,0,0.2)' : 'rgba(0,201,167,0.2)'}`,
                                     borderRadius: 'var(--radius-md)',
                                 }}>
                                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-                                        <CheckCircle size={14} style={{ color: 'var(--accent-teal)', flexShrink: 0 }} />
-                                        <span style={{ fontSize: '0.75rem', fontWeight: 600, fontFamily: 'var(--font-display)', color: 'var(--accent-teal)', letterSpacing: '0.04em', textTransform: 'uppercase' }}>
-                                            Pronto para agendar
+                                        {form.publishNow
+                                            ? <Zap size={14} style={{ color: 'var(--accent-amber)', flexShrink: 0 }} />
+                                            : <CheckCircle size={14} style={{ color: 'var(--accent-teal)', flexShrink: 0 }} />
+                                        }
+                                        <span style={{
+                                            fontSize: '0.75rem', fontWeight: 600,
+                                            fontFamily: 'var(--font-display)',
+                                            color: form.publishNow ? 'var(--accent-amber)' : 'var(--accent-teal)',
+                                            letterSpacing: '0.04em', textTransform: 'uppercase',
+                                        }}>
+                                            {form.publishNow ? 'Publicação imediata' : 'Pronto para agendar'}
                                         </span>
                                     </div>
                                     <p style={{ margin: 0, fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
-                                        <strong style={{ color: 'var(--text-primary)', fontFamily: 'var(--font-display)' }}>{form.title}</strong>
-                                        {' '}será publicado no{' '}
-                                        {PLATFORMS.find(p => p.id === form.platform)?.name}
-                                        {' '}em{' '}
-                                        <strong style={{ color: 'var(--text-primary)' }}>
-                                            {formatDateTime(form.scheduledDate, form.scheduledTime, form.timezone)}
+                                        <strong style={{ color: 'var(--text-primary)', fontFamily: 'var(--font-display)' }}>
+                                            {form.title}
                                         </strong>
+                                        {form.publishNow
+                                            ? ` será enviado agora para o ${PLATFORMS.find(p => p.id === form.platform)?.name}`
+                                            : ` será publicado no ${PLATFORMS.find(p => p.id === form.platform)?.name} em `
+                                        }
+                                        {!form.publishNow && (
+                                            <strong style={{ color: 'var(--text-primary)' }}>
+                                                {formatDateTime(form.scheduledDate, form.scheduledTime, form.timezone)}
+                                            </strong>
+                                        )}
                                     </p>
                                 </div>
                             )}
@@ -639,7 +700,10 @@ export function ScheduleVideoModal({ isOpen, onClose, selectedDate, onSchedule }
                                 disabled={!form.title || (!form.file && form.platform === 'youtube-shorts') || !isScheduleValid}
                                 className="vc-btn vc-btn-primary vc-btn-sm"
                             >
-                                <Calendar size={14} /> Agendar
+                                {form.publishNow
+                                    ? <><Zap size={14} /> Publicar agora</>
+                                    : <><Calendar size={14} /> Agendar</>
+                                }
                             </button>
                         ) : (
                             <button
