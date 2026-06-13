@@ -13,6 +13,7 @@ import {
 import { useDashboardState } from "../hooks/useDashboardState";
 import { useSupabaseDashboard } from "../hooks/useSupabaseDashboard";
 import { PageLayout } from "../components/layout/PageLayout";
+import { ChannelSwitcher } from "../components/shared/ChannelSwitcher";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 const formatNum = (n) => {
@@ -240,6 +241,8 @@ export default function ChannelPage() {
 
     const allVideos = state.recentUploads || [];
     const channelStats = state.channelStats;
+    const connectedAccounts = state.auth?.connectedAccounts || [];
+    const activeAccountId = state.auth?.activeAccountId;
 
     const hasChannel = !!(
         state.auth?.youtubeToken &&
@@ -303,6 +306,17 @@ export default function ChannelPage() {
 
             {/* ── Channel stats ─────────────────────────────── */}
             <ChannelStrip channelStats={channelStats} />
+
+            {/* ── Switcher de canais ────────────────────────── */}
+            {connectedAccounts.length > 1 && (
+                <ChannelSwitcher
+                    mode="bar"
+                    accounts={connectedAccounts}
+                    activeId={activeAccountId}
+                    onSwitch={(id) => actions.switchAccount(id)}
+                    onAddChannel={() => window.location.href = "/dashboard/profile"}
+                />
+            )}
 
             {/* ── Filtros ───────────────────────────────────── */}
             {allVideos.length > 0 && (

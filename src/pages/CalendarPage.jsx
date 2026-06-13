@@ -13,6 +13,7 @@ import {
     CalendarDays, Clock, CheckCircle2, TrendingUp,
     Plus, GitBranch, Video, Loader2
 } from "lucide-react";
+import { ChannelSwitcher } from "../components/shared/ChannelSwitcher";
 
 // ─── Stat Card do Pipeline ────────────────────────────────────────────────────
 function PipelineStat({ icon: Icon, label, value, accent = "neutral" }) {
@@ -236,6 +237,9 @@ export default function CalendarPage() {
     const { theme } = useTheme();
     const isDark = theme === "dark" || (theme === "system" && window.matchMedia("(prefers-color-scheme: dark)").matches);
 
+    const connectedAccounts = state.auth?.connectedAccounts || [];
+    const activeAccountId = state.auth?.activeAccountId;
+
     const [isScheduleModalOpen, setScheduleModalOpen] = useState(false);
     const [selectedScheduleDate, setSelectedScheduleDate] = useState(null);
     const [selectedVideo, setSelectedVideo] = useState(null);
@@ -392,12 +396,25 @@ export default function CalendarPage() {
                     </p>
                 </div>
 
-                <button
-                    onClick={() => { setSelectedScheduleDate(new Date()); setScheduleModalOpen(true); }}
-                    className="vc-btn vc-btn-primary"
-                >
-                    <Plus size={15} /> Agendar vídeo
-                </button>
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                    {/* Switcher compacto — só aparece com 2+ canais */}
+                    {connectedAccounts.length > 1 && (
+                        <ChannelSwitcher
+                            mode="compact"
+                            accounts={connectedAccounts}
+                            activeId={activeAccountId}
+                            onSwitch={(id) => actions.switchAccount(id)}
+                            onAddChannel={() => window.location.href = "/dashboard/profile"}
+                        />
+                    )}
+
+                    <button
+                        onClick={() => { setSelectedScheduleDate(new Date()); setScheduleModalOpen(true); }}
+                        className="vc-btn vc-btn-primary"
+                    >
+                        <Plus size={15} /> Agendar vídeo
+                    </button>
+                </div>
             </div>
 
             {/* ── Stats ─────────────────────────────────────────── */}
