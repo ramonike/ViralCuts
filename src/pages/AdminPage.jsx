@@ -1,24 +1,144 @@
-import React, { useState, useEffect } from 'react';
-import { fetchUsers } from '../api/admin';
-import { User, Search, Mail, CheckCircle2, XCircle, Calendar, RefreshCw, ChevronLeft, ChevronRight } from 'lucide-react';
-import { Button } from '../components/ui/button';
-import { Input } from '../components/ui/input';
+/**
+ * AdminPage — v2
+ * Design system ViralCuts + dados reais de sessão, YouTube e uploads
+ */
+import React, { useState, useEffect, useCallback } from "react";
+import {
+    User, Search, Mail, CheckCircle2, XCircle, Calendar,
+    RefreshCw, ChevronLeft, ChevronRight, Youtube, Upload,
+    Clock, Wifi, WifiOff, Shield, Activity, TrendingUp
+} from "lucide-react";
 
+// ─── API ──────────────────────────────────────────────────────────────────────
+import { API_URL } from "../config/api";
+
+async function fetchAdminUsers(page = 1, pageSize = 20, search = "") {
+    const params = new URLSearchParams({ page, pageSize, ...(search && { search }) });
+    const res = await fetch(`${API_URL}/api/admin/users?${params}`, { credentials: "include" });
+    if (!res.ok) throw new Error("Falha ao buscar usuários");
+    return res.json();
+}
+
+async function fetchAdminStats() {
+    const res = await fetch(`${API_URL}/api/admin/stats`, { credentials: "include" });
+    if (!res.ok) throw new Error("Falha ao buscar stats");
+    return res.json();
+}
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+const formatDate = (d) =>
+    d ? new Date(d).toLocaleDateString("pt-BR", {
+        day: "2-digit", month: "2-digit", year: "numeric",
+        hour: "2-digit", minute: "2-digit",
+    }) : "—";
+
+const formatRelative = (d) => {
+    if (!d) return "—";
+    const diff = Date.now() - new Date(d).getTime();
+    const min = Math.floor(diff / 60_000);
+    const h = Math.floor(diff / 3_600_000);
+    const days = Math.floor(diff / 86_400_000);
+    if (min < 2) return "Agora mesmo";
+    if (min < 60) return `há ${min}min`;
+    if (h < 24) return `há ${h}h`;
+    if (days < 7) return `há ${days}d`;
+    return formatDate(d);
+};
+
+// ─── Session Status Badge ─────────────────────────────────────────────────────
+function SessionBadge({ status, lastSeenAt }) {
+    const map = {
+        online: { badge: "vc-badge-teal", icon: <Wifi size={10} />, label: "Online" },
+        recent: { badge: "vc-badge-amber", icon: <Clock size={10} />, label: formatRelative(lastSeenAt) },
+        offline: { badge: "vc-badge-muted", icon: <WifiOff size={10} />, label: "Offline" },
+    };
+    const s = map[status] || map.offline;
+    return (
+        <span className={`vc-badge ${s.badge}`} style={{ gap: 4 }}>
+            {s.icon} {s.label}
+        </span>
+    );
+}
+
+// ─── YouTube Accounts Cell ────────────────────────────────────────────────────
+function YouTubeCell({ accounts }) {
+    if (!accounts?.length) return (
+        <span style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>—</span>
+    );
+    return (
+        <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+            {accounts.map((acc) => (
+                <div key={acc.channelId} style={{
+                    display: "flex", alignItems: "center", gap: 6,
+                    fontSize: "0.75rem",
+                }}>
+                    <div className={`vc-platform-dot ${acc.connected ? "youtube" : ""}`}
+                        style={!acc.connected ? { background: "var(--text-muted)" } : {}}
+                    />
+                    <span style={{
+                        color: acc.connected ? "var(--text-primary)" : "var(--text-muted)",
+                        fontFamily: "var(--font-display)",
+                        fontWeight: 500,
+                        letterSpacing: "-0.01em",
+                        maxWidth: 140,
+                        overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+                    }}>
+                        {acc.channelName}
+                    </span>
+                    {!acc.connected && (
+                        <span className="vc-badge vc-badge-coral" style={{ fontSize: "0.5rem", padding: "1px 4px" }}>
+                            Expirado
+                        </span>
+                    )}
+                </div>
+            ))}
+        </div>
+    );
+}
+
+// ─── Stat Card ────────────────────────────────────────────────────────────────
+function AdminStat({ icon: Icon, label, value, accent = "neutral", sub }) {
+    return (
+        <div className={`vc-metric-card metric-${accent}`}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
+                <div style={{
+                    width: 32, height: 32, borderRadius: "var(--radius-md)",
+                    background: "var(--bg-elevated)",
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                }}>
+                    <Icon size={15} style={{
+                        color: accent === "coral" ? "var(--accent-coral)"
+                            : accent === "amber" ? "var(--accent-amber)"
+                                : accent === "teal" ? "var(--accent-teal)"
+                                    : "var(--text-muted)"
+                    }} />
+                </div>
+                <span className="vc-metric-label" style={{ marginBottom: 0 }}>{label}</span>
+            </div>
+            <div className="vc-metric-value">{value ?? "—"}</div>
+            {sub && <div style={{ fontSize: "0.75rem", color: "var(--text-muted)", marginTop: 4 }}>{sub}</div>}
+        </div>
+    );
+}
+
+// ─── Main ─────────────────────────────────────────────────────────────────────
 export default function AdminPage() {
     const [users, setUsers] = useState([]);
+    const [stats, setStats] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [statsLoad, setStatsLoad] = useState(true);
     const [error, setError] = useState(null);
-    const [search, setSearch] = useState('');
+    const [search, setSearch] = useState("");
     const [page, setPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
     const [total, setTotal] = useState(0);
     const pageSize = 20;
 
-    const loadUsers = async () => {
+    const loadUsers = useCallback(async () => {
         try {
             setLoading(true);
             setError(null);
-            const data = await fetchUsers(page, pageSize, search);
+            const data = await fetchAdminUsers(page, pageSize, search);
             setUsers(data.users);
             setTotalPages(data.totalPages);
             setTotal(data.total);
@@ -27,197 +147,194 @@ export default function AdminPage() {
         } finally {
             setLoading(false);
         }
-    };
-
-    useEffect(() => {
-        loadUsers();
     }, [page, search]);
 
-    const handleSearchChange = (e) => {
-        setSearch(e.target.value);
-        setPage(1); // Reset to first page on search
-    };
+    const loadStats = useCallback(async () => {
+        try {
+            setStatsLoad(true);
+            const data = await fetchAdminStats();
+            setStats(data);
+        } catch { /* silencioso */ }
+        finally { setStatsLoad(false); }
+    }, []);
 
-    const formatDate = (dateString) => {
-        return new Date(dateString).toLocaleDateString('pt-BR', {
-            day: '2-digit',
-            month: '2-digit',
-            year: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit'
-        });
-    };
+    useEffect(() => { loadUsers(); }, [loadUsers]);
+    useEffect(() => { loadStats(); }, [loadStats]);
+
+    const initials = (name = "") =>
+        name.trim().split(" ").map(p => p[0]).slice(0, 2).join("").toUpperCase() || "?";
 
     return (
-        <div className="min-h-screen w-full bg-slate-900 text-slate-100 p-6">
-            <div className="max-w-7xl mx-auto space-y-6">
-                {/* Header */}
-                <div className="glass-panel rounded-2xl p-6 border border-surface-700/50">
-                    <div className="flex items-center justify-between">
+        <div style={{ minHeight: "100vh", background: "var(--bg-primary)", padding: 24 }}>
+            <div style={{ maxWidth: 1280, margin: "0 auto", display: "flex", flexDirection: "column", gap: 20 }}>
+
+                {/* ── Header ─────────────────────────────────────────── */}
+                <div className="vc-card" style={{ padding: "20px 24px" }}>
+                    <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 2, background: "var(--accent-coral)", borderRadius: "var(--radius-lg) var(--radius-lg) 0 0" }} />
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                         <div>
-                            <h1 className="text-3xl font-black text-white tracking-tight flex items-center gap-3">
-                                <div className="p-2 bg-primary/10 rounded-lg">
-                                    <User className="w-8 h-8 text-primary" />
+                            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
+                                <div style={{
+                                    width: 36, height: 36, borderRadius: "var(--radius-md)",
+                                    background: "var(--accent-coral-3)",
+                                    border: "1px solid rgba(232,65,42,0.2)",
+                                    display: "flex", alignItems: "center", justifyContent: "center",
+                                }}>
+                                    <Shield size={18} style={{ color: "var(--accent-coral)" }} />
                                 </div>
-                                Painel de Administração
-                            </h1>
-                            <p className="text-slate-400 mt-2">Gerencie todos os usuários cadastrados</p>
+                                <h1 style={{
+                                    margin: 0, fontFamily: "var(--font-display)", fontWeight: 700,
+                                    fontSize: "1.5rem", letterSpacing: "-0.03em", color: "var(--text-primary)",
+                                }}>
+                                    Painel de Administração
+                                </h1>
+                            </div>
+                            <p style={{ margin: 0, fontSize: "0.875rem", color: "var(--text-muted)" }}>
+                                Gerencie todos os usuários cadastrados na plataforma
+                            </p>
                         </div>
-                        <Button
-                            onClick={loadUsers}
-                            variant="outline"
-                            className="border-surface-600 bg-surface-800 text-slate-200 hover:bg-surface-700"
+                        <button
+                            onClick={() => { loadUsers(); loadStats(); }}
+                            className="vc-btn vc-btn-secondary vc-btn-sm"
                         >
-                            <RefreshCw className="w-4 h-4 mr-2" />
-                            Atualizar
-                        </Button>
+                            <RefreshCw size={14} /> Atualizar
+                        </button>
                     </div>
                 </div>
 
-                {/* Stats */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="glass-card rounded-xl p-6">
-                        <div className="flex items-center gap-4">
-                            <div className="p-3 bg-blue-500/10 rounded-xl">
-                                <User className="w-6 h-6 text-blue-500" />
-                            </div>
-                            <div>
-                                <p className="text-slate-400 text-xs uppercase font-bold">Total de Usuários</p>
-                                <p className="text-2xl font-black text-white">{total}</p>
-                            </div>
-                        </div>
-                    </div>
-                    <div className="glass-card rounded-xl p-6">
-                        <div className="flex items-center gap-4">
-                            <div className="p-3 bg-green-500/10 rounded-xl">
-                                <CheckCircle2 className="w-6 h-6 text-green-500" />
-                            </div>
-                            <div>
-                                <p className="text-slate-400 text-xs uppercase font-bold">Email Verificado</p>
-                                <p className="text-2xl font-black text-white">
-                                    {users.filter(u => u.emailVerified).length}
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-                    <div className="glass-card rounded-xl p-6">
-                        <div className="flex items-center gap-4">
-                            <div className="p-3 bg-emerald-500/10 rounded-xl">
-                                <User className="w-6 h-6 text-emerald-500" />
-                            </div>
-                            <div>
-                                <p className="text-slate-400 text-xs uppercase font-bold">Online Agora</p>
-                                <p className="text-2xl font-black text-white">
-                                    {users.filter(u => u.sessions && u.sessions.length > 0).length}
-                                </p>
-                            </div>
-                        </div>
-                    </div>
+                {/* ── Stats ──────────────────────────────────────────── */}
+                <div className="vc-grid-metrics">
+                    <AdminStat icon={User} label="Total usuários" value={statsLoad ? "…" : stats?.totalUsers} accent="coral" />
+                    <AdminStat icon={Wifi} label="Online agora" value={statsLoad ? "…" : stats?.onlineNow} accent="teal" sub="sessões ativas" />
+                    <AdminStat icon={Youtube} label="YouTube conectado" value={statsLoad ? "…" : stats?.youtubeConnected} accent="amber" sub="canais vinculados" />
+                    <AdminStat icon={Upload} label="Total uploads" value={statsLoad ? "…" : stats?.totalUploads} accent="neutral" />
+                    <AdminStat icon={CheckCircle2} label="Email verificado" value={statsLoad ? "…" : stats?.verifiedUsers} accent="teal" />
+                    <AdminStat icon={XCircle} label="Pendente verificação" value={statsLoad ? "…" : stats?.pendingUsers} accent="neutral" />
                 </div>
 
-                {/* Search */}
-                <div className="glass-panel rounded-xl p-4 border border-surface-700/50">
-                    <div className="relative">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-                        <Input
+                {/* ── Search ─────────────────────────────────────────── */}
+                <div className="vc-card" style={{ padding: "14px 16px" }}>
+                    <div className="vc-input-wrap">
+                        <Search size={15} className="vc-input-icon-left" />
+                        <input
                             type="text"
                             placeholder="Buscar por nome ou email..."
                             value={search}
-                            onChange={handleSearchChange}
-                            className="pl-10 bg-surface-800 border-surface-600 text-white"
+                            onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+                            className="vc-input has-icon-left"
                         />
                     </div>
                 </div>
 
-                {/* Users Table */}
-                <div className="glass-panel rounded-xl overflow-hidden border border-surface-700/50">
+                {/* ── Table ──────────────────────────────────────────── */}
+                <div className="vc-card" style={{ overflow: "hidden", padding: 0 }}>
+                    {/* Traço coral */}
+                    <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 2, background: "var(--accent-coral)" }} />
+
                     {loading ? (
-                        <div className="p-12 text-center">
-                            <RefreshCw className="w-8 h-8 text-primary animate-spin mx-auto mb-4" />
-                            <p className="text-slate-400">Carregando usuários...</p>
+                        <div style={{ padding: "56px 0", textAlign: "center" }}>
+                            <RefreshCw size={24} style={{ color: "var(--text-muted)", animation: "spin 1s linear infinite", marginBottom: 12 }} />
+                            <p style={{ margin: 0, color: "var(--text-muted)", fontSize: "0.875rem" }}>Carregando usuários...</p>
                         </div>
                     ) : error ? (
-                        <div className="p-12 text-center">
-                            <XCircle className="w-8 h-8 text-red-500 mx-auto mb-4" />
-                            <p className="text-red-400">{error}</p>
+                        <div style={{ padding: "56px 0", textAlign: "center" }}>
+                            <XCircle size={24} style={{ color: "var(--accent-coral)", marginBottom: 12 }} />
+                            <p style={{ margin: 0, color: "var(--accent-coral)", fontSize: "0.875rem" }}>{error}</p>
                         </div>
                     ) : users.length === 0 ? (
-                        <div className="p-12 text-center">
-                            <User className="w-8 h-8 text-slate-600 mx-auto mb-4" />
-                            <p className="text-slate-400">Nenhum usuário encontrado</p>
+                        <div style={{ padding: "56px 0", textAlign: "center" }}>
+                            <User size={24} style={{ color: "var(--text-muted)", marginBottom: 12 }} />
+                            <p style={{ margin: 0, color: "var(--text-muted)", fontSize: "0.875rem" }}>Nenhum usuário encontrado</p>
                         </div>
                     ) : (
                         <>
-                            <div className="overflow-x-auto">
-                                <table className="w-full">
-                                    <thead className="bg-surface-800/50 border-b border-surface-700">
+                            <div style={{ overflowX: "auto" }}>
+                                <table className="vc-table">
+                                    <thead>
                                         <tr>
-                                            <th className="px-6 py-4 text-left text-xs font-bold text-slate-400 uppercase tracking-wider">
-                                                Usuário
-                                            </th>
-                                            <th className="px-6 py-4 text-left text-xs font-bold text-slate-400 uppercase tracking-wider">
-                                                Email
-                                            </th>
-                                            <th className="px-6 py-4 text-left text-xs font-bold text-slate-400 uppercase tracking-wider">
-                                                Status
-                                            </th>
-                                            <th className="px-6 py-4 text-left text-xs font-bold text-slate-400 uppercase tracking-wider">
-                                                Sessão
-                                            </th>
-                                            <th className="px-6 py-4 text-left text-xs font-bold text-slate-400 uppercase tracking-wider">
-                                                Cadastro
-                                            </th>
+                                            {["Usuário", "Email", "Status email", "Sessão", "YouTube / Canais", "Uploads", "Cadastro"].map(h => (
+                                                <th key={h}>{h}</th>
+                                            ))}
                                         </tr>
                                     </thead>
-                                    <tbody className="divide-y divide-surface-700">
+                                    <tbody>
                                         {users.map((user) => (
-                                            <tr key={user.id} className="hover:bg-surface-800/30 transition-colors">
-                                                <td className="px-6 py-4 whitespace-nowrap">
-                                                    <div className="flex items-center gap-3">
-                                                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-blue-600 flex items-center justify-center text-white font-bold">
-                                                            {user.name.charAt(0).toUpperCase()}
+                                            <tr key={user.id}>
+                                                {/* Usuário */}
+                                                <td>
+                                                    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                                                        <div className="vc-avatar" style={{ width: 36, height: 36, fontSize: 13 }}>
+                                                            {initials(user.name)}
                                                         </div>
                                                         <div>
-                                                            <p className="font-semibold text-white">{user.name}</p>
-                                                            <p className="text-xs text-slate-500">{user.id.substring(0, 8)}...</p>
+                                                            <p style={{
+                                                                margin: 0, fontFamily: "var(--font-display)", fontWeight: 600,
+                                                                fontSize: "0.875rem", color: "var(--text-primary)", letterSpacing: "-0.01em",
+                                                            }}>{user.name}</p>
+                                                            <p style={{ margin: 0, fontSize: "0.6875rem", color: "var(--text-muted)", fontFamily: "monospace" }}>
+                                                                {user.id.substring(0, 10)}…
+                                                            </p>
                                                         </div>
                                                     </div>
                                                 </td>
-                                                <td className="px-6 py-4 whitespace-nowrap">
-                                                    <div className="flex items-center gap-2 text-slate-300">
-                                                        <Mail className="w-4 h-4 text-slate-500" />
-                                                        {user.email}
+
+                                                {/* Email */}
+                                                <td>
+                                                    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                                                        <Mail size={13} style={{ color: "var(--text-muted)", flexShrink: 0 }} />
+                                                        <span style={{ fontSize: "0.8125rem", color: "var(--text-secondary)" }}>
+                                                            {user.email}
+                                                        </span>
                                                     </div>
                                                 </td>
-                                                <td className="px-6 py-4 whitespace-nowrap">
+
+                                                {/* Status email */}
+                                                <td>
                                                     {user.emailVerified ? (
-                                                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-green-500/10 text-green-400 border border-green-500/20">
-                                                            <CheckCircle2 className="w-3 h-3" />
-                                                            Verificado
+                                                        <span className="vc-badge vc-badge-teal">
+                                                            <CheckCircle2 size={10} /> Verificado
                                                         </span>
                                                     ) : (
-                                                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-500/10 text-amber-400 border border-amber-500/20">
-                                                            <XCircle className="w-3 h-3" />
-                                                            Pendente
+                                                        <span className="vc-badge vc-badge-amber">
+                                                            <XCircle size={10} /> Pendente
                                                         </span>
                                                     )}
                                                 </td>
-                                                <td className="px-6 py-4 whitespace-nowrap">
-                                                    {user.sessions && user.sessions.length > 0 ? (
-                                                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                                                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse mr-1"></span>
-                                                            Online
-                                                        </span>
-                                                    ) : (
-                                                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-slate-800 text-slate-400 border border-slate-700/50">
-                                                            Offline
-                                                        </span>
-                                                    )}
+
+                                                {/* Sessão real */}
+                                                <td>
+                                                    <SessionBadge
+                                                        status={user.sessionStatus}
+                                                        lastSeenAt={user.lastSeenAt}
+                                                    />
                                                 </td>
-                                                <td className="px-6 py-4 whitespace-nowrap">
-                                                    <div className="flex items-center gap-2 text-slate-400 text-sm">
-                                                        <Calendar className="w-4 h-4" />
-                                                        {formatDate(user.createdAt)}
+
+                                                {/* YouTube */}
+                                                <td>
+                                                    <YouTubeCell accounts={user.youtubeAccounts} />
+                                                </td>
+
+                                                {/* Uploads */}
+                                                <td>
+                                                    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                                                        <Upload size={13} style={{ color: "var(--text-muted)" }} />
+                                                        <span style={{
+                                                            fontFamily: "var(--font-display)", fontWeight: 700,
+                                                            fontSize: "0.9375rem", color: "var(--text-primary)",
+                                                            letterSpacing: "-0.02em",
+                                                        }}>
+                                                            {user.totalUploads}
+                                                        </span>
+                                                    </div>
+                                                </td>
+
+                                                {/* Cadastro */}
+                                                <td>
+                                                    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                                                        <Calendar size={13} style={{ color: "var(--text-muted)" }} />
+                                                        <span style={{ fontSize: "0.8125rem", color: "var(--text-muted)" }}>
+                                                            {formatDate(user.createdAt)}
+                                                        </span>
                                                     </div>
                                                 </td>
                                             </tr>
@@ -226,37 +343,35 @@ export default function AdminPage() {
                                 </table>
                             </div>
 
-                            {/* Pagination */}
+                            {/* Paginação */}
                             {totalPages > 1 && (
-                                <div className="px-6 py-4 bg-surface-800/30 border-t border-surface-700 flex items-center justify-between">
-                                    <p className="text-sm text-slate-400">
-                                        Página {page} de {totalPages} • {total} usuários no total
+                                <div style={{
+                                    padding: "12px 16px",
+                                    borderTop: "1px solid var(--border-subtle)",
+                                    background: "var(--bg-tertiary)",
+                                    display: "flex", alignItems: "center", justifyContent: "space-between",
+                                }}>
+                                    <p style={{ margin: 0, fontSize: "0.8125rem", color: "var(--text-muted)" }}>
+                                        Página {page} de {totalPages} · {total} usuários
                                     </p>
-                                    <div className="flex gap-2">
-                                        <Button
-                                            onClick={() => setPage(p => Math.max(1, p - 1))}
-                                            disabled={page === 1}
-                                            variant="outline"
-                                            size="sm"
-                                            className="border-surface-600 bg-surface-800 text-slate-200 hover:bg-surface-700 disabled:opacity-50"
-                                        >
-                                            <ChevronLeft className="w-4 h-4" />
-                                        </Button>
-                                        <Button
-                                            onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-                                            disabled={page === totalPages}
-                                            variant="outline"
-                                            size="sm"
-                                            className="border-surface-600 bg-surface-800 text-slate-200 hover:bg-surface-700 disabled:opacity-50"
-                                        >
-                                            <ChevronRight className="w-4 h-4" />
-                                        </Button>
+                                    <div style={{ display: "flex", gap: 6 }}>
+                                        <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}
+                                            className="vc-btn vc-btn-secondary vc-btn-sm"
+                                            style={{ opacity: page === 1 ? 0.4 : 1 }}>
+                                            <ChevronLeft size={14} />
+                                        </button>
+                                        <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages}
+                                            className="vc-btn vc-btn-secondary vc-btn-sm"
+                                            style={{ opacity: page === totalPages ? 0.4 : 1 }}>
+                                            <ChevronRight size={14} />
+                                        </button>
                                     </div>
                                 </div>
                             )}
                         </>
                     )}
                 </div>
+
             </div>
         </div>
     );

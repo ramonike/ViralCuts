@@ -76,7 +76,7 @@ youtube.get("/auth/url", authMiddleware, async (c) => {
     // Use user ID as state for CSRF protection
     const state = Buffer.from(JSON.stringify({ userId: user.id })).toString("base64");
     const authUrl = getAuthUrl(state);
-    
+
     return c.json({ url: authUrl });
   } catch (error) {
     console.error("[YouTube Auth] Error generating auth URL:", error);
@@ -137,7 +137,7 @@ youtube.get("/auth/callback", async (c) => {
 
     const channelData = await channelResponse.json();
     const channel = channelData.items?.[0];
-    
+
     if (!channel) {
       throw new Error("No YouTube channel found for this account");
     }
@@ -155,6 +155,7 @@ youtube.get("/auth/callback", async (c) => {
         refreshToken: tokens.refresh_token,
         accessTokenExpiresAt: expiresAt,
         scope: tokens.scope,
+        idToken: channel.snippet.title,  // ← nome do canal
         updatedAt: new Date(),
       },
       create: {
@@ -166,6 +167,7 @@ youtube.get("/auth/callback", async (c) => {
         refreshToken: tokens.refresh_token,
         accessTokenExpiresAt: expiresAt,
         scope: tokens.scope,
+        idToken: channel.snippet.title,  // ← nome do canal
       },
     });
 
@@ -232,15 +234,15 @@ youtube.post("/auth/refresh", authMiddleware, async (c) => {
     });
   } catch (error) {
     console.error("[YouTube Auth] Refresh error:", error);
-    
+
     // If refresh fails, user needs to re-authenticate
     if (error.message.includes("invalid_grant") || error.message.includes("Token has been revoked")) {
-      return c.json({ 
+      return c.json({
         error: "Refresh token expired or revoked. Please re-authenticate.",
-        requiresReauth: true 
+        requiresReauth: true
       }, 401);
     }
-    
+
     return c.json({ error: error.message }, 500);
   }
 });
@@ -394,18 +396,18 @@ youtube.post("/upload/initiate", authMiddleware, async (c) => {
   try {
     const user = c.get("user");
     const body = await c.req.json();
-    
-    const { 
-      title, 
-      description, 
-      tags, 
-      categoryId, 
-      privacyStatus, 
+
+    const {
+      title,
+      description,
+      tags,
+      categoryId,
+      privacyStatus,
       publishAt,
       playlistId,
-      fileSize, 
+      fileSize,
       mimeType,
-      accountId 
+      accountId
     } = body;
 
     if (!title) {
@@ -480,7 +482,7 @@ youtube.post("/upload/chunk", authMiddleware, async (c) => {
     // Parse Content-Range header: bytes startByte-endByte/totalBytes
     let startByte = 0;
     let totalBytes = 0;
-    
+
     if (contentRange) {
       const match = contentRange.match(/bytes (\d+)-(\d+)\/(\d+)/);
       if (match) {
@@ -502,13 +504,13 @@ youtube.post("/upload/chunk", authMiddleware, async (c) => {
     // Upload chunk with or without retry based on header
     let progress;
     let retryAttempts = 0;
-    
+
     if (useRetry) {
       progress = await uploadChunkWithRetry(
-        sessionUri, 
-        chunk, 
-        startByte, 
-        totalBytes, 
+        sessionUri,
+        chunk,
+        startByte,
+        totalBytes,
         accessToken,
         {
           onRetry: ({ attempt }) => {
@@ -546,16 +548,16 @@ youtube.post("/upload/chunk", authMiddleware, async (c) => {
     });
   } catch (error) {
     console.error("[YouTube Upload] Chunk error:", error);
-    
+
     // Check if error is retryable (for client-side retry)
     if (isRetryableError(error)) {
-      return c.json({ 
-        error: error.message, 
+      return c.json({
+        error: error.message,
         retryable: true,
-        status: error.status 
+        status: error.status
       }, error.status || 500);
     }
-    
+
     return c.json({ error: error.message }, 500);
   }
 });
@@ -774,7 +776,7 @@ youtube.post("/schedule", authMiddleware, async (c) => {
     }
 
     const scheduledDate = new Date(scheduledAt);
-    
+
     // Validate scheduled time is in the future
     if (scheduledDate <= new Date()) {
       return c.json({ error: "Scheduled time must be in the future" }, 400);
@@ -830,7 +832,7 @@ youtube.put("/schedule/:uploadId", authMiddleware, async (c) => {
     }
 
     const scheduledDate = new Date(scheduledAt);
-    
+
     // Validate scheduled time is in the future
     if (scheduledDate <= new Date()) {
       return c.json({ error: "Scheduled time must be in the future" }, 400);
@@ -838,8 +840,8 @@ youtube.put("/schedule/:uploadId", authMiddleware, async (c) => {
 
     // Verify upload belongs to user and is scheduled
     const upload = await prisma.upload.findFirst({
-      where: { 
-        id: uploadId, 
+      where: {
+        id: uploadId,
         userId: user.id,
         status: { in: ["scheduled", "initiated", "complete"] },
       },
