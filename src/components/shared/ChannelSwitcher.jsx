@@ -15,7 +15,7 @@ const formatNum = (n) => {
     if (!n) return '—';
     const v = parseInt(n);
     if (v >= 1_000_000) return (v / 1_000_000).toFixed(1) + 'M';
-    if (v >= 1_000)     return (v / 1_000).toFixed(1) + 'K';
+    if (v >= 1_000) return (v / 1_000).toFixed(1) + 'K';
     return v.toLocaleString('pt-BR');
 };
 
@@ -57,7 +57,11 @@ function ChannelAvatar({ account, size = 32 }) {
 
 // ─── Bar mode — linha horizontal com abas por canal ──────────────────────────
 function BarMode({ accounts, activeId, onSwitch, onAddChannel }) {
-    if (!accounts?.length) return null;
+    const now = Date.now();
+    // No modo bar da aba Canal, só mostrar canais com token válido
+    const validAccounts = accounts.filter(a => a.expiresAt && a.expiresAt > now);
+
+    if (!validAccounts?.length) return null;
 
     return (
         <div style={{
@@ -71,7 +75,7 @@ function BarMode({ accounts, activeId, onSwitch, onAddChannel }) {
             </span>
 
             <div style={{ display: 'flex', gap: 8, flex: 1 }}>
-                {accounts.map(acc => {
+                {validAccounts.map(acc => {
                     const active = acc.id === activeId;
                     const expired = acc.expiresAt && new Date(acc.expiresAt).getTime() < Date.now();
                     const subs = acc.stats?.statistics?.subscriberCount;
@@ -135,9 +139,12 @@ function BarMode({ accounts, activeId, onSwitch, onAddChannel }) {
 // ─── Compact mode — dropdown para topbar do Pipeline ─────────────────────────
 function CompactMode({ accounts, activeId, onSwitch, onAddChannel }) {
     const [open, setOpen] = useState(false);
-    const ref             = useRef(null);
+    const ref = useRef(null);
 
-    const active = accounts?.find(a => a.id === activeId) || accounts?.[0];
+    const now = Date.now();
+    const active = accounts?.find(a => a.id === activeId && a.expiresAt && a.expiresAt > now)
+        || accounts?.find(a => a.expiresAt && a.expiresAt > now)
+        || accounts?.[0];
 
     useEffect(() => {
         const handler = (e) => {
@@ -198,9 +205,9 @@ function CompactMode({ accounts, activeId, onSwitch, onAddChannel }) {
                     </div>
 
                     {accounts.map(acc => {
-                        const isActive  = acc.id === activeId;
-                        const expired   = acc.expiresAt && new Date(acc.expiresAt).getTime() < Date.now();
-                        const subs      = acc.stats?.statistics?.subscriberCount;
+                        const isActive = acc.id === activeId;
+                        const expired = acc.expiresAt && new Date(acc.expiresAt).getTime() < Date.now();
+                        const subs = acc.stats?.statistics?.subscriberCount;
 
                         return (
                             <button

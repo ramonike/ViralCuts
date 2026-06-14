@@ -137,16 +137,21 @@ function ChannelHero({ channelStats, onRefresh }) {
 
 // ─── Canais Conectados ────────────────────────────────────────────────────────
 function ConnectedChannels({ connectedAccounts, activeAccountId, onSwitch, onDisconnect, onAdd }) {
+    const now = Date.now();
+    const validAccounts = connectedAccounts.filter(a => a.expiresAt && a.expiresAt > now);
+    const expiredAccounts = connectedAccounts.filter(a => !a.expiresAt || a.expiresAt <= now);
+
     return (
         <div className="glass-panel rounded-xl border border-surface-700/50 overflow-hidden">
             <div className="px-5 py-4 border-b border-surface-700/30 flex items-center justify-between">
                 <h3 className="text-sm font-semibold text-white">Canais conectados</h3>
                 <span className="text-xs text-slate-500 bg-surface-800 px-2 py-0.5 rounded-full">
-                    {connectedAccounts.length}
+                    {validAccounts.length}
                 </span>
             </div>
             <div className="p-3 space-y-2">
-                {connectedAccounts.map(account => {
+                {/* Canais com token válido */}
+                {validAccounts.map(account => {
                     const isActive = account.id === activeAccountId;
                     return (
                         <div key={account.id} className={`p-3 rounded-lg border transition-all ${isActive ? "bg-primary/10 border-primary/20" : "bg-surface-800/50 border-transparent hover:border-surface-600"}`}>
@@ -187,6 +192,45 @@ function ConnectedChannels({ connectedAccounts, activeAccountId, onSwitch, onDis
                         </div>
                     );
                 })}
+
+                {/* Canais expirados — seção separada */}
+                {expiredAccounts.length > 0 && (
+                    <>
+                        {validAccounts.length > 0 && <div style={{ height: 1, background: "rgba(255,255,255,0.06)", margin: "8px 0" }} />}
+                        <p style={{ fontSize: "0.6875rem", color: "var(--text-muted)", fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase", padding: "2px 4px 6px" }}>
+                            Desconectados
+                        </p>
+                        {expiredAccounts.map(account => (
+                            <div key={account.id} style={{ padding: "10px 12px", borderRadius: "var(--radius-md)", background: "var(--bg-tertiary)", border: "1px solid var(--border-subtle)", opacity: 0.75 }}>
+                                <div className="flex items-center gap-3">
+                                    <img
+                                        src={account.avatar || "https://github.com/shadcn.png"}
+                                        className="w-8 h-8 rounded-lg object-cover shrink-0"
+                                        style={{ filter: "grayscale(0.6)" }}
+                                        alt={account.name}
+                                        onError={(e) => { e.target.src = "https://github.com/shadcn.png"; }}
+                                    />
+                                    <div className="flex-1 min-w-0">
+                                        <p className="text-sm font-medium truncate" style={{ color: "var(--text-secondary)" }}>{account.name}</p>
+                                        <p style={{ fontSize: "0.6875rem", color: "var(--accent-coral)", marginTop: 2 }}>⚠ Token expirado</p>
+                                    </div>
+                                    <div style={{ display: "flex", flexDirection: "column", gap: 4, alignItems: "flex-end" }}>
+                                        <button onClick={() => onAdd()} style={{ fontSize: "0.625rem", fontWeight: 700, padding: "3px 8px", borderRadius: 4, background: "var(--accent-coral-3)", border: "1px solid rgba(232,65,42,0.25)", color: "var(--accent-coral-2)", cursor: "pointer", fontFamily: "var(--font-display)" }}>
+                                            Reconectar
+                                        </button>
+                                        <button onClick={() => { if (confirm(`Remover "${account.name}"?`)) onDisconnect(account.id); }} style={{ fontSize: "0.6rem", color: "var(--text-muted)", background: "none", border: "none", cursor: "pointer", padding: 0 }}>
+                                            Remover
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
+                    </>
+                )}
+
+                {validAccounts.length === 0 && expiredAccounts.length === 0 && (
+                    <p style={{ fontSize: "0.875rem", color: "var(--text-muted)", textAlign: "center", padding: "16px 0" }}>Nenhum canal conectado</p>
+                )}
 
                 <GoogleAuthButton
                     onLoginSuccess={onAdd}
