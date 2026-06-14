@@ -1,11 +1,10 @@
 /**
- * useSupabaseDashboard — v2
- * + accountId salvo no metadata ao criar upload
- * + filtro por canal ativo no loadData
- * + reloadForAccount() exposto para o CalendarPage
+ * useSupabaseDashboard — v2.1
+ * Corrigido: ordem de declaração das funções para evitar
+ * "Cannot access before initialization" após minificação do Vite
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import * as api from '../api/backend';
 
 export function useSupabaseDashboard() {
@@ -14,23 +13,26 @@ export function useSupabaseDashboard() {
     const [uploadQueue, setUploadQueue] = useState([]);
     const [history, setHistory] = useState({});
     const [settings, setSettings] = useState(null);
-    // Canal ativo gerenciado aqui para filtrar dados do backend
     const [activeAccountId, setActiveAccountId] = useState(null);
 
-    // ── Normalizar history por data ────────────────────────────────────────
-    const buildHistory = useCallback((videos, filterAccountId = null) => {
-        const historyByDate = {};
+    // Refs para dados brutos — permite refiltrar sem nova requisição de rede
+    const rawQueueRef = useRef([]);
+    const rawHistoryRef = useRef([]);
+
+    // ── Helpers puros — declarados antes de qualquer useCallback ──────────
+
+    function buildHistory(videos, filterAccountId) {
+        const byDate = {};
         (videos || []).forEach(video => {
-            // Filtro por canal: se filterAccountId definido, só inclui itens do canal
+            // Itens sem accountId (legados) aparecem em todos os canais
             if (filterAccountId && video.accountId && video.accountId !== filterAccountId) return;
 
             const dateStr = (video.date || video.publishedAt || '').split('T')[0];
             if (!dateStr) return;
 
-            if (!historyByDate[dateStr]) {
-                historyByDate[dateStr] = { completedItems: [], uploads: 0 };
-            }
-            historyByDate[dateStr].completedItems.push({
+            if (!byDate[dateStr]) byDate[dateStr] = { completedItems: [], uploads: 0 };
+
+            byDate[dateStr].completedItems.push({
                 id: video.id,
                 title: video.title,
                 type: 'youtube_video',
@@ -39,86 +41,75 @@ export function useSupabaseDashboard() {
                 likes: video.likes || 0,
                 accountId: video.accountId || null,
             });
-            historyByDate[dateStr].uploads += 1;
+            byDate[dateStr].uploads += 1;
         });
-        return historyByDate;
-    }, []);
+        return byDate;
+    }
 
-    // ── Filtrar uploadQueue por canal ──────────────────────────────────────
-    const filterQueue = useCallback((queue, filterAccountId) => {
+    function filterQueue(queue, filterAccountId) {
         if (!filterAccountId) return queue;
         return queue.filter(item => {
-            // Item sem accountId = criado antes da v2, mostrar em todos os canais
-            if (!item.accountId && !item.metadata?.accountId) return true;
             const id = item.accountId || item.metadata?.accountId;
+            if (!id) return true; // legado — mostrar em todos
             return id === filterAccountId;
         });
-    }, []);
-
-    // ── Raw data refs para poder refiltrar sem nova requisição ─────────────
-    const [rawHistory, setRawHistory] = useState([]);
-    const [rawQueue, setRawQueue] = useState([]);
+    }
 
     // ── Carregar dados do backend ──────────────────────────────────────────
-    const loadData = useCallback(async (accountId = null) => {
+    const loadData = useCallback(async (accountId) => {
         try {
             setLoading(true);
 
             const sessionData = await api.getSession().catch(() => null);
-            if (!sessionData?.user) {
-                setLoading(false);
-                return;
-            }
+            if (!sessionData?.user) { setLoading(false); return; }
             setUser(sessionData.user);
 
-            const [queueData, historyData, settingsData] = await Promise.allSettled([
+            const [queueRes, historyRes, settingsRes] = await Promise.allSettled([
                 api.getQueue().catch(() => []),
                 api.getHistory().catch(() => []),
                 api.getSettings().catch(() => null),
             ]);
 
-            const rawQ = queueData.status === 'fulfilled' ? (queueData.value || []) : [];
-            const rawH = historyData.status === 'fulfilled' ? (historyData.value || []) : [];
+            const rawQ = queueRes.status === 'fulfilled' ? (queueRes.value || []) : [];
+            const rawH = historyRes.status === 'fulfilled' ? (historyRes.value || []) : [];
 
-            setRawQueue(rawQ);
-            setRawHistory(rawH);
-            setSettings(settingsData.status === 'fulfilled' ? settingsData.value : null);
+            rawQueueRef.current = rawQ;
+            rawHistoryRef.current = rawH;
 
-            // Aplicar filtro inicial
-            const effectiveId = accountId || activeAccountId;
-            setUploadQueue(filterQueue(rawQ, effectiveId));
-            setHistory(buildHistory(rawH, effectiveId));
+            setSettings(settingsRes.status === 'fulfilled' ? settingsRes.value : null);
+            setUploadQueue(filterQueue(rawQ, accountId));
+            setHistory(buildHistory(rawH, accountId));
 
-        } catch (error) {
-            console.error('Error loading data from Backend:', error);
+        } catch (err) {
+            console.error('useSupabaseDashboard loadData error:', err);
         } finally {
             setLoading(false);
         }
-    }, [activeAccountId, buildHistory, filterQueue]);
+    }, []); // sem deps — usa refs e fns puras
 
-    useEffect(() => { loadData(); }, []);
+    useEffect(() => { loadData(null); }, []);
 
-    // ── Trocar canal ativo e refiltrar sem nova requisição de rede ─────────
+    // ── Trocar canal — refiltro instantâneo sem rede ───────────────────────
     const switchToAccount = useCallback((accountId) => {
         setActiveAccountId(accountId);
-        setUploadQueue(filterQueue(rawQueue, accountId));
-        setHistory(buildHistory(rawHistory, accountId));
-    }, [rawQueue, rawHistory, buildHistory, filterQueue]);
+        setUploadQueue(filterQueue(rawQueueRef.current, accountId));
+        setHistory(buildHistory(rawHistoryRef.current, accountId));
+    }, []);
 
-    // ── Salvar configurações ───────────────────────────────────────────────
+    // ── Salvar settings ────────────────────────────────────────────────────
     const saveSettings = async (newSettings) => {
         try {
             await api.saveSettings(newSettings);
             setSettings(newSettings);
-        } catch (error) {
-            console.error('Error saving settings:', error);
+        } catch (err) {
+            console.error('Error saving settings:', err);
         }
     };
 
-    // ── Adicionar à fila — agora inclui accountId no metadata ─────────────
+    // ── Adicionar à fila — grava accountId no metadata ────────────────────
     const addToQueue = async (item) => {
         try {
-            const enrichedItem = {
+            const enriched = {
                 ...item,
                 metadata: {
                     ...(item.metadata || {}),
@@ -129,46 +120,46 @@ export function useSupabaseDashboard() {
                     privacyStatus: item.privacyStatus || 'private',
                 },
             };
-            const res = await api.addToQueue(enrichedItem);
-            const newItem = { ...enrichedItem, id: res.id, status: res.status };
-            setRawQueue(prev => [...prev, newItem]);
-            // Só adiciona no state visível se for do canal ativo
-            if (!activeAccountId || !newItem.metadata?.accountId || newItem.metadata.accountId === activeAccountId) {
+            const res = await api.addToQueue(enriched);
+            const newItem = { ...enriched, id: res.id, status: res.status };
+
+            rawQueueRef.current = [...rawQueueRef.current, newItem];
+
+            // Só exibe se for do canal ativo (ou sem canal definido = legado)
+            const itemAccountId = newItem.metadata?.accountId;
+            if (!activeAccountId || !itemAccountId || itemAccountId === activeAccountId) {
                 setUploadQueue(prev => [...prev, newItem]);
             }
+
             return newItem;
-        } catch (error) {
-            console.error('Error adding to queue:', error);
-            throw error;
+        } catch (err) {
+            console.error('Error adding to queue:', err);
+            throw err;
         }
     };
 
     const updateQueueStatus = async (itemId, status, updates = {}) => {
-        setUploadQueue(prev =>
-            prev.map(item => item.id === itemId ? { ...item, status, ...updates } : item)
-        );
-        setRawQueue(prev =>
-            prev.map(item => item.id === itemId ? { ...item, status, ...updates } : item)
-        );
+        const updater = prev =>
+            prev.map(item => item.id === itemId ? { ...item, status, ...updates } : item);
+        setUploadQueue(updater);
+        rawQueueRef.current = updater(rawQueueRef.current);
     };
 
     const removeFromQueue = async (itemId) => {
         try {
             await api.removeFromQueue(itemId);
-            setUploadQueue(prev => prev.filter(item => item.id !== itemId));
-            setRawQueue(prev => prev.filter(item => item.id !== itemId));
-        } catch (error) {
-            console.error('Error removing from queue:', error);
-            throw error;
+            setUploadQueue(prev => prev.filter(i => i.id !== itemId));
+            rawQueueRef.current = rawQueueRef.current.filter(i => i.id !== itemId);
+        } catch (err) {
+            console.error('Error removing from queue:', err);
+            throw err;
         }
     };
 
     const addToHistory = async (date, video) => {
-        console.warn('addToHistory backend endpoint not yet implemented');
+        console.warn('addToHistory not yet implemented');
         return { id: `temp_${Date.now()}`, ...video };
     };
-
-    const markQueueStatus = updateQueueStatus;
 
     return {
         user,
@@ -177,14 +168,13 @@ export function useSupabaseDashboard() {
         history,
         settings,
         activeAccountId,
-        switchToAccount,        // ← novo: trocar canal e refiltrar
-        reloadData: loadData,   // ← exposto para refresh manual
+        switchToAccount,
+        reloadData: loadData,
         actions: {
             saveSettings,
             addToQueue,
-            addToQueue: addToQueue,
             updateQueueStatus,
-            markQueueStatus,
+            markQueueStatus: updateQueueStatus,
             removeQueueItem: removeFromQueue,
             removeFromQueue,
             addToHistory,
