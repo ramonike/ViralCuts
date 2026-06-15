@@ -8,7 +8,6 @@ import { prisma, connectWithRetry, isRetryableError } from "./db/prisma.js";
 import { rateLimiter, authRateLimiter } from "./middleware/rate-limit.js";
 import adminRoutes from "./routes/admin.js";
 import beta from './routes/beta.js';
-app.route('/api/beta', beta);
 
 // Import route modules
 import progressRoutes from "./routes/progress.js";
@@ -256,6 +255,7 @@ app.route("/api/tiktok", tiktokRoutes);
 app.route("/api/notifications", notificationsRoutes);
 app.route("/api/command-center", commandCenterRoutes);
 app.route("/api/ai", aiRoutes);
+app.route("/api/beta", beta);
 
 // Health check with database connection test
 app.get("/api/health", async (c) => {
