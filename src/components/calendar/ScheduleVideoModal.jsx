@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback, useMemo } from 'react';
+import React, { useState, useRef, useCallback, useMemo, useEffect } from 'react';
 import {
     X, Upload, FileVideo, Trash2, AlertCircle, Globe, Lock,
     EyeOff, Sparkles, CheckCircle, Zap, Calendar, Plus,
@@ -453,7 +453,7 @@ export function ScheduleVideoModal({ isOpen, onClose, selectedDate, onSchedule }
     const fileRef = useRef(null);
 
     // Reset ao abrir
-    React.useEffect(() => {
+    useEffect(() => {
         if (isOpen) {
             setItems([]);
             setGlobalError('');
