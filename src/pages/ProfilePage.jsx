@@ -5,8 +5,9 @@ import {
     ExternalLink, Video, Calendar, ChevronRight, MoreVertical, CheckCircle,
 } from "lucide-react";
 import { useDashboardState } from "../hooks/useDashboardState";
+import { GoogleAuthButton } from "../components/dashboard/GoogleAuthButton";
+import { YouTubeAccessRequest } from "../components/dashboard/YouTubeAccessRequest";
 import { PageLayout } from "../components/layout/PageLayout";
-import { YouTubeAccessRequest } from '../components/dashboard/YouTubeAccessRequest';
 
 const formatNumber = (num) => {
     if (!num) return "0";
@@ -232,7 +233,12 @@ function ConnectedChannels({ connectedAccounts, activeAccountId, onSwitch, onDis
                     <p style={{ fontSize: "0.875rem", color: "var(--text-muted)", textAlign: "center", padding: "16px 0" }}>Nenhum canal conectado</p>
                 )}
 
-                <YouTubeAccessRequest onApproved={() => actions.setYouTubeToken()} />
+                <GoogleAuthButton
+                    onLoginSuccess={onAdd}
+                    onLoginError={(err) => alert("Erro: " + JSON.stringify(err))}
+                    text="+ Adicionar canal"
+                    className="w-full justify-center h-10 text-sm font-medium bg-primary/10 hover:bg-primary/20 text-primary border border-primary/30 hover:border-primary/50 transition-all"
+                />
             </div>
         </div>
     );
@@ -305,7 +311,10 @@ function EmptyState({ onConnect }) {
             <p className="text-sm text-slate-400 mb-6 max-w-sm mx-auto">
                 Conecte seu canal do YouTube para ver suas estatísticas e fazer uploads automáticos.
             </p>
-            <YouTubeAccessRequest onApproved={() => actions.setYouTubeToken()} />
+            <YouTubeAccessRequest
+                onLoginSuccess={onConnect}
+                onLoginError={(err) => alert("Falha no login: " + JSON.stringify(err))}
+            />
         </div>
     );
 }

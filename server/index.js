@@ -7,7 +7,6 @@ import { auth } from "./auth.js";
 import { prisma, connectWithRetry, isRetryableError } from "./db/prisma.js";
 import { rateLimiter, authRateLimiter } from "./middleware/rate-limit.js";
 import adminRoutes from "./routes/admin.js";
-import beta from './routes/beta.js';
 
 // Import route modules
 import progressRoutes from "./routes/progress.js";
@@ -20,6 +19,7 @@ import notificationsRoutes from "./routes/notifications.js";
 import tiktokRoutes from "./routes/tiktok.js";
 import commandCenterRoutes from "./routes/commandCenter.js";
 import aiRoutes from "./routes/ai.js";
+import betaRoutes from "./routes/beta.js";
 
 // Import scheduled jobs
 import { startScheduledUploadsJob, stopScheduledUploadsJob } from "./jobs/scheduled-uploads.js";
@@ -255,7 +255,7 @@ app.route("/api/tiktok", tiktokRoutes);
 app.route("/api/notifications", notificationsRoutes);
 app.route("/api/command-center", commandCenterRoutes);
 app.route("/api/ai", aiRoutes);
-app.route("/api/beta", beta);
+app.route("/api/beta", betaRoutes);
 
 // Health check with database connection test
 app.get("/api/health", async (c) => {
