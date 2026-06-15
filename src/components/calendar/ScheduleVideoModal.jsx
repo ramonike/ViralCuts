@@ -1,11 +1,11 @@
-import React, { useState, useRef, useMemo } from 'react';
+import React, { useState, useRef, useCallback, useMemo } from 'react';
 import {
-    X, Clock, Upload, Video, Settings, Eye, EyeOff,
-    Globe, Lock, Sparkles, FileVideo, Trash2, AlertCircle,
-    MapPin, Loader2, CheckCircle, Zap, Calendar
+    X, Upload, FileVideo, Trash2, AlertCircle, Globe, Lock,
+    EyeOff, Sparkles, CheckCircle, Zap, Calendar, Plus,
+    ChevronDown, ChevronUp, Loader2, Clock
 } from 'lucide-react';
 
-// ─── Dados ────────────────────────────────────────────────────────────────────
+// ─── Constantes ───────────────────────────────────────────────────────────────
 
 const PLATFORMS = [
     { id: 'youtube-shorts', name: 'YouTube Shorts', dot: 'youtube' },
@@ -30,7 +30,7 @@ const TIMEZONES = [
     { value: 'Asia/Tokyo', label: 'Tóquio (JST)', offset: '+09:00' },
 ];
 
-// ─── Helpers ─────────────────────────────────────────────────────────────────
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function getLocalTimezone() {
     const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -38,680 +38,713 @@ function getLocalTimezone() {
 }
 
 function isValidFuture(date, time) {
-    const dt = new Date(`${date}T${time}:00`);
-    return dt > new Date(Date.now() + 5 * 60 * 1000);
+    if (!date || !time) return false;
+    return new Date(`${date}T${time}:00`) > new Date(Date.now() + 5 * 60 * 1000);
 }
 
-function formatDateTime(date, time, tz) {
-    return new Date(`${date}T${time}:00`).toLocaleString('pt-BR', {
-        weekday: 'long', day: 'numeric', month: 'long',
-        hour: '2-digit', minute: '2-digit', timeZone: tz,
-    });
+function todayStr() { return localDateStr(new Date()); }
+function maxDateStr() {
+    const d = new Date(); d.setFullYear(d.getFullYear() + 1);
+    return localDateStr(d);
+}
+
+// Dado um array de vídeos, gera horários espaçados de 30min a partir de agora
+// Formata data como YYYY-MM-DD em horário LOCAL (evita virar UTC e mudar o dia)
+function localDateStr(dt) {
+    const y = dt.getFullYear();
+    const m = String(dt.getMonth() + 1).padStart(2, '0');
+    const d = String(dt.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+}
+
+function localTimeStr(dt) {
+    const h = String(dt.getHours()).padStart(2, '0');
+    const min = String(dt.getMinutes()).padStart(2, '0');
+    return `${h}:${min}`;
+}
+
+function suggestTimes(count, baseDate, baseTime) {
+    const results = [];
+    let dt = baseDate && baseTime
+        ? new Date(`${baseDate}T${baseTime}:00`)
+        : new Date(Date.now() + 10 * 60 * 1000);
+
+    for (let i = 0; i < count; i++) {
+        if (i > 0) dt = new Date(dt.getTime() + 30 * 60 * 1000);
+        results.push({
+            date: localDateStr(dt),   // local, não UTC
+            time: localTimeStr(dt),
+        });
+    }
+    return results;
+}
+
+function makeVideoItem(file) {
+    return {
+        id: crypto.randomUUID(),
+        file,
+        title: file.name.replace(/\.[^/.]+$/, ''),
+        description: '',
+        tags: '',
+        platform: 'youtube-shorts',
+        privacyStatus: 'public',
+        publishNow: false,
+        scheduledDate: todayStr(),
+        scheduledTime: '12:00',
+        timezone: getLocalTimezone(),
+        useNativeScheduling: true,
+        // estados de UI
+        expanded: true,
+        aiLoading: false,
+        status: 'idle', // idle | submitting | done | error
+        error: null,
+    };
 }
 
 // ─── Sub-componentes ──────────────────────────────────────────────────────────
 
 function SectionLabel({ children }) {
-    return (
-        <div className="vc-metric-label" style={{ marginBottom: 8 }}>{children}</div>
-    );
+    return <div className="vc-metric-label" style={{ marginBottom: 6 }}>{children}</div>;
 }
 
-function ModalInput({ value, onChange, placeholder, className = '', style = {} }) {
+function AIButton({ onClick, loading, disabled }) {
     return (
-        <input
-            value={value}
-            onChange={onChange}
-            placeholder={placeholder}
-            className={`vc-input ${className}`}
-            style={style}
-        />
-    );
-}
-
-// ─── AI Generate Button ───────────────────────────────────────────────────────
-
-function AIGenerateButton({ onClick, loading, disabled }) {
-    return (
-        <button
-            type="button"
-            onClick={onClick}
-            disabled={disabled || loading}
-            style={{
-                display: 'inline-flex', alignItems: 'center', gap: 6,
-                padding: '5px 12px',
-                background: loading ? 'var(--bg-elevated)' : 'var(--accent-coral-3)',
-                border: '1px solid rgba(232,65,42,0.25)',
-                borderRadius: 'var(--radius-sm)',
-                color: loading ? 'var(--text-muted)' : 'var(--accent-coral-2)',
-                fontSize: '0.6875rem', fontWeight: 600,
-                fontFamily: 'var(--font-display)',
-                letterSpacing: '0.04em', textTransform: 'uppercase',
-                cursor: disabled || loading ? 'not-allowed' : 'pointer',
-                transition: 'all 0.15s',
-                opacity: disabled ? 0.45 : 1,
-            }}
-        >
+        <button type="button" onClick={onClick} disabled={disabled || loading} style={{
+            display: 'inline-flex', alignItems: 'center', gap: 5,
+            padding: '4px 10px',
+            background: loading ? 'var(--bg-elevated)' : 'var(--accent-coral-3)',
+            border: '1px solid rgba(232,65,42,0.25)',
+            borderRadius: 'var(--radius-sm)',
+            color: loading ? 'var(--text-muted)' : 'var(--accent-coral-2)',
+            fontSize: '0.625rem', fontWeight: 700,
+            fontFamily: 'var(--font-display)', letterSpacing: '0.06em',
+            textTransform: 'uppercase', cursor: disabled || loading ? 'not-allowed' : 'pointer',
+            opacity: disabled ? 0.45 : 1, transition: 'all 0.15s',
+        }}>
             {loading
-                ? <><Loader2 size={11} style={{ animation: 'spin 1s linear infinite' }} /> Gerando...</>
-                : <><Zap size={11} /> Otimizar com IA</>
+                ? <><Loader2 size={10} style={{ animation: 'spin 1s linear infinite' }} /> Gerando...</>
+                : <><Zap size={10} /> IA</>
             }
         </button>
+    );
+}
+
+// ─── Card de um vídeo ─────────────────────────────────────────────────────────
+
+function VideoCard({ item, index, total, onUpdate, onRemove }) {
+    const set = (field, value) => onUpdate(item.id, field, value);
+
+    const statusColors = {
+        idle: null,
+        submitting: 'var(--accent-amber)',
+        done: 'var(--accent-teal)',
+        error: 'var(--accent-coral)',
+    };
+
+    const borderColor = statusColors[item.status]
+        ? `1px solid ${statusColors[item.status]}33`
+        : '1px solid var(--border-default)';
+
+    const isScheduleValid = item.publishNow || isValidFuture(item.scheduledDate, item.scheduledTime);
+
+    return (
+        <div style={{
+            border: borderColor,
+            borderRadius: 'var(--radius-lg)',
+            background: 'var(--bg-tertiary)',
+            overflow: 'hidden',
+            transition: 'border-color 0.2s',
+        }}>
+            {/* Card header — sempre visível */}
+            <div
+                onClick={() => set('expanded', !item.expanded)}
+                style={{
+                    display: 'flex', alignItems: 'center', gap: 10,
+                    padding: '10px 14px', cursor: 'pointer',
+                    background: item.status === 'done' ? 'var(--accent-teal-3)'
+                        : item.status === 'error' ? 'var(--accent-coral-3)'
+                            : 'transparent',
+                }}
+            >
+                {/* Thumb */}
+                <div style={{
+                    width: 44, height: 25, borderRadius: 4, flexShrink: 0,
+                    background: 'var(--bg-elevated)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                }}>
+                    {item.status === 'submitting'
+                        ? <Loader2 size={13} style={{ color: 'var(--accent-amber)', animation: 'spin 1s linear infinite' }} />
+                        : item.status === 'done'
+                            ? <CheckCircle size={13} style={{ color: 'var(--accent-teal)' }} />
+                            : item.status === 'error'
+                                ? <AlertCircle size={13} style={{ color: 'var(--accent-coral)' }} />
+                                : <FileVideo size={13} style={{ color: 'var(--text-muted)' }} />
+                    }
+                </div>
+
+                {/* Info */}
+                <div style={{ flex: 1, minWidth: 0 }}>
+                    <p style={{
+                        margin: 0, fontSize: '0.8125rem', fontWeight: 600,
+                        fontFamily: 'var(--font-display)', letterSpacing: '-0.01em',
+                        color: 'var(--text-primary)',
+                        overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                    }}>
+                        {item.title || item.file.name}
+                    </p>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 2 }}>
+                        <span style={{ fontSize: '0.6875rem', color: 'var(--text-muted)' }}>
+                            {(item.file.size / (1024 * 1024)).toFixed(1)} MB
+                        </span>
+                        {!item.publishNow && item.scheduledDate && (
+                            <>
+                                <span style={{ color: 'var(--border-default)' }}>·</span>
+                                <span style={{ fontSize: '0.6875rem', color: 'var(--text-muted)' }}>
+                                    {new Date(`${item.scheduledDate}T${item.scheduledTime}:00`).toLocaleString('pt-BR', {
+                                        day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit',
+                                    })}
+                                </span>
+                            </>
+                        )}
+                        {item.publishNow && (
+                            <span className="vc-badge vc-badge-amber" style={{ fontSize: '0.5rem' }}>Agora</span>
+                        )}
+                        {item.status === 'error' && item.error && (
+                            <span style={{ fontSize: '0.6875rem', color: 'var(--accent-coral)' }}>{item.error}</span>
+                        )}
+                    </div>
+                </div>
+
+                {/* Ações */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+                    {item.status === 'idle' && (
+                        <button
+                            onClick={e => { e.stopPropagation(); onRemove(item.id); }}
+                            style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: 2, borderRadius: 4 }}
+                        >
+                            <Trash2 size={13} />
+                        </button>
+                    )}
+                    {item.status === 'idle' && (
+                        item.expanded
+                            ? <ChevronUp size={14} style={{ color: 'var(--text-muted)' }} />
+                            : <ChevronDown size={14} style={{ color: 'var(--text-muted)' }} />
+                    )}
+                </div>
+            </div>
+
+            {/* Corpo expansível — só para itens em idle */}
+            {item.expanded && item.status === 'idle' && (
+                <div style={{ padding: '0 14px 14px', display: 'flex', flexDirection: 'column', gap: 12 }}>
+                    <div style={{ height: 1, background: 'var(--border-subtle)', marginBottom: 2 }} />
+
+                    {/* Título */}
+                    <div>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+                            <SectionLabel>Título *</SectionLabel>
+                            <AIButton
+                                onClick={async () => {
+                                    set('aiLoading', true);
+                                    await new Promise(r => setTimeout(r, 1000));
+                                    const topic = item.title || item.file.name.replace(/\.[^/.]+$/, '');
+                                    set('description', `Descubra tudo sobre ${topic}! Dicas exclusivas e conteúdo incrível. Curta e inscreva-se! 🔥`);
+                                    set('tags', `${topic}, dicas, viral, shorts`);
+                                    set('aiLoading', false);
+                                }}
+                                loading={item.aiLoading}
+                                disabled={false}
+                            />
+                        </div>
+                        <input
+                            value={item.title}
+                            onChange={e => set('title', e.target.value)}
+                            placeholder="Título do vídeo"
+                            className="vc-input"
+                            style={{ fontSize: '0.875rem' }}
+                        />
+                    </div>
+
+                    {/* Descrição */}
+                    <div>
+                        <SectionLabel>Descrição</SectionLabel>
+                        <textarea
+                            value={item.description}
+                            onChange={e => set('description', e.target.value)}
+                            placeholder="Descrição..."
+                            rows={2}
+                            className="vc-input"
+                            style={{ resize: 'none', fontSize: '0.875rem', lineHeight: 1.5 }}
+                        />
+                    </div>
+
+                    {/* Tags */}
+                    <div>
+                        <SectionLabel>Tags</SectionLabel>
+                        <input
+                            value={item.tags}
+                            onChange={e => set('tags', e.target.value)}
+                            placeholder="tag1, tag2, tag3"
+                            className="vc-input"
+                            style={{ fontSize: '0.875rem' }}
+                        />
+                    </div>
+
+                    {/* Plataforma + Privacidade — linha */}
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                        <div>
+                            <SectionLabel>Plataforma</SectionLabel>
+                            <select
+                                value={item.platform}
+                                onChange={e => set('platform', e.target.value)}
+                                className="vc-input"
+                                style={{ fontSize: '0.8125rem', colorScheme: 'dark' }}
+                            >
+                                {PLATFORMS.map(p => (
+                                    <option key={p.id} value={p.id}>{p.name}</option>
+                                ))}
+                            </select>
+                        </div>
+                        <div>
+                            <SectionLabel>Privacidade</SectionLabel>
+                            <select
+                                value={item.privacyStatus}
+                                onChange={e => set('privacyStatus', e.target.value)}
+                                className="vc-input"
+                                style={{ fontSize: '0.8125rem', colorScheme: 'dark' }}
+                            >
+                                {PRIVACY_OPTIONS.map(o => (
+                                    <option key={o.value} value={o.value}>{o.label}</option>
+                                ))}
+                            </select>
+                        </div>
+                    </div>
+
+                    {/* Publicar agora vs Agendar */}
+                    <div>
+                        <SectionLabel>Quando publicar</SectionLabel>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+                            {[
+                                { key: false, icon: <Calendar size={14} />, label: 'Agendar', color: 'coral' },
+                                { key: true, icon: <Zap size={14} />, label: 'Agora', color: 'amber' },
+                            ].map(opt => (
+                                <button
+                                    key={String(opt.key)}
+                                    onClick={() => set('publishNow', opt.key)}
+                                    style={{
+                                        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                                        padding: '7px',
+                                        borderRadius: 'var(--radius-md)',
+                                        background: item.publishNow === opt.key
+                                            ? opt.color === 'coral' ? 'var(--accent-coral-3)' : 'var(--accent-amber-3)'
+                                            : 'var(--bg-elevated)',
+                                        border: `1px solid ${item.publishNow === opt.key
+                                            ? opt.color === 'coral' ? 'rgba(232,65,42,0.25)' : 'rgba(240,165,0,0.25)'
+                                            : 'var(--border-subtle)'}`,
+                                        cursor: 'pointer', transition: 'all 0.15s',
+                                        color: item.publishNow === opt.key
+                                            ? opt.color === 'coral' ? 'var(--accent-coral-2)' : 'var(--accent-amber)'
+                                            : 'var(--text-muted)',
+                                        fontSize: '0.8125rem', fontWeight: 600,
+                                        fontFamily: 'var(--font-display)', letterSpacing: '-0.01em',
+                                    }}
+                                >
+                                    {opt.icon} {opt.label}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* Data/hora — só se agendar */}
+                    {!item.publishNow && (
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                            <div>
+                                <SectionLabel>Data</SectionLabel>
+                                <input
+                                    type="date"
+                                    value={item.scheduledDate}
+                                    min={todayStr()} max={maxDateStr()}
+                                    onChange={e => set('scheduledDate', e.target.value)}
+                                    className="vc-input"
+                                    style={{ fontSize: '0.875rem', colorScheme: 'dark' }}
+                                />
+                            </div>
+                            <div>
+                                <SectionLabel>Horário</SectionLabel>
+                                <input
+                                    type="time"
+                                    value={item.scheduledTime}
+                                    onChange={e => set('scheduledTime', e.target.value)}
+                                    className="vc-input"
+                                    style={{ fontSize: '0.875rem', colorScheme: 'dark' }}
+                                />
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Aviso horário inválido */}
+                    {!item.publishNow && !isScheduleValid && item.scheduledDate && (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                            <AlertCircle size={12} style={{ color: 'var(--accent-amber)', flexShrink: 0 }} />
+                            <span style={{ fontSize: '0.75rem', color: 'var(--accent-amber)' }}>
+                                Horário deve ser pelo menos 5 minutos no futuro
+                            </span>
+                        </div>
+                    )}
+                </div>
+            )}
+        </div>
+    );
+}
+
+// ─── Zona de drop ─────────────────────────────────────────────────────────────
+
+function DropZone({ onFiles }) {
+    const [drag, setDrag] = useState(false);
+    const ref = useRef(null);
+
+    const handleFiles = (files) => {
+        const videos = Array.from(files).filter(f => f.type.startsWith('video/'));
+        if (videos.length) onFiles(videos);
+    };
+
+    return (
+        <div
+            onDrop={e => { e.preventDefault(); setDrag(false); handleFiles(e.dataTransfer.files); }}
+            onDragOver={e => { e.preventDefault(); setDrag(true); }}
+            onDragLeave={() => setDrag(false)}
+            onClick={() => ref.current?.click()}
+            style={{
+                border: `2px dashed ${drag ? 'var(--accent-coral)' : 'var(--border-default)'}`,
+                borderRadius: 'var(--radius-lg)',
+                padding: '20px 24px',
+                textAlign: 'center',
+                cursor: 'pointer',
+                background: drag ? 'var(--accent-coral-3)' : 'var(--bg-tertiary)',
+                transition: 'all 0.15s',
+            }}
+        >
+            <input ref={ref} type="file" accept="video/*" multiple style={{ display: 'none' }}
+                onChange={e => handleFiles(e.target.files)} />
+            <div style={{
+                width: 40, height: 40, borderRadius: 'var(--radius-md)',
+                background: 'var(--bg-elevated)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                margin: '0 auto 10px',
+            }}>
+                <Plus size={20} style={{ color: 'var(--text-muted)' }} />
+            </div>
+            <p style={{ margin: '0 0 4px', fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '0.875rem', color: 'var(--text-primary)', letterSpacing: '-0.01em' }}>
+                Adicionar mais vídeos
+            </p>
+            <p style={{ margin: 0, fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                Arraste ou clique · MP4, MOV, AVI
+            </p>
+        </div>
     );
 }
 
 // ─── Main Modal ───────────────────────────────────────────────────────────────
 
 export function ScheduleVideoModal({ isOpen, onClose, selectedDate, onSchedule }) {
-    const emptyForm = {
-        title: '', description: '', tags: '',
-        platform: 'youtube-shorts', privacyStatus: 'public',
-        scheduledDate: selectedDate || new Date().toISOString().split('T')[0],
-        scheduledTime: '12:00', timezone: getLocalTimezone(),
-        useNativeScheduling: true, file: null,
-        publishNow: false,  // toggle: publicar agora vs agendar
-    };
-
-    const [form, setForm] = useState(emptyForm);
+    const [items, setItems] = useState([]);
     const [dragActive, setDragActive] = useState(false);
-    const [validationErr, setValidErr] = useState('');
-    const [aiLoading, setAiLoading] = useState(false);
-    // Track which step is active for guided flow
-    const [step, setStep] = useState(1); // 1=arquivo 2=metadados 3=agendamento
+    const [submitting, setSubmitting] = useState(false);
+    const [globalError, setGlobalError] = useState('');
     const fileRef = useRef(null);
 
-    const minDate = useMemo(() => new Date().toISOString().split('T')[0], []);
-    const maxDate = useMemo(() => {
-        const d = new Date(); d.setFullYear(d.getFullYear() + 1);
-        return d.toISOString().split('T')[0];
-    }, []);
-
+    // Reset ao abrir
     React.useEffect(() => {
-        if (selectedDate) setForm(p => ({ ...p, scheduledDate: selectedDate }));
-    }, [selectedDate]);
+        if (isOpen) {
+            setItems([]);
+            setGlobalError('');
+            setSubmitting(false);
+        }
+    }, [isOpen]);
 
     if (!isOpen) return null;
 
-    const set = (field, value) => {
-        setForm(p => ({ ...p, [field]: value }));
-        setValidErr('');
-    };
+    // ── Adicionar arquivos ──────────────────────────────────────────────────
+    const addFiles = useCallback((files) => {
+        const newItems = Array.from(files)
+            .filter(f => f.type.startsWith('video/'))
+            .map(f => {
+                const item = makeVideoItem(f);
+                return item;
+            });
 
-    const handleFile = (file) => {
-        if (file?.type.startsWith('video/')) {
-            setForm(p => ({ ...p, file, title: p.title || file.name.replace(/\.[^/.]+$/, '') }));
-            setStep(2); // avança passo ao escolher arquivo
-        }
-    };
-
-    // Simula chamada de IA — substituir pelo hook real quando disponível
-    const handleAIGenerate = async () => {
-        if (!form.title && !form.file) return;
-        setAiLoading(true);
-        await new Promise(r => setTimeout(r, 1200));
-        const topic = form.title || form.file?.name?.replace(/\.[^/.]+$/, '') || 'vídeo';
-        setForm(p => ({
-            ...p,
-            description: `Descubra tudo sobre ${topic}! Neste vídeo você vai aprender os principais pontos e dicas exclusivas. Não esqueça de curtir e se inscrever! 🔥`,
-            tags: `${topic}, dicas, tutorial, viral, shorts`,
-        }));
-        setAiLoading(false);
-    };
-
-    const isScheduleValid = form.publishNow || isValidFuture(form.scheduledDate, form.scheduledTime);
-
-    const handleSubmit = () => {
-        if (!form.title) { setValidErr('Título é obrigatório'); return; }
-        if (!form.file && form.platform === 'youtube-shorts') { setValidErr('Selecione um arquivo de vídeo'); return; }
-        if (!isScheduleValid) { setValidErr('O horário deve ser pelo menos 5 minutos no futuro'); return; }
-
-        const dt = form.publishNow ? new Date() : new Date(`${form.scheduledDate}T${form.scheduledTime}:00`);
-        onSchedule({
-            title: form.title, description: form.description,
-            platform: form.platform, scheduledAt: form.publishNow ? null : dt.toISOString(),
-            publishAt: form.publishNow ? null : (form.useNativeScheduling ? dt.toISOString() : null),
-            privacyStatus: form.privacyStatus,
-            tags: form.tags.split(',').map(t => t.trim()).filter(Boolean),
-            file: form.file, timezone: form.timezone,
-            source: form.publishNow ? 'immediate' : 'scheduled',
-            publishNow: form.publishNow,
+        setItems(prev => {
+            const all = [...prev, ...newItems];
+            // Sugerir horários espaçados de 30min para os novos itens
+            const baseItem = all.find(i => i.scheduledDate && i.scheduledTime);
+            const times = suggestTimes(
+                all.length,
+                selectedDate
+                    ? (typeof selectedDate === 'string' ? selectedDate : selectedDate.toISOString().split('T')[0])
+                    : baseItem?.scheduledDate,
+                baseItem?.scheduledTime,
+            );
+            return all.map((item, idx) => ({
+                ...item,
+                scheduledDate: times[idx]?.date || item.scheduledDate,
+                scheduledTime: times[idx]?.time || item.scheduledTime,
+                expanded: idx === all.length - newItems.length, // expande apenas o primeiro novo
+            }));
         });
-        setForm(emptyForm);
-        setStep(1);
-        setValidErr('');
-        onClose();
+    }, [selectedDate]);
+
+    // ── Atualizar campo de um item ──────────────────────────────────────────
+    const updateItem = useCallback((id, field, value) => {
+        setItems(prev => prev.map(item => item.id === id ? { ...item, [field]: value } : item));
+    }, []);
+
+    // ── Remover item ────────────────────────────────────────────────────────
+    const removeItem = useCallback((id) => {
+        setItems(prev => prev.filter(item => item.id !== id));
+    }, []);
+
+    // ── Validação geral ─────────────────────────────────────────────────────
+    const allValid = useMemo(() => {
+        if (items.length === 0) return false;
+        return items.every(item => {
+            if (!item.title) return false;
+            if (item.publishNow) return true;
+            return isValidFuture(item.scheduledDate, item.scheduledTime);
+        });
+    }, [items]);
+
+    const invalidItems = useMemo(() =>
+        items.filter(item => !item.title || (!item.publishNow && !isValidFuture(item.scheduledDate, item.scheduledTime)))
+        , [items]);
+
+    // ── Submit — envia todos em paralelo ────────────────────────────────────
+    const handleSubmitAll = async () => {
+        if (!allValid) {
+            setGlobalError(`${invalidItems.length} vídeo(s) com dados incompletos ou horário inválido`);
+            // Expande os inválidos para o usuário ver
+            setItems(prev => prev.map(item => {
+                const invalid = !item.title || (!item.publishNow && !isValidFuture(item.scheduledDate, item.scheduledTime));
+                return invalid ? { ...item, expanded: true } : item;
+            }));
+            return;
+        }
+
+        setSubmitting(true);
+        setGlobalError('');
+
+        // Marca todos como "submitting"
+        setItems(prev => prev.map(i => ({ ...i, status: 'submitting', expanded: false })));
+
+        // Envia em paralelo
+        await Promise.all(
+            items.map(async (item) => {
+                try {
+                    // Constrói datetime em horário LOCAL explicitamente (evita ambiguidade UTC)
+                    const [yr, mo, dy] = item.scheduledDate.split('-').map(Number);
+                    const [hr, mn] = item.scheduledTime.split(':').map(Number);
+                    const dt = item.publishNow ? new Date() : new Date(yr, mo - 1, dy, hr, mn, 0);
+                    await onSchedule({
+                        title: item.title,
+                        description: item.description,
+                        platform: item.platform,
+                        scheduledAt: item.publishNow ? null : dt.toISOString(),
+                        publishAt: item.publishNow ? null : (item.useNativeScheduling ? dt.toISOString() : null),
+                        privacyStatus: item.privacyStatus,
+                        tags: item.tags.split(',').map(t => t.trim()).filter(Boolean),
+                        file: item.file,
+                        timezone: item.timezone,
+                        source: item.publishNow ? 'immediate' : 'scheduled',
+                        publishNow: item.publishNow,
+                    });
+                    setItems(prev => prev.map(i => i.id === item.id ? { ...i, status: 'done' } : i));
+                } catch (err) {
+                    setItems(prev => prev.map(i => i.id === item.id
+                        ? { ...i, status: 'error', error: err?.message || 'Erro ao agendar', expanded: true }
+                        : i
+                    ));
+                }
+            })
+        );
+
+        setSubmitting(false);
+
+        // Se todos foram com sucesso, fecha após 1.5s
+        setItems(prev => {
+            const allDone = prev.every(i => i.status === 'done');
+            if (allDone) {
+                setTimeout(() => onClose(), 1500);
+            }
+            return prev;
+        });
     };
 
-    // Steps config
-    const STEPS = [
-        { num: 1, label: 'Arquivo' },
-        { num: 2, label: 'Metadados' },
-        { num: 3, label: 'Agendamento' },
-    ];
+    const doneCount = items.filter(i => i.status === 'done').length;
+    const errorCount = items.filter(i => i.status === 'error').length;
+    const allDone = items.length > 0 && doneCount === items.length;
 
     return (
         <div style={{
             position: 'fixed', inset: 0, zIndex: 50,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            background: 'rgba(0,0,0,0.75)',
-            backdropFilter: 'blur(6px)',
-            padding: 16,
-            animation: 'vc-fade-in 0.2s ease',
+            background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(6px)',
+            padding: 16, animation: 'vc-fade-in 0.2s ease',
         }}>
             <div style={{
                 background: 'var(--bg-secondary)',
                 border: '1px solid var(--border-default)',
                 borderRadius: 'var(--radius-xl)',
                 boxShadow: 'var(--shadow-elevated)',
-                width: '100%', maxWidth: 620,
-                maxHeight: '90vh',
+                width: '100%', maxWidth: 640,
+                maxHeight: '92vh',
                 display: 'flex', flexDirection: 'column',
                 overflow: 'hidden',
                 animation: 'vc-scale-in 0.2s ease',
             }}>
 
-                {/* ── Header ──────────────────────────────────────── */}
+                {/* Header */}
                 <div style={{
-                    padding: '18px 20px 16px',
-                    borderBottom: '1px solid var(--border-subtle)',
-                    flexShrink: 0,
-                    position: 'relative',
+                    padding: '16px 20px', borderBottom: '1px solid var(--border-subtle)',
+                    flexShrink: 0, position: 'relative',
                 }}>
-                    {/* Traço coral no topo */}
                     <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: 'var(--accent-coral)', borderRadius: 'var(--radius-xl) var(--radius-xl) 0 0' }} />
-
-                    <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                         <div>
-                            <h2 style={{
-                                margin: '0 0 2px',
-                                fontFamily: 'var(--font-display)', fontWeight: 700,
-                                fontSize: '1.125rem', letterSpacing: '-0.025em',
-                                color: 'var(--text-primary)',
-                            }}>Agendar no Pipeline</h2>
-                            <p style={{ margin: 0, fontSize: '0.8125rem', color: 'var(--text-muted)' }}>
-                                {formatDateTime(form.scheduledDate, form.scheduledTime, form.timezone)}
+                            <h2 style={{ margin: '0 0 2px', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '1.0625rem', letterSpacing: '-0.025em', color: 'var(--text-primary)' }}>
+                                Agendar no Pipeline
+                            </h2>
+                            <p style={{ margin: 0, fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                                {items.length === 0
+                                    ? 'Selecione um ou mais vídeos'
+                                    : `${items.length} vídeo${items.length > 1 ? 's' : ''} · ${doneCount} agendado${doneCount !== 1 ? 's' : ''}`
+                                }
                             </p>
                         </div>
-                        <button
-                            onClick={onClose}
-                            className="vc-btn-icon vc-btn-ghost"
-                            style={{ marginTop: -2 }}
-                        >
-                            <X size={16} />
+                        <button onClick={onClose} style={{ background: 'none', border: '1px solid var(--border-default)', borderRadius: 'var(--radius-md)', padding: 6, cursor: 'pointer', color: 'var(--text-muted)', display: 'flex' }}>
+                            <X size={15} />
                         </button>
                     </div>
-
-                    {/* Step indicator */}
-                    <div style={{ display: 'flex', gap: 6, marginTop: 14 }}>
-                        {STEPS.map((s) => (
-                            <button
-                                key={s.num}
-                                onClick={() => s.num <= (form.file ? 3 : 1) && setStep(s.num)}
-                                style={{
-                                    flex: 1, padding: '6px 0', borderRadius: 'var(--radius-sm)',
-                                    background: step === s.num ? 'var(--accent-coral-3)' : 'var(--bg-tertiary)',
-                                    border: `1px solid ${step === s.num ? 'rgba(232,65,42,0.25)' : 'var(--border-subtle)'}`,
-                                    cursor: 'pointer', transition: 'all 0.15s',
-                                }}
-                            >
-                                <div style={{
-                                    fontSize: '0.6875rem', fontWeight: 600,
-                                    fontFamily: 'var(--font-display)', letterSpacing: '0.04em',
-                                    textTransform: 'uppercase',
-                                    color: step === s.num ? 'var(--accent-coral-2)' : 'var(--text-muted)',
-                                }}>
-                                    {s.num < step
-                                        ? <><CheckCircle size={10} style={{ display: 'inline', marginRight: 4 }} />{s.label}</>
-                                        : `${s.num}. ${s.label}`
-                                    }
-                                </div>
-                            </button>
-                        ))}
-                    </div>
                 </div>
 
-                {/* ── Body ────────────────────────────────────────── */}
-                <div style={{ overflowY: 'auto', flex: 1, padding: '20px' }}>
+                {/* Body */}
+                <div style={{ overflowY: 'auto', flex: 1, padding: '16px' }}>
 
-                    {/* ─── Passo 1: Arquivo ─────────────────────── */}
-                    {step === 1 && (
-                        <div>
-                            <SectionLabel>Arquivo de vídeo</SectionLabel>
-                            <div
-                                onDrop={(e) => { e.preventDefault(); setDragActive(false); handleFile(e.dataTransfer.files[0]); }}
-                                onDragOver={(e) => { e.preventDefault(); setDragActive(true); }}
-                                onDragLeave={() => setDragActive(false)}
-                                onClick={() => fileRef.current?.click()}
-                                style={{
-                                    border: `2px dashed ${dragActive ? 'var(--accent-coral)' : form.file ? 'var(--accent-teal)' : 'var(--border-default)'}`,
-                                    borderRadius: 'var(--radius-lg)',
-                                    padding: 28, textAlign: 'center', cursor: 'pointer',
-                                    background: dragActive ? 'var(--accent-coral-3)' : form.file ? 'var(--accent-teal-3)' : 'var(--bg-tertiary)',
-                                    transition: 'all 0.15s',
-                                }}
-                            >
-                                <input ref={fileRef} type="file" accept="video/*" style={{ display: 'none' }}
-                                    onChange={(e) => handleFile(e.target.files[0])} />
-
-                                {form.file ? (
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: 14, textAlign: 'left' }}>
-                                        <div style={{
-                                            width: 48, height: 48, borderRadius: 'var(--radius-md)',
-                                            background: 'var(--bg-elevated)',
-                                            display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-                                        }}>
-                                            <FileVideo size={22} style={{ color: 'var(--accent-teal)' }} />
-                                        </div>
-                                        <div style={{ flex: 1, minWidth: 0 }}>
-                                            <p style={{ margin: '0 0 3px', fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '0.9375rem', color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', letterSpacing: '-0.01em' }}>
-                                                {form.file.name}
-                                            </p>
-                                            <p style={{ margin: 0, fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                                                {(form.file.size / (1024 * 1024)).toFixed(1)} MB
-                                            </p>
-                                        </div>
-                                        <button
-                                            onClick={(e) => { e.stopPropagation(); set('file', null); setStep(1); }}
-                                            className="vc-btn-icon vc-btn-ghost"
-                                            style={{ color: 'var(--accent-coral)', flexShrink: 0 }}
-                                        >
-                                            <Trash2 size={15} />
-                                        </button>
-                                    </div>
-                                ) : (
-                                    <>
-                                        <div style={{
-                                            width: 52, height: 52, borderRadius: 'var(--radius-md)',
-                                            background: 'var(--bg-elevated)',
-                                            display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                            margin: '0 auto 14px',
-                                        }}>
-                                            <Upload size={22} style={{ color: 'var(--text-muted)' }} />
-                                        </div>
-                                        <p style={{ margin: '0 0 6px', fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '0.9375rem', color: 'var(--text-primary)', letterSpacing: '-0.01em' }}>
-                                            Arraste o vídeo ou clique para selecionar
-                                        </p>
-                                        <p style={{ margin: 0, fontSize: '0.8125rem', color: 'var(--text-muted)' }}>
-                                            MP4, MOV, AVI — máximo 2GB
-                                        </p>
-                                    </>
-                                )}
+                    {/* Drop zone inicial — quando não há vídeos */}
+                    {items.length === 0 && (
+                        <div
+                            onDrop={e => { e.preventDefault(); setDragActive(false); addFiles(e.dataTransfer.files); }}
+                            onDragOver={e => { e.preventDefault(); setDragActive(true); }}
+                            onDragLeave={() => setDragActive(false)}
+                            onClick={() => fileRef.current?.click()}
+                            style={{
+                                border: `2px dashed ${dragActive ? 'var(--accent-coral)' : 'var(--border-default)'}`,
+                                borderRadius: 'var(--radius-lg)',
+                                padding: '40px 24px', textAlign: 'center',
+                                cursor: 'pointer',
+                                background: dragActive ? 'var(--accent-coral-3)' : 'var(--bg-tertiary)',
+                                transition: 'all 0.15s',
+                            }}
+                        >
+                            <input ref={fileRef} type="file" accept="video/*" multiple style={{ display: 'none' }}
+                                onChange={e => addFiles(e.target.files)} />
+                            <div style={{ width: 52, height: 52, borderRadius: 'var(--radius-md)', background: 'var(--bg-elevated)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 14px' }}>
+                                <Upload size={22} style={{ color: 'var(--text-muted)' }} />
                             </div>
+                            <p style={{ margin: '0 0 6px', fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '0.9375rem', color: 'var(--text-primary)', letterSpacing: '-0.01em' }}>
+                                Arraste os vídeos ou clique para selecionar
+                            </p>
+                            <p style={{ margin: 0, fontSize: '0.8125rem', color: 'var(--text-muted)' }}>
+                                Selecione múltiplos arquivos de uma vez · MP4, MOV, AVI · máx 2GB cada
+                            </p>
+                        </div>
+                    )}
 
-                            {form.file && (
-                                <button
-                                    onClick={() => setStep(2)}
-                                    className="vc-btn vc-btn-primary"
-                                    style={{ width: '100%', justifyContent: 'center', marginTop: 16 }}
-                                >
-                                    Continuar para metadados →
-                                </button>
+                    {/* Lista de vídeos */}
+                    {items.length > 0 && (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                            {items.map((item, idx) => (
+                                <VideoCard
+                                    key={item.id}
+                                    item={item}
+                                    index={idx}
+                                    total={items.length}
+                                    onUpdate={updateItem}
+                                    onRemove={removeItem}
+                                />
+                            ))}
+
+                            {/* Adicionar mais vídeos — só quando não está enviando */}
+                            {!submitting && (
+                                <DropZone onFiles={addFiles} />
                             )}
                         </div>
                     )}
 
-                    {/* ─── Passo 2: Metadados ───────────────────── */}
-                    {step === 2 && (
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
-
-                            {/* Título com IA */}
-                            <div>
-                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-                                    <SectionLabel>Título *</SectionLabel>
-                                    <AIGenerateButton
-                                        onClick={handleAIGenerate}
-                                        loading={aiLoading}
-                                        disabled={!form.file && !form.title}
-                                    />
-                                </div>
-                                <ModalInput
-                                    value={form.title}
-                                    onChange={(e) => set('title', e.target.value)}
-                                    placeholder="Ex: 5 Curiosidades Incríveis Sobre Gatos"
-                                />
-                            </div>
-
-                            {/* Descrição */}
-                            <div>
-                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-                                    <SectionLabel>Descrição</SectionLabel>
-                                    {aiLoading && <span style={{ fontSize: '0.6875rem', color: 'var(--accent-coral-2)', fontFamily: 'var(--font-display)' }}>Gerando...</span>}
-                                </div>
-                                <textarea
-                                    value={form.description}
-                                    onChange={(e) => set('description', e.target.value)}
-                                    placeholder="Descrição do vídeo... (a IA pode gerar automaticamente)"
-                                    rows={3}
-                                    className="vc-input"
-                                    style={{ resize: 'none', lineHeight: 1.6 }}
-                                />
-                            </div>
-
-                            {/* Tags */}
-                            <div>
-                                <SectionLabel>Tags</SectionLabel>
-                                <ModalInput
-                                    value={form.tags}
-                                    onChange={(e) => set('tags', e.target.value)}
-                                    placeholder="gatos, curiosidades, animais (separadas por vírgula)"
-                                />
-                                {/* Preview das tags */}
-                                {form.tags && (
-                                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 8 }}>
-                                        {form.tags.split(',').filter(t => t.trim()).map((tag, i) => (
-                                            <span key={i} className="vc-badge vc-badge-muted" style={{ textTransform: 'none', letterSpacing: 0 }}>
-                                                #{tag.trim()}
-                                            </span>
-                                        ))}
-                                    </div>
-                                )}
-                            </div>
-
-                            {/* Plataformas */}
-                            <div>
-                                <SectionLabel>Plataforma</SectionLabel>
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                                    {PLATFORMS.map(p => (
-                                        <button
-                                            key={p.id}
-                                            onClick={() => set('platform', p.id)}
-                                            style={{
-                                                display: 'flex', alignItems: 'center', gap: 12,
-                                                padding: '10px 14px',
-                                                background: form.platform === p.id ? 'var(--accent-coral-3)' : 'var(--bg-tertiary)',
-                                                border: `1px solid ${form.platform === p.id ? 'rgba(232,65,42,0.25)' : 'var(--border-subtle)'}`,
-                                                borderRadius: 'var(--radius-md)', cursor: 'pointer',
-                                                transition: 'all 0.15s',
-                                            }}
-                                        >
-                                            <div className={`vc-platform-dot ${p.dot}`} style={{ width: 10, height: 10 }} />
-                                            <span style={{
-                                                fontFamily: 'var(--font-display)', fontWeight: 600,
-                                                fontSize: '0.875rem', letterSpacing: '-0.01em',
-                                                color: form.platform === p.id ? 'var(--accent-coral-2)' : 'var(--text-secondary)',
-                                            }}>{p.name}</span>
-                                            {form.platform === p.id && (
-                                                <CheckCircle size={14} style={{ marginLeft: 'auto', color: 'var(--accent-coral-2)' }} />
-                                            )}
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
-
-                            {/* Privacidade — só YouTube */}
-                            {form.platform === 'youtube-shorts' && (
-                                <div>
-                                    <SectionLabel>Privacidade</SectionLabel>
-                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 8 }}>
-                                        {PRIVACY_OPTIONS.map(opt => {
-                                            const Icon = opt.icon;
-                                            return (
-                                                <button
-                                                    key={opt.value}
-                                                    onClick={() => set('privacyStatus', opt.value)}
-                                                    style={{
-                                                        display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6,
-                                                        padding: '12px 8px',
-                                                        background: form.privacyStatus === opt.value ? 'var(--accent-coral-3)' : 'var(--bg-tertiary)',
-                                                        border: `1px solid ${form.privacyStatus === opt.value ? 'rgba(232,65,42,0.25)' : 'var(--border-subtle)'}`,
-                                                        borderRadius: 'var(--radius-md)', cursor: 'pointer',
-                                                        transition: 'all 0.15s',
-                                                    }}
-                                                >
-                                                    <Icon size={16} style={{ color: form.privacyStatus === opt.value ? 'var(--accent-coral-2)' : 'var(--text-muted)' }} />
-                                                    <div>
-                                                        <div style={{ fontSize: '0.75rem', fontWeight: 600, fontFamily: 'var(--font-display)', color: form.privacyStatus === opt.value ? 'var(--accent-coral-2)' : 'var(--text-secondary)', letterSpacing: '-0.01em' }}>
-                                                            {opt.label}
-                                                        </div>
-                                                        <div style={{ fontSize: '0.625rem', color: 'var(--text-muted)', marginTop: 1 }}>
-                                                            {opt.desc}
-                                                        </div>
-                                                    </div>
-                                                </button>
-                                            );
-                                        })}
-                                    </div>
-
-                                    {/* Agendamento nativo */}
-                                    <label style={{
-                                        display: 'flex', alignItems: 'flex-start', gap: 12,
-                                        marginTop: 12, padding: '12px 14px',
-                                        background: 'var(--bg-tertiary)',
-                                        border: '1px solid var(--border-subtle)',
-                                        borderRadius: 'var(--radius-md)', cursor: 'pointer',
-                                    }}>
-                                        <input
-                                            type="checkbox"
-                                            checked={form.useNativeScheduling}
-                                            onChange={(e) => set('useNativeScheduling', e.target.checked)}
-                                            style={{ marginTop: 2, accentColor: 'var(--accent-coral)', flexShrink: 0 }}
-                                        />
-                                        <div>
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 3 }}>
-                                                <Sparkles size={13} style={{ color: 'var(--accent-coral-2)' }} />
-                                                <span style={{ fontSize: '0.8125rem', fontWeight: 600, fontFamily: 'var(--font-display)', color: 'var(--text-primary)', letterSpacing: '-0.01em' }}>
-                                                    Agendamento nativo do YouTube
-                                                </span>
-                                            </div>
-                                            <p style={{ margin: 0, fontSize: '0.75rem', color: 'var(--text-muted)', lineHeight: 1.55 }}>
-                                                {form.useNativeScheduling
-                                                    ? 'Vídeo enviado agora e publicado automaticamente pelo YouTube no horário definido'
-                                                    : 'Vídeo fica na fila e é enviado apenas no horário agendado (requer dashboard aberto)'
-                                                }
-                                            </p>
-                                        </div>
-                                    </label>
-                                </div>
-                            )}
-
-                            <button
-                                onClick={() => setStep(3)}
-                                disabled={!form.title}
-                                className="vc-btn vc-btn-primary"
-                                style={{ width: '100%', justifyContent: 'center', opacity: !form.title ? 0.4 : 1 }}
-                            >
-                                Definir horário →
-                            </button>
-                        </div>
-                    )}
-
-                    {/* ─── Passo 3: Agendamento ─────────────────── */}
-                    {step === 3 && (
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
-
-                            {/* Toggle: Publicar agora vs Agendar */}
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-                                {[
-                                    {
-                                        key: false,
-                                        icon: <Calendar size={18} style={{ color: form.publishNow ? 'var(--text-muted)' : 'var(--accent-coral)' }} />,
-                                        title: 'Agendar',
-                                        desc: 'Escolhe data e hora',
-                                    },
-                                    {
-                                        key: true,
-                                        icon: <Zap size={18} style={{ color: form.publishNow ? 'var(--accent-amber)' : 'var(--text-muted)' }} />,
-                                        title: 'Publicar agora',
-                                        desc: 'Envia imediatamente',
-                                    },
-                                ].map(opt => (
-                                    <button
-                                        key={String(opt.key)}
-                                        onClick={() => set('publishNow', opt.key)}
-                                        style={{
-                                            display: 'flex', flexDirection: 'column', alignItems: 'center',
-                                            gap: 6, padding: '14px 12px',
-                                            background: form.publishNow === opt.key
-                                                ? opt.key ? 'var(--accent-amber-3)' : 'var(--accent-coral-3)'
-                                                : 'var(--bg-tertiary)',
-                                            border: `1px solid ${form.publishNow === opt.key
-                                                ? opt.key ? 'rgba(240,165,0,0.3)' : 'rgba(232,65,42,0.25)'
-                                                : 'var(--border-subtle)'}`,
-                                            borderRadius: 'var(--radius-md)', cursor: 'pointer',
-                                            transition: 'all 0.15s',
-                                        }}
-                                    >
-                                        {opt.icon}
-                                        <span style={{
-                                            fontFamily: 'var(--font-display)', fontWeight: 700,
-                                            fontSize: '0.875rem', letterSpacing: '-0.02em',
-                                            color: form.publishNow === opt.key ? 'var(--text-primary)' : 'var(--text-secondary)',
-                                        }}>{opt.title}</span>
-                                        <span style={{ fontSize: '0.6875rem', color: 'var(--text-muted)' }}>
-                                            {opt.desc}
-                                        </span>
-                                    </button>
-                                ))}
-                            </div>
-
-                            {/* Campos de data — só aparecem quando "Agendar" está selecionado */}
-                            {!form.publishNow && (
-                                <>
-                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
-                                        <div>
-                                            <SectionLabel>Data</SectionLabel>
-                                            <input
-                                                type="date"
-                                                value={form.scheduledDate}
-                                                min={minDate} max={maxDate}
-                                                onChange={(e) => set('scheduledDate', e.target.value)}
-                                                className="vc-input"
-                                                style={{ colorScheme: 'dark' }}
-                                            />
-                                        </div>
-                                        <div>
-                                            <SectionLabel>Horário</SectionLabel>
-                                            <input
-                                                type="time"
-                                                value={form.scheduledTime}
-                                                onChange={(e) => set('scheduledTime', e.target.value)}
-                                                className="vc-input"
-                                                style={{ colorScheme: 'dark' }}
-                                            />
-                                        </div>
-                                    </div>
-
-                                    <div>
-                                        <SectionLabel>Fuso horário</SectionLabel>
-                                        <select
-                                            value={form.timezone}
-                                            onChange={(e) => set('timezone', e.target.value)}
-                                            className="vc-input"
-                                            style={{ colorScheme: 'dark' }}
-                                        >
-                                            {TIMEZONES.map(tz => (
-                                                <option key={tz.value} value={tz.value}>
-                                                    {tz.label} (UTC{tz.offset})
-                                                </option>
-                                            ))}
-                                        </select>
-                                    </div>
-
-                                    {!isScheduleValid && (
-                                        <div className="vc-toast vc-toast-amber" style={{ padding: '10px 14px' }}>
-                                            <AlertCircle size={15} style={{ flexShrink: 0, marginTop: 1 }} />
-                                            <p style={{ margin: 0, fontSize: '0.8125rem' }}>
-                                                O horário deve ser pelo menos 5 minutos no futuro
-                                            </p>
-                                        </div>
-                                    )}
-                                </>
-                            )}
-
-                            {/* Resumo */}
-                            {isScheduleValid && (
-                                <div style={{
-                                    padding: '14px 16px',
-                                    background: form.publishNow ? 'var(--accent-amber-3)' : 'var(--accent-teal-3)',
-                                    border: `1px solid ${form.publishNow ? 'rgba(240,165,0,0.2)' : 'rgba(0,201,167,0.2)'}`,
-                                    borderRadius: 'var(--radius-md)',
-                                }}>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-                                        {form.publishNow
-                                            ? <Zap size={14} style={{ color: 'var(--accent-amber)', flexShrink: 0 }} />
-                                            : <CheckCircle size={14} style={{ color: 'var(--accent-teal)', flexShrink: 0 }} />
-                                        }
-                                        <span style={{
-                                            fontSize: '0.75rem', fontWeight: 600,
-                                            fontFamily: 'var(--font-display)',
-                                            color: form.publishNow ? 'var(--accent-amber)' : 'var(--accent-teal)',
-                                            letterSpacing: '0.04em', textTransform: 'uppercase',
-                                        }}>
-                                            {form.publishNow ? 'Publicação imediata' : 'Pronto para agendar'}
-                                        </span>
-                                    </div>
-                                    <p style={{ margin: 0, fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
-                                        <strong style={{ color: 'var(--text-primary)', fontFamily: 'var(--font-display)' }}>
-                                            {form.title}
-                                        </strong>
-                                        {form.publishNow
-                                            ? ` será enviado agora para o ${PLATFORMS.find(p => p.id === form.platform)?.name}`
-                                            : ` será publicado no ${PLATFORMS.find(p => p.id === form.platform)?.name} em `
-                                        }
-                                        {!form.publishNow && (
-                                            <strong style={{ color: 'var(--text-primary)' }}>
-                                                {formatDateTime(form.scheduledDate, form.scheduledTime, form.timezone)}
-                                            </strong>
-                                        )}
-                                    </p>
-                                </div>
-                            )}
+                    {/* Estado de sucesso total */}
+                    {allDone && (
+                        <div style={{
+                            marginTop: 12, padding: '14px 16px',
+                            background: 'var(--accent-teal-3)',
+                            border: '1px solid rgba(0,201,167,0.2)',
+                            borderRadius: 'var(--radius-md)',
+                            display: 'flex', alignItems: 'center', gap: 10,
+                        }}>
+                            <CheckCircle size={16} style={{ color: 'var(--accent-teal)', flexShrink: 0 }} />
+                            <p style={{ margin: 0, fontSize: '0.875rem', color: 'var(--text-primary)', fontFamily: 'var(--font-display)', fontWeight: 600, letterSpacing: '-0.01em' }}>
+                                {items.length} vídeo{items.length > 1 ? 's' : ''} agendado{items.length > 1 ? 's' : ''} com sucesso!
+                            </p>
                         </div>
                     )}
                 </div>
 
-                {/* ── Footer ──────────────────────────────────────── */}
+                {/* Footer */}
                 <div style={{
-                    padding: '14px 20px',
+                    padding: '12px 16px',
                     borderTop: '1px solid var(--border-subtle)',
-                    background: 'var(--bg-tertiary)',
-                    flexShrink: 0,
+                    background: 'var(--bg-tertiary)', flexShrink: 0,
                     display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
                 }}>
-                    {/* Erro de validação */}
+                    {/* Erro global */}
                     <div style={{ flex: 1, minWidth: 0 }}>
-                        {validationErr ? (
+                        {globalError && (
                             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                                <AlertCircle size={14} style={{ color: 'var(--accent-coral)', flexShrink: 0 }} />
-                                <span style={{ fontSize: '0.8125rem', color: 'var(--accent-coral)' }}>{validationErr}</span>
+                                <AlertCircle size={13} style={{ color: 'var(--accent-coral)', flexShrink: 0 }} />
+                                <span style={{ fontSize: '0.8125rem', color: 'var(--accent-coral)' }}>{globalError}</span>
                             </div>
-                        ) : step === 3 && form.file ? (
+                        )}
+                        {submitting && !allDone && (
                             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                                <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--accent-teal)', flexShrink: 0 }} />
-                                <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                                    {(form.file.size / (1024 * 1024)).toFixed(1)} MB · {PLATFORMS.find(p => p.id === form.platform)?.name}
+                                <Loader2 size={13} style={{ color: 'var(--accent-amber)', animation: 'spin 1s linear infinite', flexShrink: 0 }} />
+                                <span style={{ fontSize: '0.8125rem', color: 'var(--text-muted)' }}>
+                                    Enviando {doneCount + errorCount}/{items.length}...
                                 </span>
                             </div>
-                        ) : null}
+                        )}
+                        {errorCount > 0 && !submitting && (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                <AlertCircle size={13} style={{ color: 'var(--accent-coral)', flexShrink: 0 }} />
+                                <span style={{ fontSize: '0.8125rem', color: 'var(--accent-coral)' }}>
+                                    {errorCount} erro{errorCount > 1 ? 's' : ''} · verifique os itens acima
+                                </span>
+                            </div>
+                        )}
                     </div>
 
                     <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
-                        {step > 1 && (
-                            <button onClick={() => setStep(s => s - 1)} className="vc-btn vc-btn-secondary vc-btn-sm">
-                                ← Voltar
-                            </button>
-                        )}
                         <button onClick={onClose} className="vc-btn vc-btn-ghost vc-btn-sm">
-                            Cancelar
+                            {allDone ? 'Fechar' : 'Cancelar'}
                         </button>
-                        {step === 3 ? (
+
+                        {!allDone && items.length > 0 && (
                             <button
-                                onClick={handleSubmit}
-                                disabled={!form.title || (!form.file && form.platform === 'youtube-shorts') || !isScheduleValid}
+                                onClick={handleSubmitAll}
+                                disabled={submitting || !allValid}
                                 className="vc-btn vc-btn-primary vc-btn-sm"
+                                style={{ opacity: (!allValid || submitting) ? 0.5 : 1 }}
                             >
-                                {form.publishNow
-                                    ? <><Zap size={14} /> Publicar agora</>
-                                    : <><Calendar size={14} /> Agendar</>
-                                }
-                            </button>
-                        ) : (
-                            <button
-                                onClick={() => setStep(s => Math.min(s + 1, 3))}
-                                disabled={step === 1 && !form.file || step === 2 && !form.title}
-                                className="vc-btn vc-btn-primary vc-btn-sm"
-                            >
-                                Próximo →
+                                {submitting ? (
+                                    <><Loader2 size={13} style={{ animation: 'spin 1s linear infinite' }} /> Agendando...</>
+                                ) : (
+                                    <><Calendar size={13} /> Agendar {items.length > 1 ? `${items.length} vídeos` : 'vídeo'}</>
+                                )}
                             </button>
                         )}
                     </div>
