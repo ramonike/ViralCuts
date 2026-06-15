@@ -8,6 +8,7 @@ import {
     RefreshCw, ChevronLeft, ChevronRight, Youtube, Upload,
     Clock, Wifi, WifiOff, Shield, Activity, TrendingUp
 } from "lucide-react";
+import { AdminBetaRequests } from '../components/dashboard/AdminBetaRequests';
 
 // ─── API ──────────────────────────────────────────────────────────────────────
 import { API_URL } from "../config/api";
@@ -133,6 +134,8 @@ export default function AdminPage() {
     const [totalPages, setTotalPages] = useState(1);
     const [total, setTotal] = useState(0);
     const pageSize = 20;
+    const [adminTab, setAdminTab] = useState('users');
+    const [pendingCount, setPendingCount] = useState(0);
 
     const loadUsers = useCallback(async () => {
         try {
@@ -158,8 +161,19 @@ export default function AdminPage() {
         finally { setStatsLoad(false); }
     }, []);
 
+    const loadPendingCount = useCallback(async () => {
+        try {
+            const res = await fetch(`${API_URL}/api/beta/requests?status=pending`, { credentials: 'include' });
+            if (res.ok) {
+                const data = await res.json();
+                setPendingCount(data.requests?.length ?? 0);
+            }
+        } catch { /* silencioso */ }
+    }, []);
+
     useEffect(() => { loadUsers(); }, [loadUsers]);
     useEffect(() => { loadStats(); }, [loadStats]);
+    useEffect(() => { loadPendingCount(); }, [loadPendingCount]);
 
     const initials = (name = "") =>
         name.trim().split(" ").map(p => p[0]).slice(0, 2).join("").toUpperCase() || "?";
@@ -194,14 +208,36 @@ export default function AdminPage() {
                             </p>
                         </div>
                         <button
-                            onClick={() => { loadUsers(); loadStats(); }}
+                            onClick={() => { loadUsers(); loadStats(); loadPendingCount(); }}
                             className="vc-btn vc-btn-secondary vc-btn-sm"
                         >
                             <RefreshCw size={14} /> Atualizar
                         </button>
                     </div>
+
+                    {/* ── Tabs ──────────────────────────────────────── */}
+                    <div style={{ display: 'flex', gap: 8, marginTop: 14 }}>
+                        <button
+                            onClick={() => setAdminTab('users')}
+                            className={`vc-btn vc-btn-sm ${adminTab === 'users' ? 'vc-btn-primary' : 'vc-btn-secondary'}`}
+                        >
+                            <User size={14} /> Usuários
+                        </button>
+                        <button
+                            onClick={() => setAdminTab('beta')}
+                            className={`vc-btn vc-btn-sm ${adminTab === 'beta' ? 'vc-btn-primary' : 'vc-btn-secondary'}`}
+                        >
+                            Beta Requests {pendingCount > 0 && `(${pendingCount})`}
+                        </button>
+                    </div>
                 </div>
 
+                {/* ── Tab: Beta Requests ─────────────────────────── */}
+                {adminTab === 'beta' && <AdminBetaRequests />}
+
+                {/* ── Tab: Usuários ──────────────────────────────── */}
+                {adminTab === 'users' && (
+                <>
                 {/* ── Stats ──────────────────────────────────────────── */}
                 <div className="vc-grid-metrics">
                     <AdminStat icon={User} label="Total usuários" value={statsLoad ? "…" : stats?.totalUsers} accent="coral" />
@@ -371,6 +407,8 @@ export default function AdminPage() {
                         </>
                     )}
                 </div>
+                </>
+                )}
 
             </div>
         </div>

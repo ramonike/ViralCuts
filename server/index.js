@@ -7,6 +7,8 @@ import { auth } from "./auth.js";
 import { prisma, connectWithRetry, isRetryableError } from "./db/prisma.js";
 import { rateLimiter, authRateLimiter } from "./middleware/rate-limit.js";
 import adminRoutes from "./routes/admin.js";
+import beta from './routes/beta.js';
+app.route('/api/beta', beta);
 
 // Import route modules
 import progressRoutes from "./routes/progress.js";

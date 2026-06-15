@@ -320,3 +320,17 @@ model UserActivity {
   @@index([userId, timestamp])
   @@map("user_activity")
 }
+model BetaRequest {
+  id        String   @id @default(cuid())
+  userId    String   @map("user_id")
+  gmail     String                         // gmail do canal YouTube
+  channelName String? @map("channel_name") // nome do canal (opcional)
+  status    String   @default("pending")   // pending | approved | rejected
+  note      String?                        // nota do admin ao aprovar/rejeitar
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([userId])   // um pedido por usuário
+  @@index([status])
+  @@map("beta_request")
+}
