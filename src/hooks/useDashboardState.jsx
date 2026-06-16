@@ -359,25 +359,25 @@ export function useDashboardLogic() {
     useEffect(() => {
         const interval = setInterval(() => {
             const now = new Date();
-            state.uploadQueue.forEach(item => {
-                // If it has publishAt (native scheduling), upload IMMEDIATELY
-                // The platform (YouTube) will handle the release time
-                if (item.status === "ready" && item.publishAt) {
-                    console.log(`[AutoUpload] Triggering IMMEDIATE upload for ${item.title} (Native Schedule: ${item.publishAt})`);
-                    markQueueStatus(item.id, "uploading");
-                    return;
+            // Processar um item por vez para evitar conflito de token OAuth
+            // Encontra o primeiro item ready elegível e processa só ele
+            const nextItem = state.uploadQueue.find(item => {
+                if (item.status !== "ready") return false;
+                // publishAt = agendamento nativo: upload imediato
+                if (item.publishAt) return true;
+                // scheduledAt sem publishAt = aguarda o horário
+                if (item.scheduledAt && !item.publishAt) {
+                    return new Date(item.scheduledAt) <= now;
                 }
-
-                // Legacy/Dashboard scheduling (only scheduledAt): Wait for time
-                if (item.status === "ready" && item.scheduledAt && !item.publishAt) {
-                    const scheduledTime = new Date(item.scheduledAt);
-                    if (scheduledTime <= now) {
-                        console.log(`[AutoUpload] Triggering upload for ${item.title} (Scheduled: ${scheduledTime})`);
-                        markQueueStatus(item.id, "uploading");
-                    }
-                }
+                return false;
             });
-        }, 30000); // Check every 30 seconds
+
+            if (nextItem) {
+                console.log(`[AutoUpload] Triggering upload for ${nextItem.title}`);
+                // Passa o item completo para evitar race condition no state.find
+                markQueueStatus(nextItem.id, "uploading", nextItem);
+            }
+        }, 5000); // Checar a cada 5s (mais rápido para processar a fila)
 
         return () => clearInterval(interval);
     }, [state.uploadQueue]);
@@ -514,10 +514,10 @@ export function useDashboardLogic() {
         });
     }
 
-    async function markQueueStatus(id, status) {
-        // Usa a data de agendamento do item como chave no histórico (não "hoje")
-        // Isso garante que o vídeo apareça no dia correto no calendário
-        const item_for_date = state.uploadQueue.find((q) => q.id === id);
+    async function markQueueStatus(id, status, itemOverride = null) {
+        // itemOverride: item passado diretamente pelo polling para evitar
+        // race condition quando state.uploadQueue ainda não reflete adições recentes
+        const item_for_date = itemOverride || state.uploadQueue.find((q) => q.id === id);
         const scheduledDateStr = item_for_date?.scheduledAt
             ? (() => {
                 const d = new Date(item_for_date.scheduledAt);
@@ -534,8 +534,11 @@ export function useDashboardLogic() {
         }));
 
         if (status === "uploading") {
-            const item = state.uploadQueue.find((q) => q.id === id);
-            if (!item) return;
+            const item = itemOverride || state.uploadQueue.find((q) => q.id === id);
+            if (!item) {
+                console.error(`[markQueueStatus] Item ${id} not found in queue`);
+                return;
+            }
             try {
                 const result = await uploadVideo(item, state.auth.youtubeToken, item.file);
                 trackQuota(1600); // Upload cost ~1600 units
