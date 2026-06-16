@@ -83,7 +83,7 @@ function makeItem(file, date, time) {
     };
 }
 
-// Gera horários espaçados 6h em local time, começando no próximo slot
+// Gera horários nos slots de 06:00, 12:00 e 18:00 em local time
 function makeSchedule(count, baseDate, baseTime) {
     // Se tem base, usa ela; senão, começa 10min no futuro
     let base;
@@ -94,10 +94,30 @@ function makeSchedule(count, baseDate, baseTime) {
     } else {
         base = new Date(Date.now() + 10 * 60 * 1000);
     }
-    return Array.from({ length: count }, (_, i) => {
-        const dt = new Date(base.getTime() + i * 6 * 60 * 60 * 1000); // 6h de intervalo
-        return { date: localDateStr(dt), time: localTimeStr(dt) };
-    });
+    const slots = [];
+    let current = new Date(base.getTime());
+    const targetHours = [6, 12, 18];
+    for (let i = 0; i < count; i++) {
+        let found = false;
+        while (!found) {
+            const currentYear = current.getFullYear();
+            const currentMonth = current.getMonth();
+            const currentDateVal = current.getDate();
+            for (const hour of targetHours) {
+                const candidate = new Date(currentYear, currentMonth, currentDateVal, hour, 0, 0);
+                if (candidate >= current && candidate >= base) {
+                    slots.push({ date: localDateStr(candidate), time: localTimeStr(candidate) });
+                    current = new Date(candidate.getTime() + 60 * 1000);
+                    found = true;
+                    break;
+                }
+            }
+            if (!found) {
+                current = new Date(currentYear, currentMonth, currentDateVal + 1, 0, 0, 0);
+            }
+        }
+    }
+    return slots;
 }
 
 // ─── SectionLabel — componente puro sem hooks ────────────────────────────────
