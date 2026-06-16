@@ -383,7 +383,16 @@ export function useDashboardLogic() {
     }, [state.uploadQueue]);
 
     function toggleItem(checklistId, itemId) {
-        const today = new Date().toLocaleDateString('en-CA');
+        // Usa a data de agendamento do item como chave no histórico (não "hoje")
+        // Isso garante que o vídeo apareça no dia correto no calendário
+        const item_for_date = state.uploadQueue.find((q) => q.id === id);
+        const scheduledDateStr = item_for_date?.scheduledAt
+            ? (() => {
+                const d = new Date(item_for_date.scheduledAt);
+                return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+            })()
+            : new Date().toLocaleDateString('en-CA');
+        const today = scheduledDateStr; // renomeado para mínima alteração no código abaixo
         setState((prev) => {
             const newChecklists = prev.checklists.map((cl) =>
                 cl.id === checklistId
@@ -456,9 +465,9 @@ export function useDashboardLogic() {
         setState({ ...state, checklists: newLists });
     }
 
-    function addToUploadQueue({ title, source = "manual", platform = "YouTube Shorts", scheduledAt = null, file = null, privacyStatus = "private", publishAt = null, description = "" }) {
+    function addToUploadQueue({ title, source = "manual", platform = "YouTube Shorts", scheduledAt = null, file = null, privacyStatus = "private", publishAt = null, description = "", tags = [] }) {
         const item = {
-            id: `q_${Date.now()}`,
+            id: `q_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
             title,
             source,
             platform,
@@ -467,9 +476,12 @@ export function useDashboardLogic() {
             file,
             privacyStatus,
             publishAt,
-            description
+            description,
+            tags,
         };
-        setState({ ...state, uploadQueue: [...state.uploadQueue, item] });
+        // CRÍTICO: usar updater funcional (prev =>) para que múltiplas chamadas
+        // consecutivas não se sobrescrevam (bug de snapshot estático)
+        setState(prev => ({ ...prev, uploadQueue: [...prev.uploadQueue, item] }));
     }
 
     function removeQueueItem(id) {
@@ -503,7 +515,16 @@ export function useDashboardLogic() {
     }
 
     async function markQueueStatus(id, status) {
-        const today = new Date().toLocaleDateString('en-CA');
+        // Usa a data de agendamento do item como chave no histórico (não "hoje")
+        // Isso garante que o vídeo apareça no dia correto no calendário
+        const item_for_date = state.uploadQueue.find((q) => q.id === id);
+        const scheduledDateStr = item_for_date?.scheduledAt
+            ? (() => {
+                const d = new Date(item_for_date.scheduledAt);
+                return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+            })()
+            : new Date().toLocaleDateString('en-CA');
+        const today = scheduledDateStr; // renomeado para mínima alteração no código abaixo
 
         setState((prev) => ({
             ...prev,
