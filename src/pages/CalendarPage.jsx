@@ -62,9 +62,7 @@ function QueueSidebar({ queue, onScheduleNow, loadingScheduled }) {
 
     return (
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-            <button onClick={onScheduleNow} className="vc-btn vc-btn-primary" style={{ width: "100%", justifyContent: "center" }}>
-                <Plus size={15} /> Agendar vídeo agora
-            </button>
+
 
             <div className="vc-card">
                 <div style={{ padding: "14px 16px 0", display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
@@ -331,9 +329,6 @@ export default function CalendarPage() {
                             onAddChannel={() => window.location.href = "/dashboard/profile"}
                         />
                     )}
-                    <button onClick={() => { setSelectedScheduleDate(new Date()); setScheduleModalOpen(true); }} className="vc-btn vc-btn-primary">
-                        <Plus size={15} /> Agendar vídeo
-                    </button>
                 </div>
             </div>
 

@@ -83,39 +83,21 @@ function makeItem(file, date, time) {
     };
 }
 
-// Gera horários nos slots de 06:00, 12:00 e 18:00 em local time
+// Gera horários espaçados 6h em local time, começando no próximo slot
 function makeSchedule(count, baseDate, baseTime) {
-    const base = baseDate && baseTime
-        ? (() => { const [y, m, dd] = baseDate.split('-').map(Number); const [h, mn] = baseTime.split(':').map(Number); return new Date(y, m - 1, dd, h, mn); })()
-        : new Date(Date.now() + 10 * 60 * 1000);
-
-    const slots = [];
-    let current = new Date(base.getTime());
-    const targetHours = [6, 12, 18];
-
-    for (let i = 0; i < count; i++) {
-        let found = false;
-        while (!found) {
-            const currentYear = current.getFullYear();
-            const currentMonth = current.getMonth();
-            const currentDateVal = current.getDate();
-
-            for (const hour of targetHours) {
-                const candidate = new Date(currentYear, currentMonth, currentDateVal, hour, 0, 0);
-                if (candidate >= current && candidate >= base) {
-                    slots.push({ date: localDateStr(candidate), time: localTimeStr(candidate) });
-                    current = new Date(candidate.getTime() + 60 * 1000);
-                    found = true;
-                    break;
-                }
-            }
-
-            if (!found) {
-                current = new Date(currentYear, currentMonth, currentDateVal + 1, 0, 0, 0);
-            }
-        }
+    // Se tem base, usa ela; senão, começa 10min no futuro
+    let base;
+    if (baseDate && baseTime) {
+        const [y, m, dd] = baseDate.split('-').map(Number);
+        const [h, mn] = baseTime.split(':').map(Number);
+        base = new Date(y, m - 1, dd, h, mn);
+    } else {
+        base = new Date(Date.now() + 10 * 60 * 1000);
     }
-    return slots;
+    return Array.from({ length: count }, (_, i) => {
+        const dt = new Date(base.getTime() + i * 6 * 60 * 60 * 1000); // 6h de intervalo
+        return { date: localDateStr(dt), time: localTimeStr(dt) };
+    });
 }
 
 // ─── SectionLabel — componente puro sem hooks ────────────────────────────────
@@ -381,15 +363,18 @@ export function ScheduleVideoModal({ isOpen, onClose, selectedDate, onSchedule }
     }, [isOpen]);
 
     const addFiles = useCallback((files) => {
+        const videoFiles = Array.from(files).filter(f => f.type.startsWith('video/'));
+        if (!videoFiles.length) return;
         setItems(prev => {
-            const baseItem = prev[prev.length - 1];
+            // Usa selectedDate como base se disponível, senão 10min no futuro
             const baseDate = selectedDate
                 ? (typeof selectedDate === 'string' ? selectedDate : localDateStr(selectedDate))
-                : baseItem?.scheduledDate;
-            const baseTime = baseItem?.scheduledTime;
-            const times = makeSchedule(prev.length + files.length, baseDate, baseTime);
+                : null;
+            const baseTime = null; // sempre começa do zero, sem herdar horário de item anterior
+            const times = makeSchedule(prev.length + videoFiles.length, baseDate, baseTime);
+            // Re-agenda existentes com novos horários espaçados
             const existing = prev.map((item, i) => ({ ...item, scheduledDate: times[i].date, scheduledTime: times[i].time }));
-            const added = files.map((file, i) => makeItem(file, times[prev.length + i].date, times[prev.length + i].time));
+            const added = videoFiles.map((file, i) => makeItem(file, times[prev.length + i].date, times[prev.length + i].time));
             return [...existing, ...added];
         });
     }, [selectedDate]);
@@ -427,7 +412,8 @@ export function ScheduleVideoModal({ isOpen, onClose, selectedDate, onSchedule }
         setGlobalError('');
         setItems(prev => prev.map(i => ({ ...i, status: 'submitting', expanded: false })));
 
-        await Promise.all(items.map(async item => {
+        // Envio sequencial — evita race condition no estado do servidor/fila
+        for (const item of items) {
             try {
                 const [y, m, dd] = item.scheduledDate.split('-').map(Number);
                 const [h, mn] = item.scheduledTime.split(':').map(Number);
@@ -452,7 +438,7 @@ export function ScheduleVideoModal({ isOpen, onClose, selectedDate, onSchedule }
                     : i
                 ));
             }
-        }));
+        }
 
         setSubmitting(false);
         setItems(prev => {
@@ -470,11 +456,8 @@ export function ScheduleVideoModal({ isOpen, onClose, selectedDate, onSchedule }
             <div style={{
                 background: 'var(--bg-secondary)', border: '1px solid var(--border-default)',
                 borderRadius: 'var(--radius-xl)', boxShadow: 'var(--shadow-elevated)',
-                width: '100%',
-                maxWidth: items.length > 1 ? (items.length === 2 ? 860 : 1200) : 600,
-                maxHeight: '92vh',
+                width: '100%', maxWidth: 600, maxHeight: '92vh',
                 display: 'flex', flexDirection: 'column', overflow: 'hidden',
-                transition: 'max-width 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
             }}>
                 {/* Header */}
                 <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border-subtle)', flexShrink: 0, position: 'relative' }}>
@@ -498,25 +481,17 @@ export function ScheduleVideoModal({ isOpen, onClose, selectedDate, onSchedule }
 
                 {/* Body */}
                 <div style={{ overflowY: 'auto', flex: 1, padding: 16, display: 'flex', flexDirection: 'column', gap: 10 }}>
-                    {items.length === 0 ? (
-                        <DropZone onFiles={addFiles} compact={false} />
-                    ) : (
-                        <div style={{
-                            display: 'grid',
-                            gridTemplateColumns: items.length > 1 ? `repeat(min(${items.length}, 3), minmax(280px, 1fr))` : '1fr',
-                            gap: 16,
-                            alignItems: 'start',
-                        }}>
-                            {items.map(item => (
-                                <VideoCard key={item.id} item={item} onUpdate={updateItem} onRemove={removeItem} />
-                            ))}
-                            {!submitting && (
-                                <div style={{ gridColumn: items.length > 1 ? '1 / -1' : 'span 1' }}>
-                                    <DropZone onFiles={addFiles} compact={true} />
-                                </div>
-                            )}
-                        </div>
-                    )}
+                    {items.length === 0
+                        ? <DropZone onFiles={addFiles} compact={false} />
+                        : (
+                            <>
+                                {items.map(item => (
+                                    <VideoCard key={item.id} item={item} onUpdate={updateItem} onRemove={removeItem} />
+                                ))}
+                                {!submitting && <DropZone onFiles={addFiles} compact={true} />}
+                            </>
+                        )
+                    }
 
                     {allDone && (
                         <div style={{ padding: '14px 16px', background: 'var(--accent-teal-3)', border: '1px solid rgba(0,201,167,0.2)', borderRadius: 'var(--radius-md)', display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -575,3 +550,5 @@ export function ScheduleVideoModal({ isOpen, onClose, selectedDate, onSchedule }
         </div>
     );
 }
+
+export default ScheduleVideoModal;

@@ -77,7 +77,8 @@ export function ModernCalendar({
     const goToToday = () => {
         const today = new Date(new Date().toLocaleDateString('en-CA'));
         setCurrentDate(today);
-        setSelectedDate(today.toISOString().split('T')[0]);
+        const todayLocal = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+        setSelectedDate(todayLocal);
         announce('Navegando para hoje');
     };
 
@@ -91,19 +92,29 @@ export function ModernCalendar({
         const days = [];
         const current = new Date(startDate);
 
+        // Helper: date em local time (evita bug de fuso UTC vs local)
+        const toLocalDateStr = (d) => {
+            const y = d.getFullYear();
+            const m = String(d.getMonth() + 1).padStart(2, '0');
+            const dd = String(d.getDate()).padStart(2, '0');
+            return `${y}-${m}-${dd}`;
+        };
+
         for (let i = 0; i < 42; i++) {
-            const dateStr = current.toISOString().split('T')[0];
+            const dateStr = toLocalDateStr(current);  // local, não UTC
             const dayData = history[dateStr] || {};
             const scheduledVideos = uploadQueue.filter(item => {
-                const itemDate = new Date(item.scheduledAt || item.publishAt);
-                return itemDate.toISOString().split('T')[0] === dateStr;
+                const raw = item.scheduledAt || item.publishAt;
+                if (!raw) return false;
+                const itemDate = new Date(raw);
+                return toLocalDateStr(itemDate) === dateStr;  // compara em local time
             });
 
             days.push({
                 date: new Date(current),
                 dateStr,
                 isCurrentMonth: current.getMonth() === currentMonth,
-                isToday: dateStr === new Date().toISOString().split('T')[0],
+                isToday: dateStr === toLocalDateStr(new Date()),
                 isSelected: dateStr === selectedDate,
                 postedVideos: dayData.completedItems?.filter(item => item.type === 'youtube_video') || [],
                 scheduledVideos,
@@ -370,7 +381,7 @@ export function ModernCalendar({
                                 <Button
                                     onClick={() => onScheduleVideo?.(selectedDate)}
                                     size="sm"
-                                    className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white shadow-md text-xs px-2 py-1"
+                                    className="text-white shadow-md text-xs px-2 py-1" style={{ background: "var(--accent-coral)", border: "none" }}
                                 >
                                     <Plus className="w-3 h-3 mr-1" />
                                     Agendar
