@@ -456,8 +456,11 @@ export function ScheduleVideoModal({ isOpen, onClose, selectedDate, onSchedule }
             <div style={{
                 background: 'var(--bg-secondary)', border: '1px solid var(--border-default)',
                 borderRadius: 'var(--radius-xl)', boxShadow: 'var(--shadow-elevated)',
-                width: '100%', maxWidth: 600, maxHeight: '92vh',
+                width: '100%',
+                maxWidth: items.length > 1 ? (items.length === 2 ? 860 : 1200) : 600,
+                maxHeight: '92vh',
                 display: 'flex', flexDirection: 'column', overflow: 'hidden',
+                transition: 'max-width 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
             }}>
                 {/* Header */}
                 <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border-subtle)', flexShrink: 0, position: 'relative' }}>
@@ -481,17 +484,25 @@ export function ScheduleVideoModal({ isOpen, onClose, selectedDate, onSchedule }
 
                 {/* Body */}
                 <div style={{ overflowY: 'auto', flex: 1, padding: 16, display: 'flex', flexDirection: 'column', gap: 10 }}>
-                    {items.length === 0
-                        ? <DropZone onFiles={addFiles} compact={false} />
-                        : (
-                            <>
-                                {items.map(item => (
-                                    <VideoCard key={item.id} item={item} onUpdate={updateItem} onRemove={removeItem} />
-                                ))}
-                                {!submitting && <DropZone onFiles={addFiles} compact={true} />}
-                            </>
-                        )
-                    }
+                    {items.length === 0 ? (
+                        <DropZone onFiles={addFiles} compact={false} />
+                    ) : (
+                        <div style={{
+                            display: 'grid',
+                            gridTemplateColumns: items.length > 1 ? `repeat(min(${items.length}, 3), minmax(280px, 1fr))` : '1fr',
+                            gap: 16,
+                            alignItems: 'start',
+                        }}>
+                            {items.map(item => (
+                                <VideoCard key={item.id} item={item} onUpdate={updateItem} onRemove={removeItem} />
+                            ))}
+                            {!submitting && (
+                                <div style={{ gridColumn: items.length > 1 ? '1 / -1' : 'span 1' }}>
+                                    <DropZone onFiles={addFiles} compact={true} />
+                                </div>
+                            )}
+                        </div>
+                    )}
 
                     {allDone && (
                         <div style={{ padding: '14px 16px', background: 'var(--accent-teal-3)', border: '1px solid rgba(0,201,167,0.2)', borderRadius: 'var(--radius-md)', display: 'flex', alignItems: 'center', gap: 10 }}>
