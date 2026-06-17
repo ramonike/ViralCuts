@@ -358,26 +358,22 @@ export function useDashboardLogic() {
     // Polling for scheduled uploads
     useEffect(() => {
         const interval = setInterval(() => {
-            const now = new Date();
-            // Processar um item por vez para evitar conflito de token OAuth
-            // Encontra o primeiro item ready elegível e processa só ele
+            // Processar um item por vez (evita conflito de token OAuth)
+            // Lógica: qualquer item "ready" com publishAt vai para o YouTube AGORA.
+            // O YouTube cuida de publicar no horário definido em publishAt.
+            // Itens sem publishAt são legados — aguardam scheduledAt <= now.
             const nextItem = state.uploadQueue.find(item => {
                 if (item.status !== "ready") return false;
-                // publishAt = agendamento nativo: upload imediato
-                if (item.publishAt) return true;
-                // scheduledAt sem publishAt = aguarda o horário
-                if (item.scheduledAt && !item.publishAt) {
-                    return new Date(item.scheduledAt) <= now;
-                }
+                if (item.publishAt) return true; // YouTube agenda nativamente
+                if (item.scheduledAt) return new Date(item.scheduledAt) <= new Date();
                 return false;
             });
 
             if (nextItem) {
-                console.log(`[AutoUpload] Triggering upload for ${nextItem.title}`);
-                // Passa o item completo para evitar race condition no state.find
+                console.log(`[AutoUpload] Uploading "${nextItem.title}" | publishAt: ${nextItem.publishAt}`);
                 markQueueStatus(nextItem.id, "uploading", nextItem);
             }
-        }, 5000); // Checar a cada 5s (mais rápido para processar a fila)
+        }, 5000);
 
         return () => clearInterval(interval);
     }, [state.uploadQueue]);

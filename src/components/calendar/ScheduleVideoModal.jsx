@@ -83,7 +83,7 @@ function makeItem(file, date, time) {
     };
 }
 
-// Gera horários nos slots de 06:00, 12:00 e 18:00 em local time
+// Gera horários espaçados 6h em local time, começando no próximo slot
 function makeSchedule(count, baseDate, baseTime) {
     // Se tem base, usa ela; senão, começa 10min no futuro
     let base;
@@ -94,30 +94,10 @@ function makeSchedule(count, baseDate, baseTime) {
     } else {
         base = new Date(Date.now() + 10 * 60 * 1000);
     }
-    const slots = [];
-    let current = new Date(base.getTime());
-    const targetHours = [6, 12, 18];
-    for (let i = 0; i < count; i++) {
-        let found = false;
-        while (!found) {
-            const currentYear = current.getFullYear();
-            const currentMonth = current.getMonth();
-            const currentDateVal = current.getDate();
-            for (const hour of targetHours) {
-                const candidate = new Date(currentYear, currentMonth, currentDateVal, hour, 0, 0);
-                if (candidate >= current && candidate >= base) {
-                    slots.push({ date: localDateStr(candidate), time: localTimeStr(candidate) });
-                    current = new Date(candidate.getTime() + 60 * 1000);
-                    found = true;
-                    break;
-                }
-            }
-            if (!found) {
-                current = new Date(currentYear, currentMonth, currentDateVal + 1, 0, 0, 0);
-            }
-        }
-    }
-    return slots;
+    return Array.from({ length: count }, (_, i) => {
+        const dt = new Date(base.getTime() + i * 6 * 60 * 60 * 1000); // 6h de intervalo
+        return { date: localDateStr(dt), time: localTimeStr(dt) };
+    });
 }
 
 // ─── SectionLabel — componente puro sem hooks ────────────────────────────────
@@ -443,8 +423,10 @@ export function ScheduleVideoModal({ isOpen, onClose, selectedDate, onSchedule }
                     description: item.description,
                     platform: item.platform,
                     scheduledAt: item.publishNow ? null : dt.toISOString(),
-                    publishAt: item.publishNow ? null : dt.toISOString(),
-                    privacyStatus: item.privacyStatus,
+                    // publishAt sempre preenchido para YouTube nativo agendar no horário certo
+                    // YouTube requer privacyStatus = "private" quando publishAt está definido
+                    publishAt: dt.toISOString(),
+                    privacyStatus: item.publishNow ? item.privacyStatus : "private",
                     tags: item.tags.split(',').map(t => t.trim()).filter(Boolean),
                     file: item.file,
                     timezone: item.timezone,
@@ -476,11 +458,8 @@ export function ScheduleVideoModal({ isOpen, onClose, selectedDate, onSchedule }
             <div style={{
                 background: 'var(--bg-secondary)', border: '1px solid var(--border-default)',
                 borderRadius: 'var(--radius-xl)', boxShadow: 'var(--shadow-elevated)',
-                width: '100%',
-                maxWidth: items.length > 1 ? (items.length === 2 ? 860 : 1200) : 600,
-                maxHeight: '92vh',
+                width: '100%', maxWidth: 600, maxHeight: '92vh',
                 display: 'flex', flexDirection: 'column', overflow: 'hidden',
-                transition: 'max-width 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
             }}>
                 {/* Header */}
                 <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border-subtle)', flexShrink: 0, position: 'relative' }}>
@@ -504,25 +483,17 @@ export function ScheduleVideoModal({ isOpen, onClose, selectedDate, onSchedule }
 
                 {/* Body */}
                 <div style={{ overflowY: 'auto', flex: 1, padding: 16, display: 'flex', flexDirection: 'column', gap: 10 }}>
-                    {items.length === 0 ? (
-                        <DropZone onFiles={addFiles} compact={false} />
-                    ) : (
-                        <div style={{
-                            display: 'grid',
-                            gridTemplateColumns: items.length > 1 ? `repeat(min(${items.length}, 3), minmax(280px, 1fr))` : '1fr',
-                            gap: 16,
-                            alignItems: 'start',
-                        }}>
-                            {items.map(item => (
-                                <VideoCard key={item.id} item={item} onUpdate={updateItem} onRemove={removeItem} />
-                            ))}
-                            {!submitting && (
-                                <div style={{ gridColumn: items.length > 1 ? '1 / -1' : 'span 1' }}>
-                                    <DropZone onFiles={addFiles} compact={true} />
-                                </div>
-                            )}
-                        </div>
-                    )}
+                    {items.length === 0
+                        ? <DropZone onFiles={addFiles} compact={false} />
+                        : (
+                            <>
+                                {items.map(item => (
+                                    <VideoCard key={item.id} item={item} onUpdate={updateItem} onRemove={removeItem} />
+                                ))}
+                                {!submitting && <DropZone onFiles={addFiles} compact={true} />}
+                            </>
+                        )
+                    }
 
                     {allDone && (
                         <div style={{ padding: '14px 16px', background: 'var(--accent-teal-3)', border: '1px solid rgba(0,201,167,0.2)', borderRadius: 'var(--radius-md)', display: 'flex', alignItems: 'center', gap: 10 }}>
