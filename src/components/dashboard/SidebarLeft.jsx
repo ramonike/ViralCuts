@@ -141,9 +141,11 @@ export const SidebarLeft = () => {
                     <div className="vc-avatar">{initials}</div>
                     <div style={{ minWidth: 0 }}>
                         <div className="vc-user-name" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                            {user?.name || 'Criador'}
+                            {user?.name || user?.email?.split('@')[0] || 'Usuário'}
                         </div>
-                        <div className="vc-user-plan">Pro</div>
+                        <div style={{ fontSize: '0.6875rem', color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            {user?.email || ''}
+                        </div>
                     </div>
                 </div>
             </div>
