@@ -458,8 +458,9 @@ export function ScheduleVideoModal({ isOpen, onClose, selectedDate, onSchedule }
             <div style={{
                 background: 'var(--bg-secondary)', border: '1px solid var(--border-default)',
                 borderRadius: 'var(--radius-xl)', boxShadow: 'var(--shadow-elevated)',
-                width: '100%', maxWidth: 600, maxHeight: '92vh',
+                width: '100%', maxWidth: items.length === 1 ? 600 : items.length === 2 ? 860 : 1200, maxHeight: '92vh',
                 display: 'flex', flexDirection: 'column', overflow: 'hidden',
+                transition: 'max-width 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
             }}>
                 {/* Header */}
                 <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border-subtle)', flexShrink: 0, position: 'relative' }}>
@@ -482,7 +483,7 @@ export function ScheduleVideoModal({ isOpen, onClose, selectedDate, onSchedule }
                 </div>
 
                 {/* Body */}
-                <div style={{ overflowY: 'auto', flex: 1, padding: 16, display: 'grid', gridTemplateColumns: items.length === 0 ? '1fr' : '1fr 1fr', gap: 10, alignContent: 'start' }}>
+                <div style={{ overflowY: 'auto', flex: 1, padding: 16, display: 'grid', gridTemplateColumns: items.length === 0 ? '1fr' : items.length === 1 ? '1fr' : items.length === 2 ? '1fr 1fr' : '1fr 1fr 1fr', gap: 10, alignContent: 'start' }}>
                     {items.length === 0
                         ? <DropZone onFiles={addFiles} compact={false} />
                         : (
