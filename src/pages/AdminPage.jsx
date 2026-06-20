@@ -175,6 +175,22 @@ export default function AdminPage() {
     useEffect(() => { loadStats(); }, [loadStats]);
     useEffect(() => { loadPendingCount(); }, [loadPendingCount]);
 
+    const handleUpdateUserBeta = async (userId, status) => {
+        try {
+            const res = await fetch(`${API_URL}/api/admin/users/${userId}/beta`, {
+                method: "POST",
+                credentials: "include",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ status }),
+            });
+            if (!res.ok) throw new Error("Erro ao atualizar status");
+            await loadUsers();
+            loadPendingCount();
+        } catch (err) {
+            alert(err.message || "Erro ao atualizar");
+        }
+    };
+
     const initials = (name = "") =>
         name.trim().split(" ").map(p => p[0]).slice(0, 2).join("").toUpperCase() || "?";
 
@@ -288,7 +304,7 @@ export default function AdminPage() {
                                         <table className="vc-table">
                                             <thead>
                                                 <tr>
-                                                    {["Usuário", "Email", "Status email", "Sessão", "YouTube / Canais", "Uploads", "Cadastro"].map(h => (
+                                                    {["Usuário", "Email", "Status email", "Status Beta", "Sessão", "YouTube / Canais", "Uploads", "Cadastro"].map(h => (
                                                         <th key={h}>{h}</th>
                                                     ))}
                                                 </tr>
@@ -335,6 +351,62 @@ export default function AdminPage() {
                                                                     <XCircle size={10} /> Pendente
                                                                 </span>
                                                             )}
+                                                        </td>
+
+                                                        {/* Status Beta */}
+                                                        <td>
+                                                            <div style={{ display: "flex", flexDirection: "column", gap: 6, alignItems: "flex-start" }}>
+                                                                {user.betaStatus === 'approved' && (
+                                                                    <span className="vc-badge vc-badge-teal">
+                                                                        <CheckCircle2 size={10} /> Aprovado
+                                                                    </span>
+                                                                )}
+                                                                {user.betaStatus === 'pending' && (
+                                                                    <span className="vc-badge vc-badge-amber">
+                                                                        <Clock size={10} /> Pendente
+                                                                    </span>
+                                                                )}
+                                                                {user.betaStatus === 'rejected' && (
+                                                                    <span className="vc-badge vc-badge-coral">
+                                                                        <XCircle size={10} /> Rejeitado
+                                                                    </span>
+                                                                )}
+                                                                {user.betaStatus === 'none' && (
+                                                                    <span className="vc-badge vc-badge-muted">
+                                                                        Sem Pedido
+                                                                    </span>
+                                                                )}
+                                                                
+                                                                <div style={{ display: "flex", gap: 4 }}>
+                                                                    {user.betaStatus !== 'approved' && (
+                                                                        <button
+                                                                            onClick={() => handleUpdateUserBeta(user.id, 'approved')}
+                                                                            className="vc-btn vc-btn-ghost vc-btn-sm"
+                                                                            style={{ fontSize: "0.6875rem", padding: "2px 6px", height: "auto", color: "var(--accent-teal)" }}
+                                                                        >
+                                                                            Aprovar
+                                                                        </button>
+                                                                    )}
+                                                                    {user.betaStatus === 'pending' && (
+                                                                        <button
+                                                                            onClick={() => handleUpdateUserBeta(user.id, 'rejected')}
+                                                                            className="vc-btn vc-btn-ghost vc-btn-sm"
+                                                                            style={{ fontSize: "0.6875rem", padding: "2px 6px", height: "auto", color: "var(--accent-coral)" }}
+                                                                        >
+                                                                            Rejeitar
+                                                                        </button>
+                                                                    )}
+                                                                    {user.betaStatus === 'approved' && (
+                                                                        <button
+                                                                            onClick={() => handleUpdateUserBeta(user.id, 'rejected')}
+                                                                            className="vc-btn vc-btn-ghost vc-btn-sm"
+                                                                            style={{ fontSize: "0.6875rem", padding: "2px 6px", height: "auto", color: "var(--text-muted)" }}
+                                                                        >
+                                                                            Revogar
+                                                                        </button>
+                                                                    )}
+                                                                </div>
+                                                            </div>
                                                         </td>
 
                                                         {/* Sessão real */}

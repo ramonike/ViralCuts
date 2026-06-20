@@ -79,6 +79,16 @@ admin.get("/users", async (c) => {
       prisma.user.count({ where }),
     ]);
 
+    // Fetch beta requests for these users
+    const userIds = users.map((u) => u.id);
+    const betaRequests = await prisma.betaRequest.findMany({
+      where: { userId: { in: userIds } },
+      select: { userId: true, status: true, id: true },
+    }).catch(() => []);
+    const betaMap = Object.fromEntries(
+      betaRequests.map((r) => [r.userId, { status: r.status, id: r.id }])
+    );
+
     const now = Date.now();
     const thirtyMinAgo = new Date(now - 30 * 60 * 1000);
 
@@ -123,6 +133,8 @@ admin.get("/users", async (c) => {
         lastSeenAt,
         youtubeAccounts,
         totalUploads: u._count.uploads,
+        betaStatus: betaMap[u.id]?.status || "none",
+        betaRequestId: betaMap[u.id]?.id || null,
       };
     });
 
@@ -171,6 +183,34 @@ admin.get("/stats", async (c) => {
   } catch (error) {
     console.error("[Admin] Error fetching stats:", error);
     return c.json({ error: "Erro ao buscar estatísticas" }, 500);
+  }
+});
+
+// ── POST /api/admin/users/:userId/beta — admin only ─────────────────────────
+admin.post("/users/:userId/beta", async (c) => {
+  const { userId } = c.req.param();
+  const { status, note } = await c.req.json(); // status: 'approved' | 'rejected' | 'pending'
+
+  if (!["approved", "rejected", "pending"].includes(status)) {
+    return c.json({ error: "Status inválido" }, 400);
+  }
+
+  try {
+    const dbTargetUser = await prisma.user.findUnique({ where: { id: userId }, select: { email: true } });
+    if (!dbTargetUser) {
+      return c.json({ error: "Usuário não encontrado" }, 404);
+    }
+
+    const request = await prisma.betaRequest.upsert({
+      where: { userId },
+      update: { status, note: note || null, updatedAt: new Date() },
+      create: { userId, gmail: dbTargetUser.email.toLowerCase().trim(), status, note: note || null },
+    });
+
+    return c.json({ success: true, request });
+  } catch (err) {
+    console.error("[Admin] Error updating user beta status:", err);
+    return c.json({ error: "Erro ao atualizar status beta" }, 500);
   }
 });
 
