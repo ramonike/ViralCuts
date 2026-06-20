@@ -29,7 +29,7 @@ beta.post("/request", async (c) => {
         // upsert — se já existe, atualiza o gmail (caso queira corrigir)
         const request = await prisma.betaRequest.upsert({
             where:  { userId },
-            update: { gmail: gmail.toLowerCase().trim(), channelName: channelName || null, updatedAt: new Date() },
+            update: { gmail: gmail.toLowerCase().trim(), channelName: channelName || null, status: "pending", updatedAt: new Date() },
             create: { userId, gmail: gmail.toLowerCase().trim(), channelName: channelName || null, status: "pending" },
         });
 

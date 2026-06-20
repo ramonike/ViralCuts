@@ -201,8 +201,8 @@ export function AdminBetaRequests() {
                                         )}
                                     </div>
 
-                                    {/* Ações — só para pendentes */}
-                                    {req.status === 'pending' && (
+                                    {/* Ações */}
+                                    {req.status !== 'approved' && (
                                         <div style={{ display: 'flex', flexDirection: 'column', gap: 8, flexShrink: 0 }}>
                                             <input
                                                 placeholder="Nota (opcional)"
@@ -221,14 +221,16 @@ export function AdminBetaRequests() {
                                                 >
                                                     <CheckCircle size={13} /> Aprovar
                                                 </button>
-                                                <button
-                                                    onClick={() => handleAction(req.id, 'rejected')}
-                                                    disabled={isActing}
-                                                    className="vc-btn vc-btn-ghost vc-btn-sm"
-                                                    style={{ color: 'var(--accent-coral)' }}
-                                                >
-                                                    <XCircle size={13} />
-                                                </button>
+                                                {req.status === 'pending' && (
+                                                    <button
+                                                        onClick={() => handleAction(req.id, 'rejected')}
+                                                        disabled={isActing}
+                                                        className="vc-btn vc-btn-ghost vc-btn-sm"
+                                                        style={{ color: 'var(--accent-coral)' }}
+                                                    >
+                                                        <XCircle size={13} />
+                                                    </button>
+                                                )}
                                             </div>
                                         </div>
                                     )}
