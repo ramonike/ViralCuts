@@ -1,0 +1,44 @@
+{
+  "name": "ViralCuts Dev",
+  "dockerComposeFile": "../docker-compose.yml",
+  "service": "app",
+  "workspaceFolder": "/workspace",
+  "shutdownAction": "stopCompose",
+  "containerEnv": {
+    "DATABASE_URL": "postgresql://viralcuts:viralcuts@db:5432/viralcuts",
+    "DIRECT_URL": "postgresql://viralcuts:viralcuts@db:5432/viralcuts",
+    "BETTER_AUTH_URL": "http://localhost:3000",
+    "FRONTEND_URL": "http://localhost:5173",
+    "VITE_API_URL": "http://localhost:3000"
+  },
+  "forwardPorts": [3000, 5173, 5432],
+  "portsAttributes": {
+    "3000": { "label": "Backend API", "onAutoForward": "notify" },
+    "5173": { "label": "Vite Dev Server", "onAutoForward": "openBrowser" },
+    "5432": { "label": "PostgreSQL", "onAutoForward": "silent" }
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "dbaeumer.vscode-eslint",
+        "esbenp.prettier-vscode",
+        "bradlc.vscode-tailwindcss",
+        "Prisma.prisma",
+        "ms-vscode.vscode-typescript-next",
+        "christian-kohler.npm-intellisense",
+        "formulahendry.auto-rename-tag",
+        "eamodio.gitlens",
+        "streetsidesoftware.code-spell-checker"
+      ],
+      "settings": {
+        "terminal.integrated.defaultProfile.linux": "bash",
+        "files.eol": "\n"
+      }
+    }
+  },
+  "postCreateCommand": "bun install && bunx prisma generate",
+  "remoteUser": "node",
+  "features": {
+    "ghcr.io/devcontainers/features/git:1": {}
+  }
+}

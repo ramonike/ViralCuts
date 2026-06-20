@@ -482,7 +482,7 @@ export function ScheduleVideoModal({ isOpen, onClose, selectedDate, onSchedule }
                 </div>
 
                 {/* Body */}
-                <div style={{ overflowY: 'auto', flex: 1, padding: 16, display: 'flex', flexDirection: 'column', gap: 10 }}>
+                <div style={{ overflowY: 'auto', flex: 1, padding: 16, display: 'grid', gridTemplateColumns: items.length === 0 ? '1fr' : '1fr 1fr', gap: 10, alignContent: 'start' }}>
                     {items.length === 0
                         ? <DropZone onFiles={addFiles} compact={false} />
                         : (
@@ -490,13 +490,17 @@ export function ScheduleVideoModal({ isOpen, onClose, selectedDate, onSchedule }
                                 {items.map(item => (
                                     <VideoCard key={item.id} item={item} onUpdate={updateItem} onRemove={removeItem} />
                                 ))}
-                                {!submitting && <DropZone onFiles={addFiles} compact={true} />}
+                                {!submitting && (
+                                    <div style={{ gridColumn: '1 / -1' }}>
+                                        <DropZone onFiles={addFiles} compact={true} />
+                                    </div>
+                                )}
                             </>
                         )
                     }
 
                     {allDone && (
-                        <div style={{ padding: '14px 16px', background: 'var(--accent-teal-3)', border: '1px solid rgba(0,201,167,0.2)', borderRadius: 'var(--radius-md)', display: 'flex', alignItems: 'center', gap: 10 }}>
+                        <div style={{ gridColumn: '1 / -1', padding: '14px 16px', background: 'var(--accent-teal-3)', border: '1px solid rgba(0,201,167,0.2)', borderRadius: 'var(--radius-md)', display: 'flex', alignItems: 'center', gap: 10 }}>
                             <CheckCircle size={16} style={{ color: 'var(--accent-teal)', flexShrink: 0 }} />
                             <p style={{ margin: 0, fontSize: '0.875rem', color: 'var(--text-primary)', fontFamily: 'var(--font-display)', fontWeight: 600, letterSpacing: '-0.01em' }}>
                                 {items.length} vídeo{items.length > 1 ? 's' : ''} agendado{items.length > 1 ? 's' : ''} com sucesso!
