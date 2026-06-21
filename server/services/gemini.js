@@ -32,7 +32,7 @@ export async function generateWithGemini(systemPrompt, userPrompt, options = {})
     if (!response.ok) {
         const err = await response.text();
         console.error("[Gemini Service] API error:", err);
-        throw new Error("Erro ao chamar a IA. Tente novamente.");
+        throw new Error(`Gemini API error (${response.status}): ${err}`);
     }
 
     const data = await response.json();

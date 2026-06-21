@@ -52,7 +52,8 @@ ai.post("/generate", async (c) => {
         return c.json({ text });
     } catch (error) {
         console.error("[AI Route] Generate error:", error);
-        return c.json({ error: error.message || "Erro ao chamar a IA. Tente novamente." }, 500);
+        console.error("[AI Route] Generate error details:", error);
+        return c.json({ error: error.message || "Erro ao chamar a IA. Tente novamente.", detail: process.env.NODE_ENV === 'development' ? error.stack : undefined }, 500);
     }
 });
 
