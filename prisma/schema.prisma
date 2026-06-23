@@ -322,25 +322,26 @@ model UserActivity {
   @@map("user_activity")
 }
 model BetaRequest {
-  id        String   @id @default(cuid())
-  userId    String   @map("user_id")
-  gmail     String                         // gmail do canal YouTube
-  channelName String? @map("channel_name") // nome do canal (opcional)
-  status    String   @default("pending")   // pending | approved | rejected
-  note      String?                        // nota do admin ao aprovar/rejeitar
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
+  id          String   @id @default(cuid())
+  userId      String   @unique @map("user_id")
+  gmail       String
+  channelName String?  @map("channel_name")
+  status      String   @default("pending")
+  note        String?
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
 
-  @@unique([userId])   // um pedido por usuário
   @@index([status])
   @@map("beta_request")
-  model Plan {
+}
+
+model Plan {
   id                   String         @id @default(cuid())
-  name                 String         @unique // "free" | "starter" | "pro" | "agency"
-  displayName          String         // "Free" | "Starter" | "Pro" | "Agency"
-  maxChannels          Int            // 1 | 3 | 5 | 10
-  priceMonthly         Int            // centavos: 0 | 2900 | 4900 | 8900
-  priceYearly          Int            // centavos: 0 | 29000 | 49000 | 89000
+  name                 String         @unique
+  displayName          String
+  maxChannels          Int
+  priceMonthly         Int
+  priceYearly          Int
   stripePriceIdMonthly String?        @map("stripe_price_id_monthly")
   stripePriceIdYearly  String?        @map("stripe_price_id_yearly")
   active               Boolean        @default(true)
@@ -355,8 +356,8 @@ model Subscription {
   user                 User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   planId               String    @map("plan_id")
   plan                 Plan      @relation(fields: [planId], references: [id])
-  status               String    @default("active") // active | canceled | past_due | trialing
-  billingCycle         String    @default("monthly") @map("billing_cycle") // monthly | yearly
+  status               String    @default("active")
+  billingCycle         String    @default("monthly") @map("billing_cycle")
   stripeCustomerId     String?   @map("stripe_customer_id")
   stripeSubscriptionId String?   @map("stripe_subscription_id")
   currentPeriodStart   DateTime? @map("current_period_start")
@@ -368,4 +369,3 @@ model Subscription {
   @@map("subscription")
 }
 
-}
