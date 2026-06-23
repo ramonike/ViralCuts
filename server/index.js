@@ -20,6 +20,7 @@ import tiktokRoutes from "./routes/tiktok.js";
 import commandCenterRoutes from "./routes/commandCenter.js";
 import aiRoutes from "./routes/ai.js";
 import betaRoutes from "./routes/beta.js";
+import subscriptionRoutes from "./routes/subscription.js";
 
 // Import scheduled jobs
 import { startScheduledUploadsJob, stopScheduledUploadsJob } from "./jobs/scheduled-uploads.js";
@@ -256,6 +257,7 @@ app.route("/api/notifications", notificationsRoutes);
 app.route("/api/command-center", commandCenterRoutes);
 app.route("/api/ai", aiRoutes);
 app.route("/api/beta", betaRoutes);
+app.route("/api/subscription", subscriptionRoutes);
 
 // Health check with database connection test
 app.get("/api/health", async (c) => {

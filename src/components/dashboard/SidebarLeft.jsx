@@ -1,10 +1,12 @@
 import { Home, Video, Settings, TrendingUp, LogOut, User, Sparkles, Sun, Moon, GitBranch, Youtube } from 'lucide-react';
+import { useSubscription } from '../../hooks/useSubscription';
 import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTheme } from '../../contexts/ThemeContext';
 
 export const SidebarLeft = () => {
     const { signOut, user } = useAuth();
+    const { plan, isFree } = useSubscription();
     const { theme, toggleTheme } = useTheme();
     const navigate = useNavigate();
     const location = useLocation();
@@ -27,21 +29,21 @@ export const SidebarLeft = () => {
 
     // Pipeline está em destaque — é o coração do produto
     const navMain = [
-        { icon: Home, label: 'Dashboard', path: '/dashboard' },
+        { icon: Home,       label: 'Dashboard',  path: '/dashboard' },
         {
             icon: GitBranch,
             label: 'Pipeline',       // era "Calendário"
             path: '/dashboard/calendar',
             highlight: true,         // acento visual especial
         },
-        { icon: Youtube, label: 'Canal', path: '/dashboard/videos' },
-        { icon: Sparkles, label: 'Criação IA', path: '/dashboard/creation' },
-        { icon: TrendingUp, label: 'Analytics', path: '/dashboard/analytics' },
+        { icon: Youtube,     label: 'Canal',      path: '/dashboard/videos' },
+        { icon: Sparkles,   label: 'Criação IA', path: '/dashboard/creation' },
+        { icon: TrendingUp, label: 'Analytics',  path: '/dashboard/analytics' },
     ];
 
     const navAccount = [
-        { icon: User, label: 'Perfil', path: '/dashboard/profile' },
-        { icon: Settings, label: 'Configurações', path: '/dashboard/settings' },
+        { icon: User,     label: 'Perfil',          path: '/dashboard/profile' },
+        { icon: Settings, label: 'Configurações',    path: '/dashboard/settings' },
     ];
 
     return (
@@ -143,8 +145,23 @@ export const SidebarLeft = () => {
                         <div className="vc-user-name" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                             {user?.name || user?.email?.split('@')[0] || 'Usuário'}
                         </div>
-                        <div style={{ fontSize: '0.6875rem', color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                            {user?.email || ''}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginTop: 2 }}>
+                            {plan && (
+                                <span style={{
+                                    fontSize: '0.5625rem', fontWeight: 700,
+                                    fontFamily: 'var(--font-display)', letterSpacing: '0.06em',
+                                    textTransform: 'uppercase',
+                                    color: isFree ? 'var(--text-muted)' : 'var(--accent-amber)',
+                                    background: isFree ? 'var(--bg-elevated)' : 'var(--accent-amber-3)',
+                                    border: `1px solid ${isFree ? 'var(--border-subtle)' : 'rgba(240,165,0,0.25)'}`,
+                                    padding: '1px 5px', borderRadius: 3,
+                                }}>
+                                    {plan.displayName}
+                                </span>
+                            )}
+                            <span style={{ fontSize: '0.6875rem', color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                {user?.email || ''}
+                            </span>
                         </div>
                     </div>
                 </div>
