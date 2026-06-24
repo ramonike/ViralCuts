@@ -316,11 +316,11 @@ export default function ProfilePage() {
                             activeAccountId={activeAccountId}
                             onSwitch={(id) => actions.switchAccount(id)}
                             onDisconnect={(id) => actions.disconnectAccount(id)}
-                            onAdd={() => {
+                            onAdd={(tokenResponse) => {
                                 if (validChannels.length >= maxChannels) {
                                     setShowUpgrade(true);
                                 } else {
-                                    actions.setYouTubeToken();
+                                    actions.setYouTubeToken(tokenResponse);
                                 }
                             }}
                         />
