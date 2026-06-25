@@ -5,7 +5,7 @@
             "destination": "/api/[[...route]]"
         },
         {
-            "source": "/((?!api/).*)",
+            "source": "/((?!api/|tiktok-developers-site-verification\\.html).*)",
             "destination": "/index.html"
         }
     ],
