@@ -461,12 +461,13 @@ export function useDashboardLogic() {
         setState({ ...state, checklists: newLists });
     }
 
-    function addToUploadQueue({ title, source = "manual", platform = "YouTube Shorts", scheduledAt = null, file = null, privacyStatus = "private", publishAt = null, description = "", tags = [] }) {
+    function addToUploadQueue({ title, source = "manual", platform = "youtube", accountId = null, scheduledAt = null, file = null, privacyStatus = "private", publishAt = null, description = "", tags = [] }) {
         const item = {
             id: `q_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
             title,
             source,
             platform,
+            accountId,   // conta de destino (id da conta conectada)
             scheduledAt,
             status: "ready",
             file,
@@ -535,71 +536,85 @@ export function useDashboardLogic() {
                 console.error(`[markQueueStatus] Item ${id} not found in queue`);
                 return;
             }
-            try {
-                const result = await uploadVideo(item, state.auth.youtubeToken, item.file);
-                trackQuota(1600); // Upload cost ~1600 units
 
-                setState((prev) => {
-                    const safeHistory = prev.history || {};
-                    const currentHistory = safeHistory[today] || { completedItems: [], uploads: 0, uploadedVideos: [] };
+            // ── Roteamento por plataforma ──────────────────────────────────────
+            const platformKey = (item.platform || 'youtube').toLowerCase();
+            let result;
 
-                    let newUploadedVideos = currentHistory.uploadedVideos || [];
-                    let newCompletedItems = currentHistory.completedItems || [];
+            if (platformKey === 'youtube' || platformKey === 'youtube-shorts') {
+                // Usa o token da conta correta (accountId) ou o token ativo como fallback
+                const account = state.auth.connectedAccounts.find(a => a.id === item.accountId);
+                const token = account?.token || state.auth.youtubeToken;
+                try {
+                    result = await uploadVideo(item, token, item.file);
+                    trackQuota(1600); // Upload cost ~1600 units
+                } catch (err) {
+                    result = { status: 'error', error: 'Erro inesperado no upload do YouTube.' };
+                }
+            } else if (platformKey === 'tiktok') {
+                console.warn('[markQueueStatus] TikTok upload not yet implemented');
+                result = { status: 'error', error: 'Upload TikTok ainda não implementado.' };
+            } else if (platformKey === 'instagram' || platformKey === 'instagram-reels') {
+                console.warn('[markQueueStatus] Instagram upload not yet implemented');
+                result = { status: 'error', error: 'Upload Instagram ainda não implementado.' };
+            } else if (platformKey === 'facebook' || platformKey === 'facebook-reels') {
+                console.warn('[markQueueStatus] Facebook upload not yet implemented');
+                result = { status: 'error', error: 'Upload Facebook ainda não implementado.' };
+            } else {
+                console.warn(`[markQueueStatus] Plataforma desconhecida: ${platformKey}`);
+                result = { status: 'error', error: `Plataforma "${platformKey}" não suportada.` };
+            }
 
-                    // Only add to history if success
-                    if (result.status === "success") {
-                        const videoEntry = {
-                            id: item.id,
-                            title: item.title,
-                            platform: item.platform,
-                            url: result.url,
-                            timestamp: Date.now(),
-                            type: 'youtube_video', // Critical for SidebarRight filter
-                            thumbnail: item.thumbnail || null, // Ensure thumbnail exists if possible
-                            views: 0
-                        };
+            // ── Atualiza fila e histórico com base no resultado ────────────────
+            setState((prev) => {
+                const safeHistory = prev.history || {};
+                const currentHistory = safeHistory[today] || { completedItems: [], uploads: 0, uploadedVideos: [] };
 
-                        newUploadedVideos = [...newUploadedVideos, videoEntry];
+                let newUploadedVideos = currentHistory.uploadedVideos || [];
+                let newCompletedItems = currentHistory.completedItems || [];
 
-                        // Add to completedItems if not already there (avoid duplicates)
-                        if (!newCompletedItems.some(i => i.id === item.id)) {
-                            newCompletedItems = [...newCompletedItems, videoEntry];
-                        }
-                    }
-
-                    return {
-                        ...prev,
-                        uploadQueue: prev.uploadQueue.map((q) =>
-                            q.id === id
-                                ? {
-                                    ...q,
-                                    status: result.status === "success" ? "done" : "error",
-                                    url: result.url,
-                                    error: result.error,
-                                }
-                                : q
-                        ),
-                        history: result.status === "success" ? {
-                            ...safeHistory,
-                            [today]: {
-                                ...currentHistory,
-                                uploadedVideos: newUploadedVideos,
-                                completedItems: newCompletedItems,
-                                uploads: newUploadedVideos.length // Update count
-                            }
-                        } : safeHistory
+                if (result.status === "success") {
+                    const videoEntry = {
+                        id: item.id,
+                        title: item.title,
+                        platform: item.platform,
+                        url: result.url,
+                        timestamp: Date.now(),
+                        type: 'youtube_video',
+                        thumbnail: item.thumbnail || null,
+                        views: 0
                     };
-                });
-            } catch (err) {
-                setState((prev) => ({
+
+                    newUploadedVideos = [...newUploadedVideos, videoEntry];
+
+                    if (!newCompletedItems.some(i => i.id === item.id)) {
+                        newCompletedItems = [...newCompletedItems, videoEntry];
+                    }
+                }
+
+                return {
                     ...prev,
                     uploadQueue: prev.uploadQueue.map((q) =>
                         q.id === id
-                            ? { ...q, status: "error", error: "Erro inesperado no upload." }
+                            ? {
+                                ...q,
+                                status: result.status === "success" ? "done" : "error",
+                                url: result.url,
+                                error: result.error,
+                            }
                             : q
                     ),
-                }));
-            }
+                    history: result.status === "success" ? {
+                        ...safeHistory,
+                        [today]: {
+                            ...currentHistory,
+                            uploadedVideos: newUploadedVideos,
+                            completedItems: newCompletedItems,
+                            uploads: newUploadedVideos.length
+                        }
+                    } : safeHistory
+                };
+            });
         } else if (status === "done") {
             // Manual mark as done (without upload process) - also add to history
             setState((prev) => {
