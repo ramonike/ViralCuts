@@ -5,7 +5,7 @@
             "destination": "/api/[[...route]]"
         },
         {
-            "source": "/((?!api/).*)",
+            "source": "/((?!api/|tiktokNSkrKPv7ItJWYV9Nf28xxtyMilj4Zt99\\.txt).*)",
             "destination": "/index.html"
         }
     ],
