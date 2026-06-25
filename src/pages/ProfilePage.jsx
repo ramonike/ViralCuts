@@ -3,9 +3,12 @@ import { useNavigate } from "react-router-dom";
 import {
     User, Youtube, BarChart, Users, RefreshCw, Trash2,
     ExternalLink, Video, Calendar, ChevronRight, MoreVertical, CheckCircle,
+    Link2, Loader2,
 } from "lucide-react";
 import { useDashboardState } from "../hooks/useDashboardState";
+import { useTikTokAuth } from "../hooks/useTikTokAuth";
 import { GoogleAuthButton } from "../components/dashboard/GoogleAuthButton";
+import { PlatformIcon } from "../components/shared/PlatformIcon";
 import { useSubscription } from "../hooks/useSubscription";
 import { UpgradeModal } from "../components/dashboard/UpgradeModal";
 import { PageLayout } from "../components/layout/PageLayout";
@@ -231,13 +234,17 @@ function QuickActions({ navigate }) {
 }
 
 // ─── Plataformas ──────────────────────────────────────────────────────────────
-function Platforms() {
+function Platforms({ connectedTikTokAccounts, onConnectTikTok, onDisconnectTikTok, tiktokLoading, tiktokError }) {
+    const isTikTokConnected = connectedTikTokAccounts.length > 0;
+
     return (
         <div className="glass-panel rounded-xl border border-surface-700/50 overflow-hidden">
             <div className="px-5 py-4 border-b border-surface-700/30">
                 <h3 className="text-sm font-semibold text-white">Plataformas</h3>
             </div>
             <div className="p-3 space-y-2">
+
+                {/* YouTube — sempre ativo */}
                 <div className="flex items-center gap-3 p-3 rounded-lg bg-surface-800/50">
                     <div className="w-10 h-10 rounded-lg bg-red-500/10 flex items-center justify-center shrink-0">
                         <Youtube className="w-5 h-5 text-red-500" />
@@ -248,9 +255,68 @@ function Platforms() {
                     </div>
                     <span className="text-[10px] font-bold px-2 py-1 rounded bg-green-500/10 text-green-400 border border-green-500/20">ATIVO</span>
                 </div>
-                <div className="p-4 rounded-lg border border-dashed border-surface-700/50 text-center">
-                    <p className="text-xs text-slate-500 mb-1">Mais plataformas chegando em breve</p>
-                    <p className="text-[11px] text-slate-600">TikTok · Instagram · Twitter</p>
+
+                {/* TikTok */}
+                <div className="rounded-lg border border-surface-700/30 overflow-hidden">
+                    <div className="flex items-center gap-3 p-3 bg-surface-800/50">
+                        <div className="w-10 h-10 rounded-lg bg-black/30 flex items-center justify-center shrink-0">
+                            <PlatformIcon platform="tiktok" size={20} />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium text-white">TikTok</p>
+                            <p className="text-xs text-slate-500">
+                                {isTikTokConnected
+                                    ? `${connectedTikTokAccounts.length} conta${connectedTikTokAccounts.length > 1 ? 's' : ''} conectada${connectedTikTokAccounts.length > 1 ? 's' : ''}`
+                                    : 'Content Posting API v2'}
+                            </p>
+                        </div>
+                        {isTikTokConnected ? (
+                            <span className="text-[10px] font-bold px-2 py-1 rounded bg-green-500/10 text-green-400 border border-green-500/20">ATIVO</span>
+                        ) : (
+                            <button
+                                onClick={onConnectTikTok}
+                                disabled={tiktokLoading}
+                                className="flex items-center gap-1.5 text-[11px] font-semibold px-3 py-1.5 rounded-lg bg-black hover:bg-zinc-900 text-white transition-colors disabled:opacity-50 shrink-0"
+                            >
+                                {tiktokLoading
+                                    ? <Loader2 className="w-3 h-3 animate-spin" />
+                                    : <Link2 className="w-3 h-3" />
+                                }
+                                Conectar
+                            </button>
+                        )}
+                    </div>
+
+                    {/* Contas TikTok conectadas */}
+                    {connectedTikTokAccounts.map(account => (
+                        <div key={account.id} className="flex items-center gap-3 px-3 py-2 border-t border-surface-700/30 bg-surface-900/30">
+                            {account.avatar ? (
+                                <img src={account.avatar} alt={account.name} className="w-7 h-7 rounded-full object-cover shrink-0"
+                                    onError={e => { e.target.style.display = 'none'; }} />
+                            ) : (
+                                <div className="w-7 h-7 rounded-full bg-zinc-800 flex items-center justify-center shrink-0 text-xs font-bold text-white">
+                                    {(account.name || 'T')[0].toUpperCase()}
+                                </div>
+                            )}
+                            <p className="text-xs text-slate-400 flex-1 truncate">{account.name}</p>
+                            <button
+                                onClick={() => { if (confirm(`Desconectar "${account.name}" do TikTok?`)) onDisconnectTikTok(account.id); }}
+                                className="flex items-center gap-1 text-[11px] text-slate-600 hover:text-red-400 transition-colors shrink-0"
+                            >
+                                <Trash2 className="w-3 h-3" /> Desconectar
+                            </button>
+                        </div>
+                    ))}
+
+                    {tiktokError && (
+                        <p className="text-xs text-red-400 px-3 py-2 border-t border-surface-700/30">{tiktokError}</p>
+                    )}
+                </div>
+
+                {/* Mais plataformas */}
+                <div className="p-3 rounded-lg border border-dashed border-surface-700/50 text-center">
+                    <p className="text-xs text-slate-500 mb-0.5">Mais plataformas em breve</p>
+                    <p className="text-[11px] text-slate-600">Instagram · Facebook · Twitter/X</p>
                 </div>
             </div>
         </div>
@@ -289,6 +355,15 @@ export default function ProfilePage() {
     const { plan, maxChannels } = useSubscription();
     const [showUpgrade, setShowUpgrade] = useState(false);
 
+    // TikTok Auth
+    const {
+        connectTikTok,
+        disconnectTikTokAccount,
+        connectedTikTokAccounts,
+        loading: tiktokLoading,
+        error: tiktokError,
+    } = useTikTokAuth(state, actions.setState || (() => {}));
+
     // Canais com token ainda válido
     const validChannels = connectedAccounts.filter(a => a.expiresAt && a.expiresAt > Date.now());
 
@@ -325,7 +400,13 @@ export default function ProfilePage() {
                             }}
                         />
                         {isConnected && <QuickActions navigate={navigate} />}
-                        <Platforms />
+                        <Platforms
+                            connectedTikTokAccounts={connectedTikTokAccounts}
+                            onConnectTikTok={connectTikTok}
+                            onDisconnectTikTok={disconnectTikTokAccount}
+                            tiktokLoading={tiktokLoading}
+                            tiktokError={tiktokError}
+                        />
                     </div>
 
                 </div>

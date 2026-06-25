@@ -22,6 +22,8 @@ import ProfilePage from "./pages/ProfilePage";
 import CreationPage from "./pages/CreationPage";
 import AdminPage from "./pages/AdminPage";
 import HelpPage from "./pages/HelpPage";
+import TermsOfService from "./pages/TermsOfService";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
 
 import { DashboardProvider } from "./hooks/useDashboardState";
 
@@ -60,6 +62,8 @@ export default function App() {
                     } />
                     <Route path="/reset-password" element={<ResetPasswordPage />} />
                     <Route path="/verify-email" element={<VerifyEmailPage />} />
+                    <Route path="/terms" element={<TermsOfService />} />
+                    <Route path="/privacy" element={<PrivacyPolicy />} />
 
                     {/* Rotas protegidas - requer autenticação */}
                     <Route path="/dashboard" element={

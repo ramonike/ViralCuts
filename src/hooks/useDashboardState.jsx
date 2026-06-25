@@ -1,5 +1,6 @@
 import React, { useState, useEffect, createContext, useContext } from "react";
 import { uploadVideo } from "../api/upload";
+import { uploadTikTok } from "../api/tiktokUpload";
 import { fetchChannelDetails, fetchChannelVideos, fetchChannelAnalytics, searchVideos } from "../api/youtube";
 import { uploadToOpus, checkProjectStatus, getClips, createProjectFromUrl } from "../api/opus";
 
@@ -552,8 +553,12 @@ export function useDashboardLogic() {
                     result = { status: 'error', error: 'Erro inesperado no upload do YouTube.' };
                 }
             } else if (platformKey === 'tiktok') {
-                console.warn('[markQueueStatus] TikTok upload not yet implemented');
-                result = { status: 'error', error: 'Upload TikTok ainda não implementado.' };
+                // TikTok Content Posting API v2 — via backend /api/tiktok/upload
+                try {
+                    result = await uploadTikTok(item, null, item.file);
+                } catch (err) {
+                    result = { status: 'error', error: 'Erro inesperado no upload TikTok.' };
+                }
             } else if (platformKey === 'instagram' || platformKey === 'instagram-reels') {
                 console.warn('[markQueueStatus] Instagram upload not yet implemented');
                 result = { status: 'error', error: 'Upload Instagram ainda não implementado.' };
