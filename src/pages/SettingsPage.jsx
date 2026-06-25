@@ -1,9 +1,10 @@
 import { useState } from "react";
-import { Moon, Sun, Monitor, Bell, Globe, Download, Shield, ChevronRight, Trash2, User, Mail, Lock, Check, AlertCircle } from "lucide-react";
+import { Moon, Sun, Monitor, Bell, Globe, Download, Shield, ChevronRight, Trash2, User, Mail, Lock, Check, AlertCircle, Share2 } from "lucide-react";
 import { useTheme } from "../contexts/ThemeContext";
 import { useAuth } from "../contexts/AuthContext";
 import { PageLayout } from "../components/layout/PageLayout";
 import { NotificationPreferences } from "../components/notifications/NotificationPreferences";
+import PlatformConnections from "../components/settings/PlatformConnections";
 import { API_URL } from "../config/api";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -138,6 +139,11 @@ export default function SettingsPage() {
                 {/* ── Notificações ── */}
                 <Section icon={<Bell className="w-4 h-4 text-blue-400" />} color="bg-blue-500/10" title="Notificações" subtitle="Alertas de uploads, erros e atualizações" isDark={isDark}>
                     <NotificationPreferences />
+                </Section>
+
+                {/* ── Plataformas Conectadas ── */}
+                <Section icon={<Share2 className="w-4 h-4 text-pink-400" />} color="bg-pink-500/10" title="Plataformas" subtitle="Conecte suas contas TikTok e YouTube" isDark={isDark}>
+                    <PlatformConnections />
                 </Section>
 
                 {/* ── 2 colunas: Conta + Idioma ── */}

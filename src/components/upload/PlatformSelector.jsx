@@ -48,7 +48,7 @@ const PLATFORMS = [
         hoverBg: '',
         selectedBg: 'bg-slate-500/20',
         selectedBorder: 'border-slate-400',
-        description: 'Em breve'
+        description: 'Vídeos curtos'
     },
     {
         id: 'instagram',

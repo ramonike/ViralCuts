@@ -175,7 +175,7 @@ function PlatformCard({ platform, connection, onConnect, onDisconnect, onRefresh
               variant="outline"
               size="sm"
               onClick={() => onConnect(platform)}
-              disabled={isLoading || platform === 'instagram' || platform === 'tiktok'}
+              disabled={isLoading || platform === 'instagram'}
               className="flex-1"
             >
               {isLoading ? (
@@ -183,7 +183,7 @@ function PlatformCard({ platform, connection, onConnect, onDisconnect, onRefresh
               ) : (
                 <Link2 className="w-4 h-4 mr-2" />
               )}
-              {platform === 'instagram' || platform === 'tiktok' ? 'Em breve' : 'Conectar'}
+              {platform === 'instagram' ? 'Em breve' : 'Conectar'}
             </Button>
           )}
         </div>
