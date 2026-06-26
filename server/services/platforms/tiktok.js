@@ -4,7 +4,7 @@
  * Requirements: 1.2, 1.3
  */
 
-import { getPlatformConfig } from '../../config/platforms.js';
+import { getPlatformConfig } from '../config/platforms.js';
 
 const TIKTOK_AUTH_URL = 'https://www.tiktok.com/v2/auth/authorize/';
 const TIKTOK_TOKEN_URL = 'https://open.tiktokapis.com/v2/oauth/token/';
@@ -38,7 +38,7 @@ const RETRY_CONFIG = {
  */
 function getOAuthConfig() {
   const config = getPlatformConfig('tiktok');
-  
+
   if (!config?.oauth?.clientKey || !config?.oauth?.clientSecret) {
     throw new Error('Missing TikTok OAuth credentials. Set TIKTOK_CLIENT_KEY and TIKTOK_CLIENT_SECRET.');
   }
@@ -82,7 +82,7 @@ async function generateCodeChallenge(verifier) {
  */
 export async function getAuthUrl(state = null) {
   const { clientKey, redirectUri, scopes } = getOAuthConfig();
-  
+
   // Generate PKCE code verifier and challenge
   const codeVerifier = generateCodeVerifier();
   const codeChallenge = await generateCodeChallenge(codeVerifier);
@@ -382,17 +382,17 @@ export function calculateChunkSize(fileSize) {
   if (fileSize < 20 * 1024 * 1024) {
     return Math.min(fileSize, MIN_CHUNK_SIZE);
   }
-  
+
   // For medium files (20MB - 500MB), use 10MB chunks
   if (fileSize < 500 * 1024 * 1024) {
     return DEFAULT_CHUNK_SIZE;
   }
-  
+
   // For large files (500MB - 2GB), use 32MB chunks
   if (fileSize < 2 * 1024 * 1024 * 1024) {
     return 32 * 1024 * 1024;
   }
-  
+
   // For very large files (> 2GB), use maximum chunk size
   return MAX_CHUNK_SIZE;
 }
@@ -483,7 +483,7 @@ export async function initiateUpload(metadata, fileSize, chunkCount, accessToken
  */
 export async function uploadChunk(uploadUrl, chunkData, chunkIndex, startByte, endByte, totalSize, accessToken) {
   const contentRange = `bytes ${startByte}-${endByte}/${totalSize}`;
-  
+
   const response = await fetch(uploadUrl, {
     method: 'PUT',
     headers: {
@@ -515,7 +515,7 @@ export async function uploadChunk(uploadUrl, chunkData, chunkIndex, startByte, e
   }
 
   const errorMsg = errorData.error?.message || errorText || 'Chunk upload failed';
-  
+
   // Check for retryable errors
   if (RETRY_CONFIG.retryableStatusCodes.includes(response.status)) {
     const retryError = new Error(`Retryable error: ${errorMsg}`);
@@ -562,7 +562,7 @@ export async function getPublishStatus(publishId, accessToken) {
   };
 
   const tiktokStatus = data.data?.status;
-  
+
   return {
     publishId,
     status: statusMap[tiktokStatus] || tiktokStatus,
@@ -570,7 +570,7 @@ export async function getPublishStatus(publishId, accessToken) {
     publiclyAvailablePostId: data.data?.publicly_available_post_id || null,
     failReason: data.data?.fail_reason || null,
     uploadedBytes: data.data?.uploaded_bytes,
-    videoUrl: data.data?.publicly_available_post_id 
+    videoUrl: data.data?.publicly_available_post_id
       ? `https://www.tiktok.com/@/video/${data.data.publicly_available_post_id}`
       : null,
   };
@@ -652,7 +652,7 @@ export async function uploadVideo(videoData, metadata, accessToken, options = {}
 
     const startByte = chunkIndex * chunkSize;
     const endByte = Math.min(startByte + chunkSize - 1, fileSize - 1);
-    
+
     // Extract chunk data
     const chunkData = videoData.slice(startByte, endByte + 1);
 
