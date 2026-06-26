@@ -237,14 +237,41 @@ export async function getUserInfo(accessToken) {
 
   const data = await response.json();
 
+  // Graceful degradation: if scope error, return basic fields and null for rest
+  // Some accounts may not have authorized user.info.stats or user.info.profile
   if (!response.ok || (data.error?.code && data.error.code !== 'ok')) {
-    const errorMsg = data.error?.message || 'Failed to fetch user info';
-    console.error("[TikTok getUserInfo] Failed response:", {
+    const errorMsg = data.error?.message || '';
+    console.warn("[TikTok getUserInfo] Scope-limited response:", {
       status: response.status,
-      statusText: response.statusText,
       data: JSON.stringify(data),
     });
-    throw new Error(`TikTok user info failed: ${errorMsg}`);
+    // Retry with only basic fields (user.info.basic scope)
+    const basicParams = new URLSearchParams({
+      fields: 'open_id,union_id,avatar_url,avatar_url_100,avatar_url_720,display_name',
+    });
+    const basicRes = await fetch(`${TIKTOK_USER_INFO_URL}?${basicParams.toString()}`, {
+      method: 'GET',
+      headers: { 'Authorization': `Bearer ${accessToken}` },
+    });
+    const basicData = await basicRes.json();
+    if (!basicRes.ok || (basicData.error?.code && basicData.error.code !== 'ok')) {
+      throw new Error(`TikTok user info failed: ${basicData.error?.message || errorMsg}`);
+    }
+    const basicUser = basicData.data?.user || {};
+    return {
+      open_id: basicUser.open_id,
+      union_id: basicUser.union_id,
+      avatar_url: basicUser.avatar_url,
+      avatar_url_100: basicUser.avatar_url_100,
+      avatar_url_720: basicUser.avatar_url_720,
+      display_name: basicUser.display_name,
+      bio_description: null,
+      is_verified: null,
+      follower_count: null,
+      following_count: null,
+      likes_count: null,
+      video_count: null,
+    };
   }
 
   const user = data.data?.user || {};
