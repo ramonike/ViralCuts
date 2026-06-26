@@ -236,8 +236,13 @@ export async function getUserInfo(accessToken) {
 
   const data = await response.json();
 
-  if (!response.ok || data.error?.code) {
+  if (!response.ok || (data.error?.code && data.error.code !== 'ok')) {
     const errorMsg = data.error?.message || 'Failed to fetch user info';
+    console.error("[TikTok getUserInfo] Failed response:", {
+      status: response.status,
+      statusText: response.statusText,
+      data: JSON.stringify(data),
+    });
     throw new Error(`TikTok user info failed: ${errorMsg}`);
   }
 
@@ -285,7 +290,7 @@ export async function getCreatorInfo(accessToken) {
 
   const data = await response.json();
 
-  if (!response.ok || data.error?.code) {
+  if (!response.ok || (data.error?.code && data.error.code !== 'ok')) {
     const errorMsg = data.error?.message || 'Failed to fetch creator info';
     throw new Error(`TikTok creator info failed: ${errorMsg}`);
   }
@@ -409,7 +414,7 @@ export async function initiateUpload(metadata, fileSize, chunkCount, accessToken
 
   const data = await response.json();
 
-  if (!response.ok || data.error?.code) {
+  if (!response.ok || (data.error?.code && data.error.code !== 'ok')) {
     const errorCode = data.error?.code || 'unknown';
     const errorMsg = data.error?.message || 'Failed to initialize upload';
     throw new Error(`TikTok upload init failed (${errorCode}): ${errorMsg}`);
@@ -504,7 +509,7 @@ export async function getPublishStatus(publishId, accessToken) {
 
   const data = await response.json();
 
-  if (!response.ok || data.error?.code) {
+  if (!response.ok || (data.error?.code && data.error.code !== 'ok')) {
     const errorMsg = data.error?.message || 'Failed to fetch publish status';
     throw new Error(`TikTok publish status failed: ${errorMsg}`);
   }

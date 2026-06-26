@@ -118,7 +118,7 @@ tiktok.get("/auth/callback", async (c) => {
 
     if (error) {
       console.error("[TikTok Auth] OAuth error:", error, errorDescription);
-      return c.redirect(`${frontendUrl}/settings?tiktok_error=${encodeURIComponent(errorDescription || error)}`);
+      return c.redirect(`${frontendUrl}/dashboard/settings?tiktok_error=${encodeURIComponent(errorDescription || error)}`);
     }
 
     if (!code) {
@@ -181,13 +181,13 @@ tiktok.get("/auth/callback", async (c) => {
     // Redirect to frontend with success
     const displayName = userInfo.display_name || "TikTok User";
     return c.redirect(
-      `${frontendUrl}/settings?tiktok_connected=true&account=${encodeURIComponent(displayName)}`
+      `${frontendUrl}/dashboard/settings?tiktok_connected=true&account=${encodeURIComponent(displayName)}`
     );
   } catch (error) {
     console.error("[TikTok Auth] Callback error:", error);
     const frontendUrl = process.env.FRONTEND_URL || "http://localhost:5173";
     return c.redirect(
-      `${frontendUrl}/settings?tiktok_error=${encodeURIComponent(error.message)}`
+      `${frontendUrl}/dashboard/settings?tiktok_error=${encodeURIComponent(error.message)}`
     );
   }
 });
