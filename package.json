@@ -55,6 +55,7 @@
     "jsdom": "^27.4.0",
     "msw": "^2.12.7",
     "prisma": "^7.2.0",
+    "sharp": "^0.35.2",
     "tailwindcss-animate": "^1.0.7",
     "vite": "^5.0.0",
     "vitest": "^4.0.16"
