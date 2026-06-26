@@ -271,18 +271,44 @@ export default function CalendarPage() {
     }, [backendUploads, supabase.user, state.uploadQueue, shouldFilter, activeAccountId]);
 
     // ── Histórico filtrado por canal ───────────────────────────────────────
+    // state.history tem vídeos reais do YouTube (via token Google)
+    // supabase.history tem vídeos do banco (/api/videos)
+    // Mesclamos os dois para mostrar tudo no calendário
     const filteredHistory = useMemo(() => {
-        const raw = supabase.user ? supabase.history : state.history;
-        if (!shouldFilter) return raw;
+        const youtubeHistory = state.history || {};
+        const backendHistory = (supabase.user ? supabase.history : {}) || {};
+
+        // Mescla: une completedItems de ambas as fontes por data
+        const merged = { ...youtubeHistory };
+        Object.entries(backendHistory).forEach(([date, day]) => {
+            if (!merged[date]) {
+                merged[date] = day;
+            } else {
+                // Evita duplicatas por ID
+                const existingIds = new Set((merged[date].completedItems || []).map(i => i.id));
+                const newItems = (day.completedItems || []).filter(i => !existingIds.has(i.id));
+                merged[date] = {
+                    ...merged[date],
+                    completedItems: [...(merged[date].completedItems || []), ...newItems],
+                    uploads: (merged[date].uploads || 0) + newItems.length,
+                };
+            }
+        });
+
+        if (!shouldFilter) return merged;
+
+        // Filtra por canal ativo
         const result = {};
-        Object.entries(raw || {}).forEach(([date, day]) => {
-            const items = (day?.completedItems || []).filter(item =>
-                !item.channelId || item.channelId === activeAccountId
+        Object.entries(merged).forEach(([date, day]) => {
+            const items = (day.completedItems || []).filter(item =>
+                !item.channelId || !item.accountId ||
+                item.channelId === activeAccountId ||
+                item.accountId === activeAccountId
             );
             if (items.length > 0) result[date] = { ...day, completedItems: items, uploads: items.length };
         });
         return result;
-    }, [supabase.user, supabase.history, state.history, shouldFilter, activeAccountId]);
+    }, [state.history, supabase.user, supabase.history, shouldFilter, activeAccountId]);
 
     // ── Stats ──────────────────────────────────────────────────────────────
     const now = new Date();
