@@ -196,8 +196,8 @@ function TikTokHero({ account }) {
     );
 }
 
-// ─── Canais Conectados ────────────────────────────────────────────────────────
-function ConnectedChannels({ connectedAccounts, activeAccountId, onSwitch, onDisconnect, onAdd }) {
+// ─── Canais e Contas Conectados ───────────────────────────────────────────────
+function ConnectedChannels({ connectedAccounts, activeAccountId, onSwitch, onDisconnect, onAdd, onConnectTikTok, tiktokConnected }) {
     const getPlatformInfo = (account) => {
         const platform = account.platform || 'youtube';
         const config = {
@@ -210,7 +210,7 @@ function ConnectedChannels({ connectedAccounts, activeAccountId, onSwitch, onDis
     return (
         <div className="glass-panel rounded-xl border border-surface-700/50 overflow-hidden">
             <div className="px-5 py-4 border-b border-surface-700/30 flex items-center justify-between">
-                <h3 className="text-sm font-semibold text-white">Canais conectados</h3>
+                <h3 className="text-sm font-semibold text-white">Canais e Contas conectados</h3>
                 <span className="text-xs text-slate-500 bg-surface-800 px-2 py-0.5 rounded-full">
                     {connectedAccounts.length}
                 </span>
@@ -266,9 +266,17 @@ function ConnectedChannels({ connectedAccounts, activeAccountId, onSwitch, onDis
                 <GoogleAuthButton
                     onLoginSuccess={onAdd}
                     onLoginError={(err) => alert("Erro: " + JSON.stringify(err))}
-                    text="+ Adicionar canal"
-                    className="w-full justify-center h-10 text-sm font-medium bg-primary/10 hover:bg-primary/20 text-primary border border-primary/30 hover:border-primary/50 transition-all"
+                    text="+ Conectar YouTube"
+                    className="w-full justify-center h-10 text-sm font-medium bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/30 hover:border-red-500/50 transition-all"
                 />
+                {!tiktokConnected && (
+                    <button
+                        onClick={onConnectTikTok}
+                        className="w-full justify-center h-10 text-sm font-medium flex items-center gap-2 rounded-lg bg-pink-500/10 hover:bg-pink-500/20 text-pink-400 border border-pink-500/30 hover:border-pink-500/50 transition-all"
+                    >
+                        <Music2 className="w-4 h-4" /> Conectar TikTok
+                    </button>
+                )}
             </div>
         </div>
     );
@@ -304,7 +312,7 @@ function QuickActions({ navigate }) {
 }
 
 // ─── Plataformas ──────────────────────────────────────────────────────────────
-function Platforms({ connectedTikTokAccounts, onConnectTikTok, onDisconnectTikTok, tiktokLoading, tiktokError }) {
+function Platforms({ connectedTikTokAccounts }) {
     const isTikTokConnected = connectedTikTokAccounts.length > 0;
 
     return (
@@ -314,7 +322,7 @@ function Platforms({ connectedTikTokAccounts, onConnectTikTok, onDisconnectTikTo
             </div>
             <div className="p-3 space-y-2">
 
-                {/* YouTube — sempre ativo */}
+                {/* YouTube */}
                 <div className="flex items-center gap-3 p-3 rounded-lg bg-surface-800/50">
                     <div className="w-10 h-10 rounded-lg bg-red-500/10 flex items-center justify-center shrink-0">
                         <Youtube className="w-5 h-5 text-red-500" />
@@ -327,59 +335,22 @@ function Platforms({ connectedTikTokAccounts, onConnectTikTok, onDisconnectTikTo
                 </div>
 
                 {/* TikTok */}
-                <div className="rounded-lg border border-surface-700/30 overflow-hidden">
-                    <div className="flex items-center gap-3 p-3 bg-surface-800/50">
-                        <div className="w-10 h-10 rounded-lg bg-black/30 flex items-center justify-center shrink-0">
-                            <PlatformIcon platform="tiktok" size={20} />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium text-white">TikTok</p>
-                            <p className="text-xs text-slate-500">
-                                {isTikTokConnected
-                                    ? `${connectedTikTokAccounts.length} conta${connectedTikTokAccounts.length > 1 ? 's' : ''} conectada${connectedTikTokAccounts.length > 1 ? 's' : ''}`
-                                    : 'Content Posting API v2'}
-                            </p>
-                        </div>
-                        {isTikTokConnected ? (
-                            <span className="text-[10px] font-bold px-2 py-1 rounded bg-green-500/10 text-green-400 border border-green-500/20">ATIVO</span>
-                        ) : (
-                            <button
-                                onClick={onConnectTikTok}
-                                disabled={tiktokLoading}
-                                className="flex items-center gap-1.5 text-[11px] font-semibold px-3 py-1.5 rounded-lg bg-black hover:bg-zinc-900 text-white transition-colors disabled:opacity-50 shrink-0"
-                            >
-                                {tiktokLoading
-                                    ? <Loader2 className="w-3 h-3 animate-spin" />
-                                    : <Link2 className="w-3 h-3" />
-                                }
-                                Conectar
-                            </button>
-                        )}
+                <div className="flex items-center gap-3 p-3 rounded-lg bg-surface-800/50">
+                    <div className="w-10 h-10 rounded-lg bg-black/30 flex items-center justify-center shrink-0">
+                        <PlatformIcon platform="tiktok" size={20} />
                     </div>
-
-                    {/* Contas TikTok conectadas */}
-                    {connectedTikTokAccounts.map(account => (
-                        <div key={account.id} className="flex items-center gap-3 px-3 py-2 border-t border-surface-700/30 bg-surface-900/30">
-                            {account.avatar ? (
-                                <img src={account.avatar} alt={account.name} className="w-7 h-7 rounded-full object-cover shrink-0"
-                                    onError={e => { e.target.style.display = 'none'; }} />
-                            ) : (
-                                <div className="w-7 h-7 rounded-full bg-zinc-800 flex items-center justify-center shrink-0 text-xs font-bold text-white">
-                                    {(account.name || 'T')[0].toUpperCase()}
-                                </div>
-                            )}
-                            <p className="text-xs text-slate-400 flex-1 truncate">{account.name}</p>
-                            <button
-                                onClick={() => { if (confirm(`Desconectar "${account.name}" do TikTok?`)) onDisconnectTikTok(account.id); }}
-                                className="flex items-center gap-1 text-[11px] text-slate-600 hover:text-red-400 transition-colors shrink-0"
-                            >
-                                <Trash2 className="w-3 h-3" /> Desconectar
-                            </button>
-                        </div>
-                    ))}
-
-                    {tiktokError && (
-                        <p className="text-xs text-red-400 px-3 py-2 border-t border-surface-700/30">{tiktokError}</p>
+                    <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-white">TikTok</p>
+                        <p className="text-xs text-slate-500">
+                            {isTikTokConnected
+                                ? `${connectedTikTokAccounts.length} conta${connectedTikTokAccounts.length > 1 ? 's' : ''} conectada${connectedTikTokAccounts.length > 1 ? 's' : ''}`
+                                : 'Content Posting API v2'}
+                        </p>
+                    </div>
+                    {isTikTokConnected ? (
+                        <span className="text-[10px] font-bold px-2 py-1 rounded bg-green-500/10 text-green-400 border border-green-500/20">ATIVO</span>
+                    ) : (
+                        <span className="text-[10px] font-medium px-2 py-1 rounded text-slate-500 bg-surface-700/50">NÃO CONECTADO</span>
                     )}
                 </div>
 
@@ -479,14 +450,12 @@ export default function ProfilePage() {
                                     actions.setYouTubeToken(tokenResponse);
                                 }
                             }}
+                            onConnectTikTok={handleConnectTikTok}
+                            tiktokConnected={connectedTikTokAccounts.length > 0}
                         />
                         {isConnected && <QuickActions navigate={navigate} />}
                         <Platforms
                             connectedTikTokAccounts={connectedTikTokAccounts}
-                            onConnectTikTok={handleConnectTikTok}
-                            onDisconnectTikTok={disconnectTikTokAccount}
-                            tiktokLoading={tiktokLoading}
-                            tiktokError={tiktokError}
                         />
                     </div>
 
