@@ -15,7 +15,7 @@ export const platformConfig = {
       clientKey: process.env.TIKTOK_CLIENT_KEY,
       clientSecret: process.env.TIKTOK_CLIENT_SECRET,
       redirectUri: process.env.TIKTOK_REDIRECT_URI || 'http://localhost:3000/api/auth/tiktok/callback',
-      scopes: ['user.info.basic', 'video.upload', 'video.publish'],
+      scopes: ['user.info.basic', 'user.info.stats', 'user.info.profile', 'video.upload', 'video.publish'],
     },
     
     // API Endpoints
