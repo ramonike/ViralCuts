@@ -263,26 +263,19 @@ export default function CalendarPage() {
     const loadUploads = useCallback(async (silent = false) => {
         if (!silent && !hasFetchedRef.current) setLoadingUploads(true);
         else if (silent) setLoadingUploads(true);
+
         try {
-            // Timeout de 8s para não travar o fluxo em cold start do Render
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 8000);
-            const raw = await fetchScheduledUploads(true, 200, controller.signal);
-            clearTimeout(timeoutId);
+            const raw = await fetchScheduledUploads(true, 200);
             const normalized = raw.map(normalizeUpload);
             setBackendUploads(normalized);
             hasFetchedRef.current = true;
         } catch (err) {
-            if (err?.name === 'AbortError') {
-                console.warn('[CalendarPage] loadUploads timeout — mantendo dados anteriores');
-            } else {
-                console.error('Failed to load uploads:', err);
-            }
+            console.error('Failed to load uploads:', err);
             // Mantém dados anteriores — nunca zera
         } finally {
             setLoadingUploads(false);
         }
-    }, []); // sem deps — estável entre renders
+    }, []);
 
     useEffect(() => { loadUploads(); }, [loadUploads]);
 

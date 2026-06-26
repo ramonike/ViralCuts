@@ -412,7 +412,7 @@ export async function searchVideos(token, query = "ciência curiosidades podcast
  * @param {number} limit - Maximum number of uploads to return
  * @returns {Promise<Array>} List of scheduled uploads
  */
-export async function fetchScheduledUploads(includeAll = false, limit = 50, signal = undefined) {
+export async function fetchScheduledUploads(includeAll = false, limit = 50) {
     console.log("[YouTube API] fetchScheduledUploads called");
 
     try {
@@ -420,7 +420,7 @@ export async function fetchScheduledUploads(includeAll = false, limit = 50, sign
         // múltiplas plataformas (YouTube, TikTok) e todos os status relevantes
         const response = await fetch(`/api/uploads`, {
             credentials: 'include',
-            signal,
+
         });
 
         if (!response.ok) {
