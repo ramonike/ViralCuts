@@ -43,9 +43,16 @@ export function useTikTokAuth(state, setState) {
             const handleMessage = (event) => {
                 if (event.data?.type === 'tiktok_connected') {
                     window.removeEventListener('message', handleMessage);
+                    clearInterval(timer);
                     popup?.close();
-                    // Refetch contas conectadas
                     fetchConnectedAccounts();
+                }
+                if (event.data?.type === 'tiktok_error') {
+                    window.removeEventListener('message', handleMessage);
+                    clearInterval(timer);
+                    popup?.close();
+                    setError(event.data.error || 'Erro ao conectar TikTok');
+                    setLoading(false);
                 }
             };
             window.addEventListener('message', handleMessage);

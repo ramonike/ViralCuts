@@ -222,11 +222,24 @@ export default function PlatformConnections() {
       fetchTikTokAccounts();
       // Clean URL
       window.history.replaceState({}, '', window.location.pathname);
+      
+      // If popup, notify parent and close
+      if (window.opener) {
+        window.opener.postMessage({ type: 'tiktok_connected', account: accountName }, '*');
+        setTimeout(() => window.close(), 100);
+      }
     }
     
     if (params.get('tiktok_error')) {
-      setError(`TikTok: ${params.get('tiktok_error')}`);
+      const errorMsg = params.get('tiktok_error');
+      setError(`TikTok: ${errorMsg}`);
       window.history.replaceState({}, '', window.location.pathname);
+      
+      // If popup, notify parent and close
+      if (window.opener) {
+        window.opener.postMessage({ type: 'tiktok_error', error: errorMsg }, '*');
+        setTimeout(() => window.close(), 100);
+      }
     }
   }, []);
 

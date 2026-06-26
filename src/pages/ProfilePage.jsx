@@ -142,6 +142,15 @@ function ChannelHero({ channelStats, onRefresh }) {
 
 // ─── Canais Conectados ────────────────────────────────────────────────────────
 function ConnectedChannels({ connectedAccounts, activeAccountId, onSwitch, onDisconnect, onAdd }) {
+    const getPlatformInfo = (account) => {
+        const platform = account.platform || 'youtube';
+        const config = {
+            youtube: { name: 'YouTube', color: 'text-red-400', bg: 'bg-red-500/10' },
+            tiktok: { name: 'TikTok', color: 'text-pink-400', bg: 'bg-pink-500/10' },
+        };
+        return config[platform] || config.youtube;
+    };
+
     return (
         <div className="glass-panel rounded-xl border border-surface-700/50 overflow-hidden">
             <div className="px-5 py-4 border-b border-surface-700/30 flex items-center justify-between">
@@ -153,33 +162,38 @@ function ConnectedChannels({ connectedAccounts, activeAccountId, onSwitch, onDis
             <div className="p-3 space-y-2">
                 {connectedAccounts.map(account => {
                     const isActive = account.id === activeAccountId;
+                    const platform = getPlatformInfo(account);
                     return (
                         <div key={account.id} className={`p-3 rounded-lg border transition-all ${isActive ? "bg-primary/10 border-primary/20" : "bg-surface-800/50 border-transparent hover:border-surface-600"}`}>
                             <div className="flex items-center gap-3">
-                                <img
-                                    src={account.avatar || "https://github.com/shadcn.png"}
-                                    className="w-10 h-10 rounded-lg object-cover shrink-0"
-                                    alt={account.name}
-                                    onError={(e) => { e.target.src = "https://github.com/shadcn.png"; }}
-                                />
+                                {account.avatar ? (
+                                    <img
+                                        src={account.avatar}
+                                        className="w-10 h-10 rounded-lg object-cover shrink-0"
+                                        alt={account.name}
+                                        onError={(e) => { e.target.src = "https://github.com/shadcn.png"; }}
+                                    />
+                                ) : (
+                                    <div className={`w-10 h-10 rounded-lg ${platform.bg} flex items-center justify-center shrink-0`}>
+                                        <span className={`text-xs font-bold ${platform.color}`}>
+                                            {(account.name || platform.name)[0].toUpperCase()}
+                                        </span>
+                                    </div>
+                                )}
                                 <div className="flex-1 min-w-0">
                                     <p className="text-sm font-medium text-white truncate">{account.name}</p>
-                                    <p className="text-xs text-slate-500">
-                                        {account.stats?.statistics?.subscriberCount
-                                            ? formatNumber(account.stats.statistics.subscriberCount) + " inscritos"
-                                            : "YouTube"}
-                                    </p>
+                                    <p className="text-xs text-slate-500">{platform.name}</p>
                                 </div>
-                                {isActive ? (
+                                {account.platform === 'youtube' && isActive ? (
                                     <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-primary/10 text-primary border border-primary/20 shrink-0">ATIVO</span>
-                                ) : (
+                                ) : account.platform === 'youtube' ? (
                                     <button
                                         onClick={() => onSwitch(account.id)}
                                         className="text-[10px] font-medium px-2 py-1 rounded text-slate-400 bg-surface-700 hover:bg-surface-600 hover:text-white transition-colors shrink-0"
                                     >
                                         Usar este
                                     </button>
-                                )}
+                                ) : null}
                             </div>
                             <div className="mt-2 pt-2 border-t border-surface-700/30 flex justify-end">
                                 <button
@@ -344,7 +358,7 @@ function EmptyState({ onConnect }) {
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
 export default function ProfilePage() {
-    const { state, actions } = useDashboardState();
+    const { state, setState, actions } = useDashboardState();
     const navigate = useNavigate();
 
     const { channelStats, auth } = state;
@@ -362,10 +376,18 @@ export default function ProfilePage() {
         connectedTikTokAccounts,
         loading: tiktokLoading,
         error: tiktokError,
-    } = useTikTokAuth(state, actions.setState || (() => {}));
+    } = useTikTokAuth(state, setState);
 
-    // Canais com token ainda válido
+    // Canais com token ainda válido (qualquer plataforma)
     const validChannels = connectedAccounts.filter(a => a.expiresAt && a.expiresAt > Date.now());
+
+    const handleConnectTikTok = () => {
+        if (validChannels.length >= maxChannels) {
+            setShowUpgrade(true);
+        } else {
+            connectTikTok();
+        }
+    };
 
     return (
         <>
@@ -402,7 +424,7 @@ export default function ProfilePage() {
                         {isConnected && <QuickActions navigate={navigate} />}
                         <Platforms
                             connectedTikTokAccounts={connectedTikTokAccounts}
-                            onConnectTikTok={connectTikTok}
+                            onConnectTikTok={handleConnectTikTok}
                             onDisconnectTikTok={disconnectTikTokAccount}
                             tiktokLoading={tiktokLoading}
                             tiktokError={tiktokError}
