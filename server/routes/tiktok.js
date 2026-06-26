@@ -163,6 +163,8 @@ tiktok.get("/auth/callback", async (c) => {
         accessTokenExpiresAt: expiresAt,
         refreshTokenExpiresAt: refreshExpiresAt,
         scope: tokens.scope,
+        displayName: userInfo.display_name,
+        avatarUrl: userInfo.avatar_url,
         updatedAt: new Date(),
       },
       create: {
@@ -175,6 +177,8 @@ tiktok.get("/auth/callback", async (c) => {
         accessTokenExpiresAt: expiresAt,
         refreshTokenExpiresAt: refreshExpiresAt,
         scope: tokens.scope,
+        displayName: userInfo.display_name,
+        avatarUrl: userInfo.avatar_url,
       },
     });
 
@@ -280,6 +284,8 @@ tiktok.get("/accounts", authMiddleware, async (c) => {
         refreshTokenExpiresAt: true,
         scope: true,
         createdAt: true,
+        displayName: true,
+        avatarUrl: true,
       },
     });
 
