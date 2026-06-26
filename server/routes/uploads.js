@@ -141,6 +141,9 @@ uploads.put("/:id", async (c) => {
     });
 
     return c.json(serializeUpload(upload));
+  } catch (error) {
+    console.error("Error updating upload:", error.message);
+    return c.json({ error: "Failed to update upload" }, 500);
   }
 });
 
