@@ -4,7 +4,7 @@
  * Requirements: 1.2, 1.3
  */
 
-import { getPlatformConfig } from '../../config/platforms.js';
+import { getPlatformConfig } from '../config/platforms.js';
 
 const TIKTOK_AUTH_URL = 'https://www.tiktok.com/v2/auth/authorize/';
 const TIKTOK_TOKEN_URL = 'https://open.tiktokapis.com/v2/oauth/token/';
@@ -918,3 +918,4 @@ export default {
   MAX_VIDEO_DURATION,
   RETRY_CONFIG,
 };
+
