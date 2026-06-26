@@ -1,4 +1,3 @@
-
 export async function fetchChannelDetails(token) {
     console.log("[YouTube API] fetchChannelDetails called with token:", token ? "EXISTS" : "NULL");
 
@@ -47,7 +46,7 @@ export async function fetchChannelDetails(token) {
         if (!response.ok) {
             const errorText = await response.text();
             console.error("[YouTube API] Error response:", errorText);
-            
+
             // Try to parse error for more details
             try {
                 const errorJson = JSON.parse(errorText);
@@ -417,24 +416,22 @@ export async function fetchScheduledUploads(includeAll = false, limit = 50) {
     console.log("[YouTube API] fetchScheduledUploads called");
 
     try {
-        const params = new URLSearchParams({
-            limit: limit.toString(),
-            includeAll: includeAll.toString(),
-        });
-
-        const response = await fetch(`/api/youtube/scheduled?${params}`, {
+        // Usa /api/uploads em vez de /api/youtube/scheduled para suportar
+        // múltiplas plataformas (YouTube, TikTok) e todos os status relevantes
+        const response = await fetch(`/api/uploads`, {
             credentials: 'include',
         });
 
         if (!response.ok) {
             const error = await response.json().catch(() => ({ error: 'Unknown error' }));
-            throw new Error(error.error || 'Failed to fetch scheduled uploads');
+            throw new Error(error.error || 'Failed to fetch uploads');
         }
 
         const data = await response.json();
-        return data.uploads || [];
+        // /api/uploads retorna array direto
+        return Array.isArray(data) ? data : (data.uploads || []);
     } catch (error) {
-        console.error("[YouTube API] Failed to fetch scheduled uploads:", error);
+        console.error("[YouTube API] Failed to fetch uploads:", error);
         throw error;
     }
 }
