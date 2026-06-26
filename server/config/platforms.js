@@ -9,7 +9,7 @@ export const platformConfig = {
   tiktok: {
     name: 'TikTok',
     enabled: !!process.env.TIKTOK_CLIENT_KEY,
-    
+
     // OAuth Configuration
     oauth: {
       clientKey: process.env.TIKTOK_CLIENT_KEY,
@@ -17,7 +17,7 @@ export const platformConfig = {
       redirectUri: process.env.TIKTOK_REDIRECT_URI || 'http://localhost:3000/api/auth/tiktok/callback',
       scopes: ['user.info.basic', 'user.info.stats', 'user.info.profile', 'video.upload', 'video.publish'],
     },
-    
+
     // API Endpoints
     endpoints: {
       authorize: 'https://www.tiktok.com/v2/auth/authorize/',
@@ -27,7 +27,7 @@ export const platformConfig = {
       publishStatus: 'https://open.tiktokapis.com/v2/post/publish/status/fetch/',
       creatorInfo: 'https://open.tiktokapis.com/v2/post/publish/creator_info/query/',
     },
-    
+
     // Video Requirements
     videoRequirements: {
       maxDuration: 600, // 10 minutes in seconds
@@ -39,13 +39,13 @@ export const platformConfig = {
       minResolution: 720,
       recommendedResolution: 1080,
     },
-    
+
     // Rate Limits
     rateLimits: {
       uploadsPerDay: 20,
       apiCallsPerDay: 1000,
     },
-    
+
     // Privacy Options
     privacyOptions: [
       { value: 'PUBLIC_TO_EVERYONE', label: 'Public' },
@@ -53,11 +53,11 @@ export const platformConfig = {
       { value: 'SELF_ONLY', label: 'Private' },
     ],
   },
-  
+
   youtube: {
     name: 'YouTube',
     enabled: !!process.env.GOOGLE_CLIENT_ID,
-    
+
     oauth: {
       clientId: process.env.GOOGLE_CLIENT_ID,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET,
@@ -67,31 +67,31 @@ export const platformConfig = {
         'https://www.googleapis.com/auth/youtube.readonly',
       ],
     },
-    
+
     videoRequirements: {
       maxDuration: 43200, // 12 hours in seconds
       maxFileSize: 256 * 1024 * 1024 * 1024, // 256GB
       supportedFormats: ['mp4', 'mov', 'avi', 'wmv', 'flv', 'webm', 'mkv'],
     },
   },
-  
+
   instagram: {
     name: 'Instagram Reels',
     enabled: !!process.env.INSTAGRAM_APP_ID,
-    
+
     oauth: {
       appId: process.env.INSTAGRAM_APP_ID,
       appSecret: process.env.INSTAGRAM_APP_SECRET,
       redirectUri: process.env.INSTAGRAM_REDIRECT_URI || 'http://localhost:3000/api/auth/instagram/callback',
       scopes: ['instagram_basic', 'instagram_content_publish'],
     },
-    
+
     endpoints: {
       authorize: 'https://api.instagram.com/oauth/authorize',
       token: 'https://api.instagram.com/oauth/access_token',
       graphApi: 'https://graph.instagram.com',
     },
-    
+
     videoRequirements: {
       maxDuration: 90, // 90 seconds for Reels
       minDuration: 3,
