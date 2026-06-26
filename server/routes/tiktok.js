@@ -1,921 +1,753 @@
 /**
- * TikTok OAuth 2.0 Authentication Service & Content Posting API
- * Implements OAuth flow and video upload for TikTok
+ * TikTok OAuth and Upload Routes
  * Requirements: 1.2, 1.3
  */
 
-import { getPlatformConfig } from '../config/platforms.js';
-
-const TIKTOK_AUTH_URL = 'https://www.tiktok.com/v2/auth/authorize/';
-const TIKTOK_TOKEN_URL = 'https://open.tiktokapis.com/v2/oauth/token/';
-const TIKTOK_REVOKE_URL = 'https://open.tiktokapis.com/v2/oauth/revoke/';
-const TIKTOK_USER_INFO_URL = 'https://open.tiktokapis.com/v2/user/info/';
-
-// Content Posting API endpoints
-const TIKTOK_VIDEO_INIT_URL = 'https://open.tiktokapis.com/v2/post/publish/video/init/';
-const TIKTOK_PUBLISH_STATUS_URL = 'https://open.tiktokapis.com/v2/post/publish/status/fetch/';
-const TIKTOK_CREATOR_INFO_URL = 'https://open.tiktokapis.com/v2/post/publish/creator_info/query/';
-
-// Upload configuration
-const DEFAULT_CHUNK_SIZE = 10 * 1024 * 1024; // 10MB chunks
-const MAX_VIDEO_SIZE = 4 * 1024 * 1024 * 1024; // 4GB max
-const MAX_VIDEO_DURATION = 600; // 10 minutes in seconds
-const MIN_CHUNK_SIZE = 5 * 1024 * 1024; // 5MB minimum chunk
-const MAX_CHUNK_SIZE = 64 * 1024 * 1024; // 64MB maximum chunk
-
-// Retry configuration
-const RETRY_CONFIG = {
-  maxRetries: 5,
-  baseDelayMs: 1000,
-  maxDelayMs: 32000,
-  retryableStatusCodes: [408, 429, 500, 502, 503, 504],
-};
-
-/**
- * Get TikTok OAuth configuration from environment
- * @returns {object} OAuth configuration
- * @throws {Error} If required credentials are missing
- */
-function getOAuthConfig() {
-  const config = getPlatformConfig('tiktok');
-
-  if (!config?.oauth?.clientKey || !config?.oauth?.clientSecret) {
-    throw new Error('Missing TikTok OAuth credentials. Set TIKTOK_CLIENT_KEY and TIKTOK_CLIENT_SECRET.');
-  }
-
-  return {
-    clientKey: config.oauth.clientKey,
-    clientSecret: config.oauth.clientSecret,
-    redirectUri: config.oauth.redirectUri,
-    scopes: config.oauth.scopes,
-  };
-}
-
-/**
- * Generate a cryptographically secure code verifier for PKCE
- * @returns {string} Code verifier string
- */
-function generateCodeVerifier() {
-  const array = new Uint8Array(32);
-  crypto.getRandomValues(array);
-  return Array.from(array, byte => byte.toString(16).padStart(2, '0')).join('');
-}
-
-/**
- * Generate code challenge from code verifier using SHA-256
- * @param {string} verifier - Code verifier
- * @returns {Promise<string>} Base64URL encoded code challenge
- */
-async function generateCodeChallenge(verifier) {
-  const encoder = new TextEncoder();
-  const data = encoder.encode(verifier);
-  const digest = await crypto.subtle.digest('SHA-256', data);
-  const base64 = btoa(String.fromCharCode(...new Uint8Array(digest)));
-  return base64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
-}
-
-/**
- * Generate OAuth 2.0 authorization URL for TikTok
- * TikTok requires PKCE (Proof Key for Code Exchange) for security
- * @param {string} state - Optional state parameter for CSRF protection
- * @returns {Promise<{url: string, codeVerifier: string}>} Authorization URL and code verifier
- */
-export async function getAuthUrl(state = null) {
-  const { clientKey, redirectUri, scopes } = getOAuthConfig();
-
-  // Generate PKCE code verifier and challenge
-  const codeVerifier = generateCodeVerifier();
-  const codeChallenge = await generateCodeChallenge(codeVerifier);
-
-  const params = new URLSearchParams({
-    client_key: clientKey,
-    redirect_uri: redirectUri,
-    response_type: 'code',
-    scope: scopes.join(','),
-    code_challenge: codeChallenge,
-    code_challenge_method: 'S256',
-    force_login: 'true',
-  });
-
-  if (state) {
-    params.append('state', state);
-  }
-
-  return {
-    url: `${TIKTOK_AUTH_URL}?${params.toString()}`,
-    codeVerifier, // Must be stored and used during token exchange
-  };
-}
-
-
-/**
- * Exchange authorization code for access and refresh tokens
- * @param {string} code - Authorization code from OAuth callback
- * @param {string} codeVerifier - PKCE code verifier used during authorization
- * @returns {Promise<TikTokTokenResponse>} Token response with access and refresh tokens
- */
-export async function exchangeCode(code, codeVerifier) {
-  const { clientKey, clientSecret, redirectUri } = getOAuthConfig();
-
-  const response = await fetch(TIKTOK_TOKEN_URL, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/x-www-form-urlencoded',
-      'Cache-Control': 'no-cache',
-    },
-    body: new URLSearchParams({
-      client_key: clientKey,
-      client_secret: clientSecret,
-      code: code,
-      grant_type: 'authorization_code',
-      redirect_uri: redirectUri,
-      code_verifier: codeVerifier,
-    }),
-  });
-
-  const data = await response.json();
-
-  if (!response.ok || data.error) {
-    const errorMsg = data.error_description || data.error || 'Unknown error';
-    throw new Error(`TikTok token exchange failed: ${errorMsg}`);
-  }
-
-  return {
-    access_token: data.access_token,
-    refresh_token: data.refresh_token,
-    expires_in: data.expires_in,
-    refresh_expires_in: data.refresh_expires_in,
-    open_id: data.open_id,
-    scope: data.scope,
-    token_type: data.token_type || 'Bearer',
-  };
-}
-
-/**
- * Refresh access token using refresh token
- * TikTok refresh tokens are valid for 365 days
- * @param {string} refreshTokenValue - Refresh token from previous authorization
- * @returns {Promise<TikTokTokenResponse>} New token response
- */
-export async function refreshToken(refreshTokenValue) {
-  const { clientKey, clientSecret } = getOAuthConfig();
-
-  const response = await fetch(TIKTOK_TOKEN_URL, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/x-www-form-urlencoded',
-      'Cache-Control': 'no-cache',
-    },
-    body: new URLSearchParams({
-      client_key: clientKey,
-      client_secret: clientSecret,
-      grant_type: 'refresh_token',
-      refresh_token: refreshTokenValue,
-    }),
-  });
-
-  const data = await response.json();
-
-  if (!response.ok || data.error) {
-    const errorMsg = data.error_description || data.error || 'Unknown error';
-    throw new Error(`TikTok token refresh failed: ${errorMsg}`);
-  }
-
-  return {
-    access_token: data.access_token,
-    refresh_token: data.refresh_token, // TikTok returns a new refresh token
-    expires_in: data.expires_in,
-    refresh_expires_in: data.refresh_expires_in,
-    open_id: data.open_id,
-    scope: data.scope,
-    token_type: data.token_type || 'Bearer',
-  };
-}
-
-/**
- * Revoke OAuth token (access or refresh)
- * @param {string} token - Access or refresh token to revoke
- * @returns {Promise<void>}
- */
-export async function revokeToken(token) {
-  const { clientKey, clientSecret } = getOAuthConfig();
-
-  const response = await fetch(TIKTOK_REVOKE_URL, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/x-www-form-urlencoded',
-    },
-    body: new URLSearchParams({
-      client_key: clientKey,
-      client_secret: clientSecret,
-      token: token,
-    }),
-  });
-
-  if (!response.ok) {
-    const data = await response.json().catch(() => ({ error: 'Unknown error' }));
-    throw new Error(`TikTok token revocation failed: ${data.error_description || data.error}`);
-  }
-}
-
-/**
- * Get user info from TikTok
- * @param {string} accessToken - Valid access token
- * @returns {Promise<TikTokUserInfo>} User information
- */
-export async function getUserInfo(accessToken) {
-  const params = new URLSearchParams({
-    fields: 'open_id,union_id,avatar_url,avatar_url_100,avatar_url_720,display_name,bio_description,is_verified,follower_count,following_count,likes_count,video_count',
-  });
-
-  const response = await fetch(`${TIKTOK_USER_INFO_URL}?${params.toString()}`, {
-    method: 'GET',
-    headers: {
-      'Authorization': `Bearer ${accessToken}`,
-    },
-  });
-
-  const data = await response.json();
-
-  // Graceful degradation: if scope error, return basic fields and null for rest
-  // Some accounts may not have authorized user.info.stats or user.info.profile
-  if (!response.ok || (data.error?.code && data.error.code !== 'ok')) {
-    const errorMsg = data.error?.message || '';
-    console.warn("[TikTok getUserInfo] Scope-limited response:", {
-      status: response.status,
-      data: JSON.stringify(data),
-    });
-    // Retry with only basic fields (user.info.basic scope)
-    const basicParams = new URLSearchParams({
-      fields: 'open_id,union_id,avatar_url,avatar_url_100,avatar_url_720,display_name',
-    });
-    const basicRes = await fetch(`${TIKTOK_USER_INFO_URL}?${basicParams.toString()}`, {
-      method: 'GET',
-      headers: { 'Authorization': `Bearer ${accessToken}` },
-    });
-    const basicData = await basicRes.json();
-    if (!basicRes.ok || (basicData.error?.code && basicData.error.code !== 'ok')) {
-      throw new Error(`TikTok user info failed: ${basicData.error?.message || errorMsg}`);
-    }
-    const basicUser = basicData.data?.user || {};
-    return {
-      open_id: basicUser.open_id,
-      union_id: basicUser.union_id,
-      avatar_url: basicUser.avatar_url,
-      avatar_url_100: basicUser.avatar_url_100,
-      avatar_url_720: basicUser.avatar_url_720,
-      display_name: basicUser.display_name,
-      bio_description: null,
-      is_verified: null,
-      follower_count: null,
-      following_count: null,
-      likes_count: null,
-      video_count: null,
-    };
-  }
-
-  const user = data.data?.user || {};
-
-  return {
-    open_id: user.open_id,
-    union_id: user.union_id,
-    avatar_url: user.avatar_url,
-    avatar_url_100: user.avatar_url_100,
-    avatar_url_720: user.avatar_url_720,
-    display_name: user.display_name,
-    bio_description: user.bio_description,
-    is_verified: user.is_verified,
-    follower_count: user.follower_count,
-    following_count: user.following_count,
-    likes_count: user.likes_count,
-    video_count: user.video_count,
-  };
-}
-
-/**
- * Validate if access token is still valid
- * @param {string} accessToken - Access token to validate
- * @returns {Promise<boolean>} True if token is valid
- */
-export async function validateToken(accessToken) {
-  try {
-    await getUserInfo(accessToken);
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-// ============================================================================
-// Content Posting API - Video Upload Functions
-// Requirements: 1.3
-// ============================================================================
-
-/**
- * Get creator info including posting permissions and limits
- * @param {string} accessToken - Valid access token
- * @returns {Promise<CreatorInfo>} Creator information and limits
- */
-export async function getCreatorInfo(accessToken) {
-  const response = await fetch(TIKTOK_CREATOR_INFO_URL, {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${accessToken}`,
-      'Content-Type': 'application/json; charset=UTF-8',
-    },
-    body: JSON.stringify({}),
-  });
-
-  const data = await response.json();
-
-  if (!response.ok || (data.error?.code && data.error.code !== 'ok')) {
-    const errorMsg = data.error?.message || 'Failed to fetch creator info';
-    throw new Error(`TikTok creator info failed: ${errorMsg}`);
-  }
-
-  return {
-    creator_avatar_url: data.data?.creator_avatar_url,
-    creator_username: data.data?.creator_username,
-    creator_nickname: data.data?.creator_nickname,
-    privacy_level_options: data.data?.privacy_level_options || [],
-    comment_disabled: data.data?.comment_disabled,
-    duet_disabled: data.data?.duet_disabled,
-    stitch_disabled: data.data?.stitch_disabled,
-    max_video_post_duration_sec: data.data?.max_video_post_duration_sec || MAX_VIDEO_DURATION,
-  };
-}
-
-/**
- * Validate video metadata before upload
- * @param {TikTokVideoMetadata} metadata - Video metadata to validate
- * @param {number} fileSize - File size in bytes
- * @param {number} duration - Video duration in seconds (optional)
- * @throws {Error} If validation fails
- */
-export function validateVideoMetadata(metadata, fileSize, duration = null) {
-  // Validate file size
-  if (fileSize > MAX_VIDEO_SIZE) {
-    throw new Error(`Video file size (${(fileSize / (1024 * 1024 * 1024)).toFixed(2)}GB) exceeds maximum allowed (4GB)`);
-  }
-
-  // Validate duration if provided
-  if (duration !== null && duration > MAX_VIDEO_DURATION) {
-    throw new Error(`Video duration (${duration}s) exceeds maximum allowed (${MAX_VIDEO_DURATION}s / 10 minutes)`);
-  }
-
-  // Validate privacy level
-  const validPrivacyLevels = ['PUBLIC_TO_EVERYONE', 'MUTUAL_FOLLOW_FRIENDS', 'FOLLOWER_OF_CREATOR', 'SELF_ONLY'];
-  if (metadata.privacyLevel && !validPrivacyLevels.includes(metadata.privacyLevel)) {
-    throw new Error(`Invalid privacy level: ${metadata.privacyLevel}. Must be one of: ${validPrivacyLevels.join(', ')}`);
-  }
-
-  return true;
-}
-
-/**
- * Calculate optimal chunk size based on file size
- * @param {number} fileSize - Total file size in bytes
- * @returns {number} Optimal chunk size in bytes
- */
-export function calculateChunkSize(fileSize) {
-  // For small files (< 20MB), use minimum chunk size
-  if (fileSize < 20 * 1024 * 1024) {
-    return Math.min(fileSize, MIN_CHUNK_SIZE);
-  }
-
-  // For medium files (20MB - 500MB), use 10MB chunks
-  if (fileSize < 500 * 1024 * 1024) {
-    return DEFAULT_CHUNK_SIZE;
-  }
-
-  // For large files (500MB - 2GB), use 32MB chunks
-  if (fileSize < 2 * 1024 * 1024 * 1024) {
-    return 32 * 1024 * 1024;
-  }
-
-  // For very large files (> 2GB), use maximum chunk size
-  return MAX_CHUNK_SIZE;
-}
-
-/**
- * Initialize a video upload session with TikTok
- * This is the first step in the Content Posting API flow
- * @param {TikTokVideoMetadata} metadata - Video metadata
- * @param {number} fileSize - Total file size in bytes
- * @param {number} chunkCount - Number of chunks for upload
- * @param {string} accessToken - Valid access token
- * @returns {Promise<TikTokUploadSession>} Upload session with publish_id and upload_url
- */
-export async function initiateUpload(metadata, fileSize, chunkCount, accessToken) {
-  // Validate metadata
-  validateVideoMetadata(metadata, fileSize);
-
-  // Build post info object
-  const postInfo = {
-    title: metadata.title || '',
-    privacy_level: metadata.privacyLevel || 'SELF_ONLY',
-    disable_comment: metadata.disableComment || false,
-    disable_duet: metadata.disableDuet || false,
-    disable_stitch: metadata.disableStitch || false,
-    video_cover_timestamp_ms: metadata.coverTimestampMs || 0,
-  };
-
-  // Add optional brand content disclosure
-  if (metadata.brandContentToggle !== undefined) {
-    postInfo.brand_content_toggle = metadata.brandContentToggle;
-    if (metadata.brandOrganicToggle !== undefined) {
-      postInfo.brand_organic_toggle = metadata.brandOrganicToggle;
-    }
-  }
-
-  // Build source info for chunked upload
-  const sourceInfo = {
-    source: 'FILE_UPLOAD',
-    video_size: fileSize,
-    chunk_size: calculateChunkSize(fileSize),
-    total_chunk_count: chunkCount,
-  };
-
-  const requestBody = {
-    post_info: postInfo,
-    source_info: sourceInfo,
-  };
-
-  const response = await fetch(TIKTOK_VIDEO_INIT_URL, {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${accessToken}`,
-      'Content-Type': 'application/json; charset=UTF-8',
-    },
-    body: JSON.stringify(requestBody),
-  });
-
-  const data = await response.json();
-
-  if (!response.ok || (data.error?.code && data.error.code !== 'ok')) {
-    const errorCode = data.error?.code || 'unknown';
-    const errorMsg = data.error?.message || 'Failed to initialize upload';
-
-    // Erro específico de app não aprovado pelo TikTok
-    if (errorCode === 'unaudited_client_can_on_in_sandbox' || errorCode.includes('sandbox') || errorCode.includes('unaudited')) {
-      throw new Error(`TikTok app ainda não aprovado: seu app está em modo Sandbox. Aguarde a aprovação do TikTok Developer Portal antes de fazer uploads reais. (${errorCode})`);
-    }
-
-    throw new Error(`TikTok upload init failed (${errorCode}): ${errorMsg}`);
-  }
-
-  return {
-    publishId: data.data?.publish_id,
-    uploadUrl: data.data?.upload_url,
-    status: 'initialized',
-    fileSize,
-    chunkSize: sourceInfo.chunk_size,
-    totalChunks: chunkCount,
-    uploadedChunks: 0,
-    bytesUploaded: 0,
-  };
-}
-
-/**
- * Upload a single chunk of the video file
- * @param {string} uploadUrl - Upload URL from initiateUpload
- * @param {Buffer|ArrayBuffer} chunkData - Chunk data to upload
- * @param {number} chunkIndex - Zero-based chunk index
- * @param {number} startByte - Starting byte position
- * @param {number} endByte - Ending byte position (inclusive)
- * @param {number} totalSize - Total file size
- * @param {string} accessToken - Valid access token
- * @returns {Promise<TikTokChunkUploadResult>} Chunk upload result
- */
-export async function uploadChunk(uploadUrl, chunkData, chunkIndex, startByte, endByte, totalSize, accessToken) {
-  const contentRange = `bytes ${startByte}-${endByte}/${totalSize}`;
-
-  const response = await fetch(uploadUrl, {
-    method: 'PUT',
-    headers: {
-      'Authorization': `Bearer ${accessToken}`,
-      'Content-Type': 'video/mp4',
-      'Content-Length': chunkData.byteLength || chunkData.length,
-      'Content-Range': contentRange,
-    },
-    body: chunkData,
-  });
-
-  // 200/201 - Chunk uploaded successfully
-  if (response.ok) {
-    return {
-      success: true,
-      chunkIndex,
-      bytesUploaded: endByte - startByte + 1,
-      status: 'uploaded',
-    };
-  }
-
-  // Handle errors
-  const errorText = await response.text().catch(() => 'Unknown error');
-  let errorData;
-  try {
-    errorData = JSON.parse(errorText);
-  } catch {
-    errorData = { error: { message: errorText } };
-  }
-
-  const errorMsg = errorData.error?.message || errorText || 'Chunk upload failed';
-
-  // Check for retryable errors
-  if (RETRY_CONFIG.retryableStatusCodes.includes(response.status)) {
-    const retryError = new Error(`Retryable error: ${errorMsg}`);
-    retryError.retryable = true;
-    retryError.status = response.status;
-    throw retryError;
-  }
-
-  throw new Error(`TikTok chunk upload failed (${response.status}): ${errorMsg}`);
-}
-
-/**
- * Check the publish status of an uploaded video
- * @param {string} publishId - Publish ID from initiateUpload
- * @param {string} accessToken - Valid access token
- * @returns {Promise<TikTokPublishStatus>} Current publish status
- */
-export async function getPublishStatus(publishId, accessToken) {
-  const response = await fetch(TIKTOK_PUBLISH_STATUS_URL, {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${accessToken}`,
-      'Content-Type': 'application/json; charset=UTF-8',
-    },
-    body: JSON.stringify({
-      publish_id: publishId,
-    }),
-  });
-
-  const data = await response.json();
-
-  if (!response.ok || (data.error?.code && data.error.code !== 'ok')) {
-    const errorMsg = data.error?.message || 'Failed to fetch publish status';
-    throw new Error(`TikTok publish status failed: ${errorMsg}`);
-  }
-
-  // Map TikTok status to our internal status
-  const statusMap = {
-    'PROCESSING_UPLOAD': 'uploading',
-    'PROCESSING_DOWNLOAD': 'processing',
-    'SEND_TO_USER_INBOX': 'pending_approval',
-    'PUBLISH_COMPLETE': 'published',
-    'FAILED': 'failed',
-  };
-
-  const tiktokStatus = data.data?.status;
-
-  return {
-    publishId,
-    status: statusMap[tiktokStatus] || tiktokStatus,
-    rawStatus: tiktokStatus,
-    publiclyAvailablePostId: data.data?.publicly_available_post_id || null,
-    failReason: data.data?.fail_reason || null,
-    uploadedBytes: data.data?.uploaded_bytes,
-    videoUrl: data.data?.publicly_available_post_id
-      ? `https://www.tiktok.com/@/video/${data.data.publicly_available_post_id}`
-      : null,
-  };
-}
-
-/**
- * Poll publish status until completion or failure
- * @param {string} publishId - Publish ID from initiateUpload
- * @param {string} accessToken - Valid access token
- * @param {Object} options - Polling options
- * @param {number} options.maxAttempts - Maximum polling attempts (default: 60)
- * @param {number} options.intervalMs - Polling interval in ms (default: 5000)
- * @param {Function} options.onProgress - Progress callback
- * @returns {Promise<TikTokPublishStatus>} Final publish status
- */
-export async function waitForPublish(publishId, accessToken, options = {}) {
-  const maxAttempts = options.maxAttempts || 60;
-  const intervalMs = options.intervalMs || 5000;
-  const onProgress = options.onProgress;
-
-  for (let attempt = 0; attempt < maxAttempts; attempt++) {
-    const status = await getPublishStatus(publishId, accessToken);
-
-    if (onProgress) {
-      onProgress(status, attempt + 1, maxAttempts);
-    }
-
-    // Check for terminal states
-    if (status.status === 'published') {
-      return status;
-    }
-
-    if (status.status === 'failed') {
-      throw new Error(`TikTok publish failed: ${status.failReason || 'Unknown reason'}`);
-    }
-
-    // Wait before next poll
-    await sleep(intervalMs);
-  }
-
-  throw new Error('TikTok publish timed out - video may still be processing');
-}
-
-/**
- * Upload a complete video file to TikTok using chunked upload
- * This is the main entry point for video uploads
- * @param {Buffer|ArrayBuffer} videoData - Complete video file data
- * @param {TikTokVideoMetadata} metadata - Video metadata
- * @param {string} accessToken - Valid access token
- * @param {Object} options - Upload options
- * @param {Function} options.onProgress - Progress callback (bytesUploaded, totalBytes, status)
- * @param {AbortSignal} options.signal - AbortSignal for cancellation
- * @returns {Promise<TikTokUploadResult>} Upload result with publish_id and status
- */
-export async function uploadVideo(videoData, metadata, accessToken, options = {}) {
-  const fileSize = videoData.byteLength || videoData.length;
-  const onProgress = options.onProgress;
-  const signal = options.signal;
-
-  // Calculate chunk size and count
-  const chunkSize = calculateChunkSize(fileSize);
-  const totalChunks = Math.ceil(fileSize / chunkSize);
-
-  // Step 1: Initialize upload session
-  const session = await initiateUpload(metadata, fileSize, totalChunks, accessToken);
-
-  if (onProgress) {
-    onProgress(0, fileSize, 'initialized');
-  }
-
-  // Step 2: Upload chunks
-  let bytesUploaded = 0;
-
-  for (let chunkIndex = 0; chunkIndex < totalChunks; chunkIndex++) {
-    // Check for cancellation
-    if (signal?.aborted) {
-      throw new Error('Upload cancelled');
-    }
-
-    const startByte = chunkIndex * chunkSize;
-    const endByte = Math.min(startByte + chunkSize - 1, fileSize - 1);
-
-    // Extract chunk data
-    const chunkData = videoData.slice(startByte, endByte + 1);
-
-    // Upload chunk with retry
-    await uploadChunkWithRetry(
-      session.uploadUrl,
-      chunkData,
-      chunkIndex,
-      startByte,
-      endByte,
-      fileSize,
-      accessToken,
-      { maxRetries: RETRY_CONFIG.maxRetries }
-    );
-
-    bytesUploaded = endByte + 1;
-
-    if (onProgress) {
-      onProgress(bytesUploaded, fileSize, 'uploading');
-    }
-  }
-
-  if (onProgress) {
-    onProgress(fileSize, fileSize, 'processing');
-  }
-
-  // Step 3: Return session info - caller can poll for status
-  return {
-    publishId: session.publishId,
-    status: 'uploaded',
-    bytesUploaded: fileSize,
-    totalBytes: fileSize,
-    message: 'Video uploaded successfully. Use getPublishStatus to check processing status.',
-  };
-}
-
-/**
- * Upload video from a file path (Node.js only)
- * @param {string} filePath - Path to video file
- * @param {TikTokVideoMetadata} metadata - Video metadata
- * @param {string} accessToken - Valid access token
- * @param {Object} options - Upload options
- * @returns {Promise<TikTokUploadResult>} Upload result
- */
-export async function uploadVideoFromFile(filePath, metadata, accessToken, options = {}) {
-  // Dynamic import for Node.js fs module
-  const fs = await import('fs');
-  const { stat, open } = fs.promises;
-
-  // Get file size
-  const stats = await stat(filePath);
-  const fileSize = stats.size;
-
-  // Validate
-  validateVideoMetadata(metadata, fileSize);
-
-  // Calculate chunk size and count
-  const chunkSize = calculateChunkSize(fileSize);
-  const totalChunks = Math.ceil(fileSize / chunkSize);
-
-  const onProgress = options.onProgress;
-  const signal = options.signal;
-
-  // Step 1: Initialize upload session
-  const session = await initiateUpload(metadata, fileSize, totalChunks, accessToken);
-
-  if (onProgress) {
-    onProgress(0, fileSize, 'initialized');
-  }
-
-  // Step 2: Upload chunks by reading file in chunks
-  const fileHandle = await open(filePath, 'r');
-  let bytesUploaded = 0;
-
-  try {
-    for (let chunkIndex = 0; chunkIndex < totalChunks; chunkIndex++) {
-      // Check for cancellation
-      if (signal?.aborted) {
-        throw new Error('Upload cancelled');
-      }
-
-      const startByte = chunkIndex * chunkSize;
-      const endByte = Math.min(startByte + chunkSize - 1, fileSize - 1);
-      const chunkLength = endByte - startByte + 1;
-
-      // Read chunk from file
-      const buffer = Buffer.alloc(chunkLength);
-      await fileHandle.read(buffer, 0, chunkLength, startByte);
-
-      // Upload chunk with retry
-      await uploadChunkWithRetry(
-        session.uploadUrl,
-        buffer,
-        chunkIndex,
-        startByte,
-        endByte,
-        fileSize,
-        accessToken,
-        { maxRetries: RETRY_CONFIG.maxRetries }
-      );
-
-      bytesUploaded = endByte + 1;
-
-      if (onProgress) {
-        onProgress(bytesUploaded, fileSize, 'uploading');
-      }
-    }
-  } finally {
-    await fileHandle.close();
-  }
-
-  if (onProgress) {
-    onProgress(fileSize, fileSize, 'processing');
-  }
-
-  return {
-    publishId: session.publishId,
-    status: 'uploaded',
-    bytesUploaded: fileSize,
-    totalBytes: fileSize,
-    message: 'Video uploaded successfully. Use getPublishStatus to check processing status.',
-  };
-}
-
-// ============================================================================
-// Retry and Error Handling Utilities
-// ============================================================================
-
-/**
- * Check if an error is retryable
- * @param {Error} error - Error to check
- * @returns {boolean} True if error is retryable
- */
-export function isRetryableError(error) {
-  // Network errors
-  if (error.code === 'ECONNRESET' || error.code === 'ETIMEDOUT' || error.code === 'ENOTFOUND') {
-    return true;
-  }
-
-  // HTTP status codes that are retryable
-  if (error.status && RETRY_CONFIG.retryableStatusCodes.includes(error.status)) {
-    return true;
-  }
-
-  // Explicitly marked as retryable
-  if (error.retryable === true) {
-    return true;
-  }
-
-  return false;
-}
-
-/**
- * Calculate delay for exponential backoff with jitter
- * @param {number} attempt - Current attempt number (0-based)
- * @returns {number} Delay in milliseconds
- */
-export function calculateBackoffDelay(attempt) {
-  const exponentialDelay = RETRY_CONFIG.baseDelayMs * Math.pow(2, attempt);
-  const cappedDelay = Math.min(exponentialDelay, RETRY_CONFIG.maxDelayMs);
-  const jitter = cappedDelay * 0.25 * (Math.random() * 2 - 1);
-  return Math.round(cappedDelay + jitter);
-}
-
-/**
- * Sleep for specified milliseconds
- * @param {number} ms - Milliseconds to sleep
- * @returns {Promise<void>}
- */
-function sleep(ms) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
-/**
- * Execute a function with retry logic and exponential backoff
- * @param {Function} fn - Async function to execute
- * @param {Object} options - Retry options
- * @returns {Promise<any>} Result of the function
- */
-export async function withRetry(fn, options = {}) {
-  const maxRetries = options.maxRetries ?? RETRY_CONFIG.maxRetries;
-  const onRetry = options.onRetry;
-
-  let lastError;
-
-  for (let attempt = 0; attempt <= maxRetries; attempt++) {
-    try {
-      return await fn();
-    } catch (error) {
-      lastError = error;
-
-      if (attempt >= maxRetries || !isRetryableError(error)) {
-        throw error;
-      }
-
-      const delay = calculateBackoffDelay(attempt);
-
-      if (onRetry) {
-        onRetry({ attempt: attempt + 1, maxRetries, delay, error });
-      }
-
-      await sleep(delay);
-    }
-  }
-
-  throw lastError;
-}
-
-/**
- * Upload chunk with automatic retry
- * @param {string} uploadUrl - Upload URL
- * @param {Buffer|ArrayBuffer} chunkData - Chunk data
- * @param {number} chunkIndex - Chunk index
- * @param {number} startByte - Start byte
- * @param {number} endByte - End byte
- * @param {number} totalSize - Total file size
- * @param {string} accessToken - Access token
- * @param {Object} options - Retry options
- * @returns {Promise<TikTokChunkUploadResult>} Chunk upload result
- */
-export async function uploadChunkWithRetry(uploadUrl, chunkData, chunkIndex, startByte, endByte, totalSize, accessToken, options = {}) {
-  return withRetry(
-    () => uploadChunk(uploadUrl, chunkData, chunkIndex, startByte, endByte, totalSize, accessToken),
-    {
-      maxRetries: options.maxRetries ?? RETRY_CONFIG.maxRetries,
-      onRetry: options.onRetry,
-    }
-  );
-}
-
-export default {
-  // OAuth functions
+import { Hono } from "hono";
+import { prisma } from "../db/prisma.js";
+import { authMiddleware } from "../middleware/auth.js";
+import {
   getAuthUrl,
   exchangeCode,
-  refreshToken,
+  refreshToken as refreshTikTokToken,
   revokeToken,
   getUserInfo,
-  validateToken,
-  // Upload functions
   getCreatorInfo,
-  validateVideoMetadata,
-  calculateChunkSize,
-  initiateUpload,
-  uploadChunk,
-  uploadChunkWithRetry,
+  uploadVideo,
   getPublishStatus,
   waitForPublish,
-  uploadVideo,
-  uploadVideoFromFile,
-  // Utilities
-  isRetryableError,
-  calculateBackoffDelay,
-  withRetry,
-  // Constants
-  DEFAULT_CHUNK_SIZE,
-  MAX_VIDEO_SIZE,
-  MAX_VIDEO_DURATION,
-  RETRY_CONFIG,
-};
+  validateVideoMetadata,
+} from "../services/platforms/tiktok.js";
 
+const tiktok = new Hono();
+
+// In-memory store for PKCE code verifiers (in production, use Redis or database)
+const codeVerifierStore = new Map();
+
+// Helper to get valid access token (refreshes if needed)
+async function getValidAccessToken(userId, accountId = null) {
+  if (!accountId) {
+    const account = await prisma.account.findFirst({ where: { userId, providerId: "tiktok" } });
+    if (!account) throw new Error("TikTok account not found");
+    return getTokenWithRefresh(account);
+  }
+
+  // accountId may be bare openId or prefixed (tiktok_...)
+  const bareId = accountId.startsWith('tiktok_') ? accountId.slice(7) : accountId;
+
+  let account = await prisma.account.findFirst({
+    where: { id: `tiktok_${userId}_${bareId}` },
+  });
+
+  // Fallback: try with userId prefix (legacy format from ScheduleVideoModal)
+  if (!account) {
+    account = await prisma.account.findFirst({
+      where: { id: `tiktok_${userId}_${accountId}` },
+    });
+  }
+
+  if (!account) {
+    throw new Error("TikTok account not found");
+  }
+
+  return getTokenWithRefresh(account);
+}
+
+async function getTokenWithRefresh(account) {
+  const isExpired = account.accessTokenExpiresAt
+    ? new Date(account.accessTokenExpiresAt) < new Date(Date.now() + 5 * 60 * 1000)
+    : true;
+
+  if (isExpired && account.refreshToken) {
+    const tokens = await refreshTikTokToken(account.refreshToken);
+    const expiresAt = new Date(Date.now() + tokens.expires_in * 1000);
+
+    await prisma.account.update({
+      where: { id: account.id },
+      data: {
+        accessToken: tokens.access_token,
+        refreshToken: tokens.refresh_token,
+        accessTokenExpiresAt: expiresAt,
+        updatedAt: new Date(),
+      },
+    });
+
+    return tokens.access_token;
+  }
+
+  if (!account.accessToken) {
+    throw new Error("No access token available");
+  }
+
+  return account.accessToken;
+}
+
+/**
+ * GET /api/tiktok/auth/url
+ * Get OAuth authorization URL for TikTok
+ * Requirements: 1.2
+ */
+tiktok.get("/auth/url", authMiddleware, async (c) => {
+  try {
+    const user = c.get("user");
+    // Use user ID as state for CSRF protection
+    const state = Buffer.from(JSON.stringify({ userId: user.id })).toString("base64");
+
+    const { url, codeVerifier } = await getAuthUrl(state);
+
+    // Store code verifier for later use during token exchange
+    // Key is the state parameter for lookup during callback
+    codeVerifierStore.set(state, {
+      codeVerifier,
+      userId: user.id,
+      createdAt: Date.now(),
+    });
+
+    // Clean up old entries (older than 10 minutes)
+    const tenMinutesAgo = Date.now() - 10 * 60 * 1000;
+    for (const [key, value] of codeVerifierStore.entries()) {
+      if (value.createdAt < tenMinutesAgo) {
+        codeVerifierStore.delete(key);
+      }
+    }
+
+    return c.json({ url });
+  } catch (error) {
+    console.error("[TikTok Auth] Error generating auth URL:", error);
+    return c.json({ error: error.message }, 500);
+  }
+});
+
+/**
+ * GET /api/auth/tiktok/callback
+ * OAuth callback endpoint - exchanges code for tokens and saves to database
+ * Requirements: 1.2
+ */
+tiktok.get("/auth/callback", async (c) => {
+  try {
+    const code = c.req.query("code");
+    const state = c.req.query("state");
+    const error = c.req.query("error");
+    const errorDescription = c.req.query("error_description");
+
+    const frontendUrl = process.env.FRONTEND_URL || "http://localhost:5173";
+
+    if (error) {
+      console.error("[TikTok Auth] OAuth error:", error, errorDescription);
+      const errMsg = errorDescription || error;
+      c.res.headers.set('Content-Type', 'text/html; charset=utf-8');
+      return c.html(`
+<!DOCTYPE html>
+<html><body><script>
+  if (window.opener) {
+    window.opener.postMessage({ type: 'tiktok_error', error: '${errMsg.replace(/'/g, "\\'")}' }, '*');
+    setTimeout(function(){ window.close(); }, 200);
+  } else {
+    window.location.href = '${frontendUrl}/dashboard/settings?tiktok_error=${encodeURIComponent(errMsg)}';
+  }
+<\/script></body></html>
+      `);
+    }
+
+    if (!code) {
+      return c.json({ error: "Missing authorization code" }, 400);
+    }
+
+    if (!state) {
+      return c.json({ error: "Missing state parameter" }, 400);
+    }
+
+    // Retrieve code verifier from store
+    const storedData = codeVerifierStore.get(state);
+    if (!storedData) {
+      return c.json({ error: "Invalid or expired state parameter. Please try again." }, 400);
+    }
+
+    const { codeVerifier, userId } = storedData;
+
+    // Remove used code verifier
+    codeVerifierStore.delete(state);
+
+    // Exchange code for tokens
+    const tokens = await exchangeCode(code, codeVerifier);
+
+    // Get TikTok user info
+    const userInfo = await getUserInfo(tokens.access_token);
+
+    const accountId = tokens.open_id || userInfo.open_id;
+    const expiresAt = new Date(Date.now() + tokens.expires_in * 1000);
+    const refreshExpiresAt = tokens.refresh_expires_in
+      ? new Date(Date.now() + tokens.refresh_expires_in * 1000)
+      : null;
+
+    // Upsert account - update if exists, create if not
+    await prisma.account.upsert({
+      where: {
+        id: `tiktok_${userId}_${accountId}`,
+      },
+      update: {
+        accessToken: tokens.access_token,
+        refreshToken: tokens.refresh_token,
+        accessTokenExpiresAt: expiresAt,
+        refreshTokenExpiresAt: refreshExpiresAt,
+        scope: tokens.scope,
+        displayName: userInfo.display_name,
+        avatarUrl: userInfo.avatar_url,
+        bioDescription: userInfo.bio_description,
+        followerCount: userInfo.follower_count,
+        followingCount: userInfo.following_count,
+        likesCount: userInfo.likes_count,
+        videoCount: userInfo.video_count,
+        updatedAt: new Date(),
+      },
+      create: {
+        id: `tiktok_${userId}_${accountId}`,
+        accountId: accountId,
+        providerId: "tiktok",
+        userId: userId,
+        accessToken: tokens.access_token,
+        refreshToken: tokens.refresh_token,
+        accessTokenExpiresAt: expiresAt,
+        refreshTokenExpiresAt: refreshExpiresAt,
+        scope: tokens.scope,
+        displayName: userInfo.display_name,
+        avatarUrl: userInfo.avatar_url,
+        bioDescription: userInfo.bio_description,
+        followerCount: userInfo.follower_count,
+        followingCount: userInfo.following_count,
+        likesCount: userInfo.likes_count,
+        videoCount: userInfo.video_count,
+      },
+    });
+
+    // Return HTML that posts message to parent and closes popup
+    const displayName = userInfo.display_name || "TikTok User";
+    c.res.headers.set('Content-Type', 'text/html; charset=utf-8');
+    return c.html(`
+<!DOCTYPE html>
+<html><body><script>
+  if (window.opener) {
+    window.opener.postMessage({ type: 'tiktok_connected', account: '${displayName.replace(/'/g, "\\'")}' }, '*');
+    setTimeout(function(){ window.close(); }, 200);
+    document.body.innerHTML = '<p style="font-family:sans-serif;text-align:center;padding:40px;color:#333">Conectado! Feche esta janela.</p>';
+  } else {
+    window.location.href = '${frontendUrl}/dashboard/settings?tiktok_connected=true&account=${encodeURIComponent(displayName)}';
+  }
+<\/script></body></html>
+    `);
+  } catch (error) {
+    console.error("[TikTok Auth] Callback error:", error);
+    const frontendUrl = process.env.FRONTEND_URL || "http://localhost:5173";
+    // Return HTML that posts error to parent and closes popup
+    c.res.headers.set('Content-Type', 'text/html; charset=utf-8');
+    return c.html(`
+<!DOCTYPE html>
+<html><body><script>
+  if (window.opener) {
+    window.opener.postMessage({ type: 'tiktok_error', error: '${(error.message || '').replace(/'/g, "\\'")}' }, '*');
+    setTimeout(function(){ window.close(); }, 200);
+    document.body.innerHTML = '<p style="font-family:sans-serif;text-align:center;padding:40px;color:#c00">Erro: ${(error.message || '').replace(/'/g, "\\'")}</p>';
+  } else {
+    window.location.href = '${frontendUrl}/dashboard/settings?tiktok_error=${encodeURIComponent(error.message)}';
+  }
+<\/script></body></html>
+    `);
+  }
+});
+
+
+/**
+ * POST /api/tiktok/auth/refresh
+ * Refresh access token using stored refresh token
+ * Requirements: 1.2
+ */
+tiktok.post("/auth/refresh", authMiddleware, async (c) => {
+  try {
+    const user = c.get("user");
+    const body = await c.req.json().catch(() => ({}));
+    const { accountId } = body;
+
+    // Find the TikTok account for this user
+    const whereClause = accountId
+      ? { id: `tiktok_${user.id}_${accountId}` }
+      : { userId: user.id, providerId: "tiktok" };
+
+    const account = await prisma.account.findFirst({
+      where: whereClause,
+    });
+
+    if (!account) {
+      return c.json({ error: "TikTok account not found" }, 404);
+    }
+
+    if (!account.refreshToken) {
+      return c.json({ error: "No refresh token available. Please re-authenticate.", requiresReauth: true }, 401);
+    }
+
+    // Refresh the token
+    const tokens = await refreshTikTokToken(account.refreshToken);
+    const expiresAt = new Date(Date.now() + tokens.expires_in * 1000);
+    const refreshExpiresAt = tokens.refresh_expires_in
+      ? new Date(Date.now() + tokens.refresh_expires_in * 1000)
+      : null;
+
+    // Update the account with new tokens (TikTok returns new refresh token)
+    await prisma.account.update({
+      where: { id: account.id },
+      data: {
+        accessToken: tokens.access_token,
+        refreshToken: tokens.refresh_token,
+        accessTokenExpiresAt: expiresAt,
+        refreshTokenExpiresAt: refreshExpiresAt,
+        updatedAt: new Date(),
+      },
+    });
+
+    return c.json({
+      access_token: tokens.access_token,
+      expires_in: tokens.expires_in,
+      expires_at: expiresAt.toISOString(),
+    });
+  } catch (error) {
+    console.error("[TikTok Auth] Refresh error:", error);
+
+    // If refresh fails, user needs to re-authenticate
+    if (error.message.includes("invalid_grant") || error.message.includes("expired")) {
+      return c.json({
+        error: "Refresh token expired or revoked. Please re-authenticate.",
+        requiresReauth: true
+      }, 401);
+    }
+
+    return c.json({ error: error.message }, 500);
+  }
+});
+
+/**
+ * GET /api/tiktok/accounts
+ * Get all connected TikTok accounts for the user
+ */
+tiktok.get("/accounts", authMiddleware, async (c) => {
+  try {
+    const user = c.get("user");
+
+    const accounts = await prisma.account.findMany({
+      where: {
+        userId: user.id,
+        providerId: "tiktok",
+      },
+      select: {
+        id: true,
+        accountId: true,
+        accessTokenExpiresAt: true,
+        refreshTokenExpiresAt: true,
+        scope: true,
+        createdAt: true,
+        displayName: true,
+        avatarUrl: true,
+        bioDescription: true,
+        followerCount: true,
+        followingCount: true,
+        likesCount: true,
+        videoCount: true,
+      },
+    });
+
+    // Check if tokens are expired
+    const accountsWithStatus = accounts.map((account) => ({
+      ...account,
+      isExpired: account.accessTokenExpiresAt
+        ? new Date(account.accessTokenExpiresAt) < new Date()
+        : true,
+      refreshExpired: account.refreshTokenExpiresAt
+        ? new Date(account.refreshTokenExpiresAt) < new Date()
+        : false,
+    }));
+
+    return c.json({ accounts: accountsWithStatus });
+  } catch (error) {
+    console.error("[TikTok Auth] Error fetching accounts:", error);
+    return c.json({ error: error.message }, 500);
+  }
+});
+
+/**
+ * DELETE /api/tiktok/accounts/:accountId
+ * Disconnect a TikTok account
+ */
+tiktok.delete("/accounts/:accountId", authMiddleware, async (c) => {
+  try {
+    const user = c.get("user");
+    const accountId = c.req.param("accountId");
+
+    const account = await prisma.account.findFirst({
+      where: {
+        accountId: accountId,
+        userId: user.id,
+        providerId: "tiktok",
+      },
+    });
+
+    if (!account) {
+      return c.json({ error: "Account not found" }, 404);
+    }
+
+    // Revoke the token if we have one
+    if (account.accessToken) {
+      try {
+        await revokeToken(account.accessToken);
+      } catch (revokeError) {
+        console.warn("[TikTok Auth] Failed to revoke token:", revokeError);
+        // Continue with deletion even if revoke fails
+      }
+    }
+
+    // Delete the account
+    await prisma.account.delete({
+      where: { id: account.id },
+    });
+
+    return c.json({ success: true });
+  } catch (error) {
+    console.error("[TikTok Auth] Error disconnecting account:", error);
+    return c.json({ error: error.message }, 500);
+  }
+});
+
+
+/**
+ * GET /api/tiktok/creator-info
+ * Get creator info including posting permissions and limits
+ */
+tiktok.get("/creator-info", authMiddleware, async (c) => {
+  try {
+    const user = c.get("user");
+    const accountId = c.req.query("accountId");
+
+    const accessToken = await getValidAccessToken(user.id, accountId);
+    const creatorInfo = await getCreatorInfo(accessToken);
+
+    return c.json({ creatorInfo });
+  } catch (error) {
+    console.error("[TikTok] Error getting creator info:", error);
+    return c.json({ error: error.message }, 500);
+  }
+});
+
+/**
+ * POST /api/tiktok/upload
+ * Upload a video to TikTok
+ * Requirements: 1.3
+ */
+tiktok.post("/upload", authMiddleware, async (c) => {
+  try {
+    const user = c.get("user");
+    const contentType = c.req.header("Content-Type");
+    const accountId = c.req.header("X-Account-Id");
+
+    // Get metadata from headers (URI-encoded JSON)
+    const metadataHeader = c.req.header("X-Video-Metadata");
+    let metadata = {};
+
+    if (metadataHeader) {
+      try {
+        metadata = JSON.parse(decodeURIComponent(metadataHeader));
+      } catch {
+        return c.json({ error: "Invalid X-Video-Metadata header (must be valid JSON)" }, 400);
+      }
+    }
+
+    // Get video data from request body
+    const videoData = Buffer.from(await c.req.arrayBuffer());
+
+    if (videoData.length === 0) {
+      return c.json({ error: "Video data is required" }, 400);
+    }
+
+    // Validate metadata
+    try {
+      validateVideoMetadata(metadata, videoData.length);
+    } catch (validationError) {
+      return c.json({ error: validationError.message }, 400);
+    }
+
+    // Get valid access token
+    const accessToken = await getValidAccessToken(user.id, accountId);
+
+    // Create upload record
+    const uploadRecord = await prisma.upload.create({
+      data: {
+        id: `upload_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`,
+        userId: user.id,
+        fileName: metadata.title || "TikTok Video",
+        fileSize: BigInt(videoData.length),
+        mimeType: contentType || "video/mp4",
+        bytesUploaded: BigInt(0),
+        status: "uploading",
+        platform: "tiktok",
+        metadata: metadata,
+      },
+    });
+
+    // Upload video
+    const result = await uploadVideo(videoData, metadata, accessToken, {
+      onProgress: async (bytesUploaded, totalBytes, status) => {
+        // Update upload record with progress
+        await prisma.upload.update({
+          where: { id: uploadRecord.id },
+          data: {
+            bytesUploaded: BigInt(bytesUploaded),
+            status: status === "processing" ? "processing" : "uploading",
+            updatedAt: new Date(),
+          },
+        }).catch(() => { });
+      },
+    });
+
+    // Update upload record with publish ID
+    await prisma.upload.update({
+      where: { id: uploadRecord.id },
+      data: {
+        status: "processing",
+        metadata: {
+          ...metadata,
+          publishId: result.publishId,
+        },
+        updatedAt: new Date(),
+      },
+    });
+
+    return c.json({
+      uploadId: uploadRecord.id,
+      publishId: result.publishId,
+      status: result.status,
+      bytesUploaded: result.bytesUploaded,
+      totalBytes: result.totalBytes,
+      message: result.message,
+    });
+  } catch (error) {
+    console.error("[TikTok Upload] Error:", error);
+    return c.json({ error: error.message }, 500);
+  }
+});
+
+/**
+ * GET /api/tiktok/status/:publishId
+ * Get the publish status of an uploaded video
+ * Requirements: 1.3
+ */
+tiktok.get("/status/:publishId", authMiddleware, async (c) => {
+  try {
+    const user = c.get("user");
+    const publishId = c.req.param("publishId");
+    const accountId = c.req.query("accountId");
+
+    if (!publishId) {
+      return c.json({ error: "Publish ID is required" }, 400);
+    }
+
+    // Get valid access token
+    const accessToken = await getValidAccessToken(user.id, accountId);
+
+    // Get publish status from TikTok
+    const status = await getPublishStatus(publishId, accessToken);
+
+    // Find and update the upload record if it exists
+    const upload = await prisma.upload.findFirst({
+      where: {
+        userId: user.id,
+        platform: "tiktok",
+        metadata: {
+          path: ["publishId"],
+          equals: publishId,
+        },
+      },
+    });
+
+    if (upload) {
+      // Map TikTok status to our internal status
+      let uploadStatus = "processing";
+      if (status.status === "published") {
+        uploadStatus = "complete";
+      } else if (status.status === "failed") {
+        uploadStatus = "failed";
+      } else if (status.status === "pending_approval") {
+        uploadStatus = "pending";
+      }
+
+      await prisma.upload.update({
+        where: { id: upload.id },
+        data: {
+          status: uploadStatus,
+          publishedAt: status.status === "published" ? new Date() : null,
+          metadata: {
+            ...(upload.metadata || {}),
+            tiktokVideoId: status.publiclyAvailablePostId,
+            tiktokVideoUrl: status.videoUrl,
+            failReason: status.failReason,
+          },
+          updatedAt: new Date(),
+        },
+      });
+    }
+
+    return c.json({
+      publishId: status.publishId,
+      status: status.status,
+      rawStatus: status.rawStatus,
+      videoId: status.publiclyAvailablePostId,
+      videoUrl: status.videoUrl,
+      failReason: status.failReason,
+      uploadedBytes: status.uploadedBytes,
+    });
+  } catch (error) {
+    console.error("[TikTok Status] Error:", error);
+    return c.json({ error: error.message }, 500);
+  }
+});
+
+
+/**
+ * POST /api/tiktok/status/:publishId/wait
+ * Wait for video to finish processing (polling)
+ */
+tiktok.post("/status/:publishId/wait", authMiddleware, async (c) => {
+  try {
+    const user = c.get("user");
+    const publishId = c.req.param("publishId");
+    const accountId = c.req.query("accountId");
+    const body = await c.req.json().catch(() => ({}));
+
+    const maxAttempts = body.maxAttempts || 30;
+    const intervalMs = body.intervalMs || 5000;
+
+    if (!publishId) {
+      return c.json({ error: "Publish ID is required" }, 400);
+    }
+
+    // Get valid access token
+    const accessToken = await getValidAccessToken(user.id, accountId);
+
+    // Wait for publish to complete
+    const status = await waitForPublish(publishId, accessToken, {
+      maxAttempts,
+      intervalMs,
+    });
+
+    // Update upload record
+    const upload = await prisma.upload.findFirst({
+      where: {
+        userId: user.id,
+        platform: "tiktok",
+        metadata: {
+          path: ["publishId"],
+          equals: publishId,
+        },
+      },
+    });
+
+    if (upload) {
+      await prisma.upload.update({
+        where: { id: upload.id },
+        data: {
+          status: "complete",
+          publishedAt: new Date(),
+          metadata: {
+            ...(upload.metadata || {}),
+            tiktokVideoId: status.publiclyAvailablePostId,
+            tiktokVideoUrl: status.videoUrl,
+          },
+          updatedAt: new Date(),
+        },
+      });
+    }
+
+    return c.json({
+      publishId: status.publishId,
+      status: status.status,
+      videoId: status.publiclyAvailablePostId,
+      videoUrl: status.videoUrl,
+    });
+  } catch (error) {
+    console.error("[TikTok Status] Wait error:", error);
+    return c.json({ error: error.message }, 500);
+  }
+});
+
+/**
+ * GET /api/tiktok/uploads
+ * Get all TikTok uploads for the current user
+ */
+tiktok.get("/uploads", authMiddleware, async (c) => {
+  try {
+    const user = c.get("user");
+    const limit = parseInt(c.req.query("limit") || "50", 10);
+    const status = c.req.query("status");
+
+    const whereClause = {
+      userId: user.id,
+      platform: "tiktok",
+    };
+
+    if (status) {
+      whereClause.status = status;
+    }
+
+    const uploads = await prisma.upload.findMany({
+      where: whereClause,
+      orderBy: { createdAt: "desc" },
+      take: limit,
+    });
+
+    // Convert BigInt to number for JSON serialization
+    const serializedUploads = uploads.map((upload) => ({
+      ...upload,
+      fileSize: upload.fileSize ? Number(upload.fileSize) : null,
+      bytesUploaded: Number(upload.bytesUploaded),
+    }));
+
+    return c.json({ uploads: serializedUploads });
+  } catch (error) {
+    console.error("[TikTok] Error getting uploads:", error);
+    return c.json({ error: error.message }, 500);
+  }
+});
+
+/**
+ * DELETE /api/tiktok/uploads/:uploadId
+ * Cancel/delete an upload record
+ */
+tiktok.delete("/uploads/:uploadId", authMiddleware, async (c) => {
+  try {
+    const user = c.get("user");
+    const uploadId = c.req.param("uploadId");
+
+    const upload = await prisma.upload.findFirst({
+      where: {
+        id: uploadId,
+        userId: user.id,
+        platform: "tiktok",
+      },
+    });
+
+    if (!upload) {
+      return c.json({ error: "Upload not found" }, 404);
+    }
+
+    // Only allow deletion of non-published uploads
+    if (upload.status === "complete") {
+      return c.json({ error: "Cannot delete published uploads" }, 400);
+    }
+
+    await prisma.upload.delete({
+      where: { id: uploadId },
+    });
+
+    return c.json({ success: true });
+  } catch (error) {
+    console.error("[TikTok] Error deleting upload:", error);
+    return c.json({ error: error.message }, 500);
+  }
+});
+
+export default tiktok;
