@@ -247,6 +247,7 @@ export default function CalendarPage() {
     const [isVideoModalOpen, setVideoModalOpen] = useState(false);
 
     const connectedAccounts = state.auth?.connectedAccounts || [];
+    const activeAccountId = state.auth?.activeAccountId;
     const [activeFilter, setActiveFilter] = useState('all');
 
     const channelFilter = useMemo(() => {
@@ -292,11 +293,11 @@ export default function CalendarPage() {
             ];
         }
         if (activeFilter === 'all') return merged;
-        return merged.filter(item =>
-            !item.channelId || !item.accountId ||
-            item.channelId === activeFilter || item.accountId === activeFilter
-        );
-    }, [backendUploads, supabase.user, state.uploadQueue, activeFilter]);
+        return merged.filter(item => {
+            const channelId = item.channelId || item.accountId || activeAccountId;
+            return channelId === activeFilter;
+        });
+    }, [backendUploads, supabase.user, state.uploadQueue, activeFilter, activeAccountId]);
 
     // ── Histórico filtrado por canal ───────────────────────────────────────
     const filteredHistory = useMemo(() => {
@@ -320,16 +321,19 @@ export default function CalendarPage() {
 
         if (activeFilter === 'all') return merged;
 
+        // YouTube API history items lack per-channel tagging.
+        // Tag them with the active account's ID so they appear when
+        // filtering by that account (where they actually belong).
         const result = {};
         Object.entries(merged).forEach(([date, day]) => {
-            const items = (day.completedItems || []).filter(item =>
-                !item.channelId || !item.accountId ||
-                item.channelId === activeFilter || item.accountId === activeFilter
-            );
+            const items = (day.completedItems || []).filter(item => {
+                const channelId = item.channelId || item.accountId || activeAccountId;
+                return channelId === activeFilter;
+            });
             if (items.length > 0) result[date] = { ...day, completedItems: items, uploads: items.length };
         });
         return result;
-    }, [state.history, supabase.user, supabase.history, activeFilter]);
+    }, [state.history, supabase.user, supabase.history, activeFilter, activeAccountId]);
 
     // ── Stats ──────────────────────────────────────────────────────────────
     const now = new Date();
