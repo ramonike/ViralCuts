@@ -407,6 +407,7 @@ export function ScheduleVideoModal({ isOpen, onClose, selectedDate, onSchedule }
 
         // Para cada vídeo × cada conta selecionada → um item na fila
         for (const item of items) {
+            let itemError = '';
             for (const account of activeAccounts) {
                 try {
                     const [y, m, dd] = item.scheduledDate.split('-').map(Number);
@@ -428,14 +429,21 @@ export function ScheduleVideoModal({ isOpen, onClose, selectedDate, onSchedule }
                     });
                 } catch (err) {
                     console.error(`[Modal] Failed for ${account.platform}:`, err);
+                    itemError = err.message || `Erro ao agendar para ${account.platform}`;
                 }
             }
-            setItems(prev => prev.map(i => i.id === item.id ? { ...i, status: 'done' } : i));
+            setItems(prev => prev.map(i =>
+                i.id === item.id
+                    ? { ...i, status: itemError ? 'error' : 'done', errorMsg: itemError }
+                    : i
+            ));
         }
 
         setSubmitting(false);
         setItems(prev => {
-            if (prev.every(i => i.status === 'done')) setTimeout(() => onClose(), 1400);
+            if (prev.every(i => i.status === 'done' || i.status === 'error')) {
+                if (prev.every(i => i.status === 'done')) setTimeout(() => onClose(), 1400);
+            }
             return prev;
         });
     };

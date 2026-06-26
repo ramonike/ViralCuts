@@ -4,6 +4,15 @@ import { authMiddleware } from "../middleware/auth.js";
 
 const uploads = new Hono();
 
+// Helper: converte campos BigInt para Number (JSON.stringify não suporta BigInt)
+function serializeUpload(upload) {
+  return {
+    ...upload,
+    fileSize: upload.fileSize != null ? Number(upload.fileSize) : null,
+    bytesUploaded: upload.bytesUploaded != null ? Number(upload.bytesUploaded) : 0,
+  };
+}
+
 // Apply auth middleware to all routes
 uploads.use("/*", authMiddleware);
 
@@ -27,7 +36,7 @@ uploads.get("/", async (c) => {
       orderBy: { createdAt: "desc" },
     });
 
-    return c.json(uploadList);
+    return c.json(uploadList.map(serializeUpload));
   } catch (error) {
     console.error("Error fetching uploads:", error.message);
     return c.json({ error: "Failed to fetch uploads" }, 500);
@@ -63,8 +72,8 @@ uploads.post("/", async (c) => {
           create: platformList.map(p => ({
             platform: p,
             status: "pending",
-            scheduledAt: metadata?.platformSchedules?.[p] 
-              ? new Date(metadata.platformSchedules[p]) 
+            scheduledAt: metadata?.platformSchedules?.[p]
+              ? new Date(metadata.platformSchedules[p])
               : (scheduledAt ? new Date(scheduledAt) : null),
           })),
         },
@@ -81,7 +90,7 @@ uploads.post("/", async (c) => {
       },
     });
 
-    return c.json(upload, 201);
+    return c.json(serializeUpload(upload), 201);
   } catch (error) {
     console.error("Error creating upload:", error.message);
     return c.json({ error: "Failed to create upload" }, 500);
@@ -131,10 +140,7 @@ uploads.put("/:id", async (c) => {
       },
     });
 
-    return c.json(upload);
-  } catch (error) {
-    console.error("Error updating upload:", error.message);
-    return c.json({ error: "Failed to update upload" }, 500);
+    return c.json(serializeUpload(upload));
   }
 });
 

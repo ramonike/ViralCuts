@@ -109,10 +109,12 @@ export function useSupabaseDashboard() {
     // ── Adicionar à fila — grava accountId no metadata ────────────────────
     const addToQueue = async (item) => {
         try {
+            // Remove campo `file` (objeto File do browser) — não serializável em JSON
+            const { file: _file, ...itemWithoutFile } = item;
             const enriched = {
-                ...item,
+                ...itemWithoutFile,
                 metadata: {
-                    ...(item.metadata || {}),
+                    ...(itemWithoutFile.metadata || {}),
                     accountId: activeAccountId || item.accountId || null,
                     title: item.title,
                     description: item.description || '',
