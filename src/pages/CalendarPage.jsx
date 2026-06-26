@@ -9,7 +9,6 @@ import { useNotification } from "../contexts/NotificationContext";
 import { useTheme } from "../contexts/ThemeContext";
 import { fetchScheduledUploads, rescheduleUpload, cancelScheduledUpload } from "../api/youtube";
 import { CalendarDays, Clock, CheckCircle2, TrendingUp, GitBranch, Video, Loader2, RefreshCw } from "lucide-react";
-import { ChannelSwitcher } from "../components/shared/ChannelSwitcher";
 import { PlatformIcon } from "../components/shared/PlatformIcon";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -104,8 +103,30 @@ function QueueSidebar({ queue, onScheduleNow, loading, onRefresh }) {
                         <GitBranch size={14} style={{ color: "var(--accent-coral)" }} />
                         <span className="vc-metric-label" style={{ marginBottom: 0 }}>Fila de uploads</span>
                     </div>
-                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                        <span className="vc-badge vc-badge-muted">{queue.length} {queue.length === 1 ? "item" : "itens"}</span>
+                    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                            <span className="vc-badge vc-badge-muted">{queue.length} {queue.length === 1 ? "item" : "itens"}</span>
+                            {/* Platform breakdown */}
+                            {(() => {
+                                const counts = {};
+                                queue.forEach(item => {
+                                    const p = (item.platform || 'youtube').toLowerCase();
+                                    counts[p] = (counts[p] || 0) + 1;
+                                });
+                                const entries = Object.entries(counts);
+                                if (entries.length <= 1) return null;
+                                return (
+                                    <span style={{ display: 'flex', alignItems: 'center', gap: 3, fontSize: '0.6875rem', color: 'var(--text-muted)' }}>
+                                        {entries.map(([platform, count]) => (
+                                            <span key={platform} style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                                                <PlatformIcon platform={platform} size={10} />
+                                                <span>{count}</span>
+                                            </span>
+                                        ))}
+                                    </span>
+                                );
+                            })()}
+                        </div>
                         <button
                             onClick={onRefresh}
                             disabled={loading}
@@ -226,8 +247,16 @@ export default function CalendarPage() {
     const [isVideoModalOpen, setVideoModalOpen] = useState(false);
 
     const connectedAccounts = state.auth?.connectedAccounts || [];
-    const activeAccountId = state.auth?.activeAccountId;
-    const shouldFilter = connectedAccounts.length > 1 && !!activeAccountId;
+    const [activeFilter, setActiveFilter] = useState('all');
+
+    const channelFilter = useMemo(() => {
+        return connectedAccounts.map(a => ({
+            id: a.id,
+            name: a.name || 'Canal',
+            platform: a.platform || 'youtube',
+            avatar: a.stats?.thumbnails?.default?.url || a.avatar,
+        }));
+    }, [connectedAccounts]);
 
     // ── Carrega uploads do backend ─────────────────────────────────────────
     const loadUploads = useCallback(async (silent = false) => {
@@ -250,15 +279,11 @@ export default function CalendarPage() {
     useEffect(() => { loadUploads(); }, [loadUploads]);
 
     // ── Queue combinada: backend é fonte única quando logado ───────────────
-    // Não mescla supabase.uploadQueue com backendUploads pois ambos vêm de
-    // /api/uploads — causaria duplicatas e flash ao recarregar
     const combinedQueue = useMemo(() => {
         let merged;
         if (supabase.user) {
-            // Logado: só usa dados do backend (já inclui tudo)
             merged = backendUploads;
         } else {
-            // Offline/não autenticado: usa estado local
             const localQueue = state.uploadQueue;
             const backendIds = new Set(backendUploads.map(u => u.id));
             merged = [
@@ -266,25 +291,22 @@ export default function CalendarPage() {
                 ...localQueue.filter(item => !backendIds.has(item.id)),
             ];
         }
-        if (!shouldFilter) return merged;
-        return merged.filter(item => !item.channelId || item.channelId === activeAccountId);
-    }, [backendUploads, supabase.user, state.uploadQueue, shouldFilter, activeAccountId]);
+        if (activeFilter === 'all') return merged;
+        return merged.filter(item =>
+            item.channelId === activeFilter || item.accountId === activeFilter
+        );
+    }, [backendUploads, supabase.user, state.uploadQueue, activeFilter]);
 
     // ── Histórico filtrado por canal ───────────────────────────────────────
-    // state.history tem vídeos reais do YouTube (via token Google)
-    // supabase.history tem vídeos do banco (/api/videos)
-    // Mesclamos os dois para mostrar tudo no calendário
     const filteredHistory = useMemo(() => {
         const youtubeHistory = state.history || {};
         const backendHistory = (supabase.user ? supabase.history : {}) || {};
 
-        // Mescla: une completedItems de ambas as fontes por data
         const merged = { ...youtubeHistory };
         Object.entries(backendHistory).forEach(([date, day]) => {
             if (!merged[date]) {
                 merged[date] = day;
             } else {
-                // Evita duplicatas por ID
                 const existingIds = new Set((merged[date].completedItems || []).map(i => i.id));
                 const newItems = (day.completedItems || []).filter(i => !existingIds.has(i.id));
                 merged[date] = {
@@ -295,20 +317,17 @@ export default function CalendarPage() {
             }
         });
 
-        if (!shouldFilter) return merged;
+        if (activeFilter === 'all') return merged;
 
-        // Filtra por canal ativo
         const result = {};
         Object.entries(merged).forEach(([date, day]) => {
             const items = (day.completedItems || []).filter(item =>
-                !item.channelId || !item.accountId ||
-                item.channelId === activeAccountId ||
-                item.accountId === activeAccountId
+                item.channelId === activeFilter || item.accountId === activeFilter
             );
             if (items.length > 0) result[date] = { ...day, completedItems: items, uploads: items.length };
         });
         return result;
-    }, [state.history, supabase.user, supabase.history, shouldFilter, activeAccountId]);
+    }, [state.history, supabase.user, supabase.history, activeFilter]);
 
     // ── Stats ──────────────────────────────────────────────────────────────
     const now = new Date();
@@ -347,11 +366,6 @@ export default function CalendarPage() {
     ).length + historyPublishedCount;
 
     // ── Ações ──────────────────────────────────────────────────────────────
-    const handleSwitchAccount = useCallback((accountId) => {
-        actions.switchAccount(accountId);
-        supabase.switchToAccount?.(accountId);
-    }, [actions, supabase]);
-
     const handleScheduleVideo = (date) => {
         setSelectedScheduleDate(date);
         setScheduleModalOpen(true);
@@ -419,17 +433,6 @@ export default function CalendarPage() {
                         Agendamento e distribuição multicanal dos seus Shorts
                     </p>
                 </div>
-                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                    {connectedAccounts.length > 1 && (
-                        <ChannelSwitcher
-                            mode="compact"
-                            accounts={connectedAccounts}
-                            activeId={activeAccountId}
-                            onSwitch={handleSwitchAccount}
-                            onAddChannel={() => window.location.href = "/dashboard/profile"}
-                        />
-                    )}
-                </div>
             </div>
 
             {/* Stats */}
@@ -466,6 +469,9 @@ export default function CalendarPage() {
                             onEditVideo={(video) => { setSelectedVideo(video); setVideoModalOpen(true); }}
                             onDeleteVideo={handleDeleteVideo}
                             onViewVideo={(video) => { setSelectedVideo(video); setVideoModalOpen(true); }}
+                            channelFilter={channelFilter}
+                            activeFilter={activeFilter}
+                            onFilterChange={setActiveFilter}
                             loading={isFirstLoad}
                         />
                     </div>
