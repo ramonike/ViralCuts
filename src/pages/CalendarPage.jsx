@@ -279,26 +279,23 @@ export default function CalendarPage() {
 
     useEffect(() => { loadUploads(); }, [loadUploads]);
 
-    // ── Queue combinada: backend é fonte única quando logado ───────────────
+    // ── Queue combinada: backend é sempre incluído ─────────────────────────
     const combinedQueue = useMemo(() => {
-        let merged;
-        if (supabase.user) {
-            merged = backendUploads;
-        } else {
-            const localQueue = state.uploadQueue;
-            const backendIds = new Set(backendUploads.map(u => u.id));
-            merged = [
-                ...backendUploads,
-                ...localQueue.filter(item => !backendIds.has(item.id)),
-            ];
-        }
+        // backendUploads é sempre a fonte principal (vem de /api/uploads autenticado)
+        // localQueue só adiciona itens que ainda não chegaram ao backend
+        const localQueue = state.uploadQueue || [];
+        const backendIds = new Set(backendUploads.map(u => u.id));
+        const merged = [
+            ...backendUploads,
+            ...localQueue.filter(item => !backendIds.has(item.id)),
+        ];
         if (activeFilter === 'all') return merged;
         return merged.filter(item => {
             const cid = item.channelId || item.accountId;
-            if (!cid) return true; // legado sem channelId — mostra sempre
+            if (!cid) return true;
             return cid === activeFilter;
         });
-    }, [backendUploads, supabase.user, state.uploadQueue, activeFilter, activeAccountId]);
+    }, [backendUploads, state.uploadQueue, activeFilter]);
 
     // ── Histórico filtrado por canal ───────────────────────────────────────
     const filteredHistory = useMemo(() => {
