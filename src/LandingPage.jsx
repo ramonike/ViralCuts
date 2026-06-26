@@ -523,11 +523,15 @@ export default function LandingPage() {
           </div>
 
           <div style={{ display: "flex", gap: 24 }}>
-            {["Termos", "Privacidade", "Suporte"].map((l) => (
-              <a key={l} href="#" style={{ fontSize: "0.875rem", color: "var(--text-muted)", textDecoration: "none", transition: "color 0.15s" }}
+            {[
+              { label: "Termos", href: "/terms" },
+              { label: "Privacidade", href: "/privacy" },
+              { label: "Suporte", href: "mailto:suporte@viralcuts.app" },
+            ].map((l) => (
+              <a key={l.label} href={l.href} style={{ fontSize: "0.875rem", color: "var(--text-muted)", textDecoration: "none", transition: "color 0.15s" }}
                 onMouseEnter={e => e.target.style.color = "var(--text-primary)"}
                 onMouseLeave={e => e.target.style.color = "var(--text-muted)"}
-              >{l}</a>
+              >{l.label}</a>
             ))}
           </div>
 
