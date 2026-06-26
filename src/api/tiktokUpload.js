@@ -51,6 +51,7 @@ export async function uploadTikTok(item, _token, file) {
         const data = await response.json();
 
         if (!response.ok) {
+            console.error('[tiktokUpload] Server error:', data);
             return {
                 status: 'error',
                 error: data.error || `TikTok upload falhou (${response.status})`,
