@@ -249,7 +249,7 @@ export function useDashboardLogic() {
     };
 
     // Helper function to sync YouTube videos to calendar history
-    const syncVideosToCalendar = (videos, currentHistory) => {
+    const syncVideosToCalendar = (videos, currentHistory, channelId = null) => {
         const newHistory = { ...currentHistory };
         const videosByDate = {};
 
@@ -265,6 +265,8 @@ export function useDashboardLogic() {
                 id: video.id,
                 title: video.title,
                 type: 'youtube_video',
+                platform: 'youtube',
+                channelId: channelId || video.channelId || null, // ← tagueia com canal de origem
                 url: video.url,
                 thumbnail: video.thumbnail,
                 views: video.viewCount || 0,
@@ -319,9 +321,9 @@ export function useDashboardLogic() {
                 .then(videos => {
                     console.log("[useDashboardState] Received videos:", videos?.length);
                     if (videos) {
-                        // Sync videos to calendar
+                        // Sync videos to calendar — passa channelId do canal ativo no momento do fetch
                         setState(prev => {
-                            const newHistory = syncVideosToCalendar(videos, prev.history);
+                            const newHistory = syncVideosToCalendar(videos, prev.history, prev.auth?.activeAccountId || null);
                             return {
                                 ...prev,
                                 recentUploads: videos,
@@ -1095,7 +1097,7 @@ export function useDashboardLogic() {
 
             // Update State with successful results
             setState(prev => {
-                const newHistory = videos ? syncVideosToCalendar(videos, prev.history) : prev.history;
+                const newHistory = videos ? syncVideosToCalendar(videos, prev.history, prev.auth?.activeAccountId || null) : prev.history;
 
                 return {
                     ...prev,

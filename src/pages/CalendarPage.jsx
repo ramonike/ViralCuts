@@ -261,21 +261,28 @@ export default function CalendarPage() {
 
     // ── Carrega uploads do backend ─────────────────────────────────────────
     const loadUploads = useCallback(async (silent = false) => {
-        // Não bloqueia UI se já temos dados (reload silencioso)
         if (!silent && !hasFetchedRef.current) setLoadingUploads(true);
         else if (silent) setLoadingUploads(true);
         try {
-            const raw = await fetchScheduledUploads(true, 200);
+            // Timeout de 8s para não travar o fluxo em cold start do Render
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 8000);
+            const raw = await fetchScheduledUploads(true, 200, controller.signal);
+            clearTimeout(timeoutId);
             const normalized = raw.map(normalizeUpload);
             setBackendUploads(normalized);
             hasFetchedRef.current = true;
         } catch (err) {
-            console.error("Failed to load uploads:", err);
-            // Mantém dados anteriores em caso de erro — não zera
+            if (err?.name === 'AbortError') {
+                console.warn('[CalendarPage] loadUploads timeout — mantendo dados anteriores');
+            } else {
+                console.error('Failed to load uploads:', err);
+            }
+            // Mantém dados anteriores — nunca zera
         } finally {
             setLoadingUploads(false);
         }
-    }, []); // sem deps — evita re-criar ao mudar token Google
+    }, []); // sem deps — estável entre renders
 
     useEffect(() => { loadUploads(); }, [loadUploads]);
 
@@ -294,8 +301,9 @@ export default function CalendarPage() {
         }
         if (activeFilter === 'all') return merged;
         return merged.filter(item => {
-            const channelId = item.channelId || item.accountId || activeAccountId;
-            return channelId === activeFilter;
+            const cid = item.channelId || item.accountId;
+            if (!cid) return true; // legado sem channelId — mostra sempre
+            return cid === activeFilter;
         });
     }, [backendUploads, supabase.user, state.uploadQueue, activeFilter, activeAccountId]);
 
@@ -321,14 +329,15 @@ export default function CalendarPage() {
 
         if (activeFilter === 'all') return merged;
 
-        // YouTube API history items lack per-channel tagging.
-        // Tag them with the active account's ID so they appear when
-        // filtering by that account (where they actually belong).
+        // Agora os itens têm channelId real (tagueado no sync).
+        // Filtra apenas por channelId/accountId — sem fallback para activeAccountId.
         const result = {};
         Object.entries(merged).forEach(([date, day]) => {
             const items = (day.completedItems || []).filter(item => {
-                const channelId = item.channelId || item.accountId || activeAccountId;
-                return channelId === activeFilter;
+                const cid = item.channelId || item.accountId;
+                // Se o item não tem channelId (legado), mostra em todos os filtros
+                if (!cid) return true;
+                return cid === activeFilter;
             });
             if (items.length > 0) result[date] = { ...day, completedItems: items, uploads: items.length };
         });
@@ -380,14 +389,18 @@ export default function CalendarPage() {
     const handleScheduleSubmit = async (videoData) => {
         try {
             await supabase.actions.addToQueue(videoData);
-            await loadUploads(true);
             success("Vídeo agendado com sucesso!");
-        } catch {
+            // Reload silencioso em background — não bloqueia fechamento do modal
+            loadUploads(true).catch(() => { });
+        } catch (err) {
+            // Fallback local se backend falhar
             actions.addToUploadQueue(videoData);
             showError("Erro ao agendar no servidor. Salvo localmente.");
+        } finally {
+            // Sempre fecha o modal, independente de erro ou timeout
+            setScheduleModalOpen(false);
+            setSelectedScheduleDate(null);
         }
-        setScheduleModalOpen(false);
-        setSelectedScheduleDate(null);
     };
 
     const handleRescheduleVideo = async (videoId, newScheduledAt) => {
