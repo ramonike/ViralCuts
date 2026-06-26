@@ -94,7 +94,6 @@ export async function getAuthUrl(state = null) {
     scope: scopes.join(','),
     code_challenge: codeChallenge,
     code_challenge_method: 'S256',
-    force_login: 'true',
   });
 
   if (state) {
