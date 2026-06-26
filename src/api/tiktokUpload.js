@@ -43,7 +43,7 @@ export async function uploadTikTok(item, _token, file) {
             headers: {
                 'Content-Type': file.type || 'video/mp4',
                 'X-Account-Id': item.accountId || '',
-                'X-Video-Metadata': JSON.stringify(metadata),
+                'X-Video-Metadata': encodeURIComponent(JSON.stringify(metadata)),
             },
             body: arrayBuffer,
         });

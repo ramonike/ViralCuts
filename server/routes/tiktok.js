@@ -429,13 +429,13 @@ tiktok.post("/upload", authMiddleware, async (c) => {
     const contentType = c.req.header("Content-Type");
     const accountId = c.req.header("X-Account-Id");
     
-    // Get metadata from headers (JSON encoded)
+    // Get metadata from headers (URI-encoded JSON)
     const metadataHeader = c.req.header("X-Video-Metadata");
     let metadata = {};
     
     if (metadataHeader) {
       try {
-        metadata = JSON.parse(metadataHeader);
+        metadata = JSON.parse(decodeURIComponent(metadataHeader));
       } catch {
         return c.json({ error: "Invalid X-Video-Metadata header (must be valid JSON)" }, 400);
       }
