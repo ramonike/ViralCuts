@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import {
     User, Youtube, BarChart, Users, RefreshCw, Trash2,
     ExternalLink, Video, Calendar, ChevronRight, MoreVertical, CheckCircle,
-    Link2, Loader2, Heart, Music2,
+    Link2, Loader2, Heart, Music2, Instagram, Globe,
 } from "lucide-react";
 import { useDashboardState } from "../hooks/useDashboardState";
 import { useTikTokAuth } from "../hooks/useTikTokAuth";
@@ -197,7 +197,7 @@ function TikTokHero({ account }) {
 }
 
 // ─── Canais e Contas Conectados ───────────────────────────────────────────────
-function ConnectedChannels({ connectedAccounts, activeAccountId, onSwitch, onDisconnect, onAdd, onConnectTikTok, tiktokConnected }) {
+function ConnectedChannels({ connectedAccounts, activeAccountId, onSwitch, onDisconnect, onAdd, onConnectTikTok }) {
     const getPlatformInfo = (account) => {
         const platform = account.platform || 'youtube';
         const config = {
@@ -263,20 +263,32 @@ function ConnectedChannels({ connectedAccounts, activeAccountId, onSwitch, onDis
                     );
                 })}
 
-                <GoogleAuthButton
-                    onLoginSuccess={onAdd}
-                    onLoginError={(err) => alert("Erro: " + JSON.stringify(err))}
-                    text="+ Conectar YouTube"
-                    className="w-full justify-center h-10 text-sm font-medium bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/30 hover:border-red-500/50 transition-all"
-                />
-                {!tiktokConnected && (
+                <div className="space-y-2 pt-1">
+                    <GoogleAuthButton
+                        onLoginSuccess={onAdd}
+                        onLoginError={(err) => alert("Erro: " + JSON.stringify(err))}
+                        text="+ Conectar YouTube"
+                        className="w-full h-10 text-sm font-medium bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/30 hover:border-red-500/50 transition-all"
+                    />
                     <button
                         onClick={onConnectTikTok}
-                        className="w-full justify-center h-10 text-sm font-medium flex items-center gap-2 rounded-lg bg-pink-500/10 hover:bg-pink-500/20 text-pink-400 border border-pink-500/30 hover:border-pink-500/50 transition-all"
+                        className="w-full h-10 text-sm font-medium flex items-center justify-center gap-2 rounded-lg bg-pink-500/10 hover:bg-pink-500/20 text-pink-400 border border-pink-500/30 hover:border-pink-500/50 transition-all"
                     >
                         <Music2 className="w-4 h-4" /> Conectar TikTok
                     </button>
-                )}
+                    <button
+                        disabled
+                        className="w-full h-10 text-sm font-medium flex items-center justify-center gap-2 rounded-lg bg-purple-500/10 text-purple-400/50 border border-purple-500/20 cursor-not-allowed"
+                    >
+                        <Instagram className="w-4 h-4" /> Conectar Instagram
+                    </button>
+                    <button
+                        disabled
+                        className="w-full h-10 text-sm font-medium flex items-center justify-center gap-2 rounded-lg bg-blue-500/10 text-blue-400/50 border border-blue-500/20 cursor-not-allowed"
+                    >
+                        <Globe className="w-4 h-4" /> Conectar Facebook
+                    </button>
+                </div>
             </div>
         </div>
     );
@@ -312,8 +324,9 @@ function QuickActions({ navigate }) {
 }
 
 // ─── Plataformas ──────────────────────────────────────────────────────────────
-function Platforms({ connectedTikTokAccounts }) {
+function Platforms({ connectedTikTokAccounts, connectedAccounts }) {
     const isTikTokConnected = connectedTikTokAccounts.length > 0;
+    const isYouTubeConnected = connectedAccounts.some(a => (a.platform || 'youtube') === 'youtube');
 
     return (
         <div className="glass-panel rounded-xl border border-surface-700/50 overflow-hidden">
@@ -331,7 +344,11 @@ function Platforms({ connectedTikTokAccounts }) {
                         <p className="text-sm font-medium text-white">YouTube</p>
                         <p className="text-xs text-slate-500">Upload e analytics</p>
                     </div>
-                    <span className="text-[10px] font-bold px-2 py-1 rounded bg-green-500/10 text-green-400 border border-green-500/20">ATIVO</span>
+                    {isYouTubeConnected ? (
+                        <span className="text-[10px] font-bold px-2 py-1 rounded bg-green-500/10 text-green-400 border border-green-500/20">ATIVO</span>
+                    ) : (
+                        <span className="text-[10px] font-medium px-2 py-1 rounded text-slate-500 bg-surface-700/50">NÃO CONECTADO</span>
+                    )}
                 </div>
 
                 {/* TikTok */}
@@ -451,11 +468,11 @@ export default function ProfilePage() {
                                 }
                             }}
                             onConnectTikTok={handleConnectTikTok}
-                            tiktokConnected={connectedTikTokAccounts.length > 0}
                         />
                         {isConnected && <QuickActions navigate={navigate} />}
                         <Platforms
                             connectedTikTokAccounts={connectedTikTokAccounts}
+                            connectedAccounts={connectedAccounts}
                         />
                     </div>
 
