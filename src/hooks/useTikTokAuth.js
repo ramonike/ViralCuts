@@ -92,6 +92,7 @@ export function useTikTokAuth(state, setState) {
                     id: `tiktok_${a.accountId}`,
                     accountId: a.accountId,
                     name: a.displayName || 'TikTok',
+                    username: a.username || a.unique_id || a.uniqueName || null,
                     avatar: a.avatarUrl || null,
                     platform: 'tiktok',
                     token: null,

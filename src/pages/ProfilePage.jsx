@@ -173,9 +173,11 @@ function ChannelHero({ channelStats, onRefresh, youtubeAccounts, activeId, onSwi
 }
 
 // ─── TikTok Hero ──────────────────────────────────────────────────────────────
-function TikTokHero({ accounts, activeId, onSwitch }) {
+function TikTokHero({ accounts, activeId, onSwitch, onRefresh, loading }) {
     const account = accounts.find(a => a.id === activeId) || accounts[0];
     if (!account) return null;
+
+    const handle = account.username || account.name;
 
     return (
         <div className="glass-panel rounded-2xl border border-surface-700/50 overflow-hidden">
@@ -199,11 +201,20 @@ function TikTokHero({ accounts, activeId, onSwitch }) {
                         <div className="flex items-center gap-2 flex-wrap">
                             <h2 className="text-xl font-bold text-white truncate">{account.name}</h2>
                         </div>
-                        <p className="text-sm text-slate-400">@{account.name}</p>
+                        <p className="text-sm text-slate-400">@{handle}</p>
                     </div>
                     <div className="flex flex-col items-end gap-2 shrink-0">
-                        <AccountSwitcher accounts={accounts} activeId={activeId} onSwitch={onSwitch} />
-                        <a href={`https://tiktok.com/@${encodeURIComponent(account.name)}`} target="_blank" rel="noopener noreferrer"
+                        <div className="flex items-center gap-2">
+                            {onRefresh && (
+                                <button onClick={onRefresh} disabled={loading}
+                                    className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium text-slate-400 bg-surface-800 hover:bg-surface-700 hover:text-white transition-colors disabled:opacity-50"
+                                    title="Atualizar dados do perfil">
+                                    {loading ? "..." : <RefreshCw className="w-3 h-3" />}
+                                </button>
+                            )}
+                            <AccountSwitcher accounts={accounts} activeId={activeId} onSwitch={onSwitch} />
+                        </div>
+                        <a href={`https://tiktok.com/@${encodeURIComponent(handle)}`} target="_blank" rel="noopener noreferrer"
                             className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium text-white bg-pink-600/80 hover:bg-pink-600 transition-colors">
                             Ver TikTok
                         </a>

@@ -364,10 +364,10 @@ export default function PlatformConnections() {
   // Transform TikTok accounts to connection format
   const tiktokConnection = tiktokAccounts.length > 0 ? {
     accountId: tiktokAccounts[0].accountId,
-    accountName: `@${tiktokAccounts[0].accountId}`,
-    avatar: null,
+    accountName: `@${tiktokAccounts[0].username || tiktokAccounts[0].name || tiktokAccounts[0].accountId}`,
+    avatar: tiktokAccounts[0].avatar,
     isExpired: tiktokAccounts[0].isExpired,
-    profileUrl: `https://tiktok.com/@${tiktokAccounts[0].accountId}`,
+    profileUrl: `https://tiktok.com/@${encodeURIComponent(tiktokAccounts[0].username || tiktokAccounts[0].name || tiktokAccounts[0].accountId)}`,
   } : null;
 
   // Instagram not yet implemented

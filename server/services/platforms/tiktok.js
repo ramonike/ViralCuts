@@ -225,7 +225,7 @@ export async function revokeToken(token) {
  */
 export async function getUserInfo(accessToken) {
   const params = new URLSearchParams({
-    fields: 'open_id,union_id,avatar_url,avatar_url_100,avatar_url_720,display_name,bio_description,is_verified,follower_count,following_count,likes_count,video_count',
+    fields: 'open_id,union_id,avatar_url,avatar_url_100,avatar_url_720,display_name,username,bio_description,is_verified,follower_count,following_count,likes_count,video_count',
   });
 
   const response = await fetch(`${TIKTOK_USER_INFO_URL}?${params.toString()}`, {
