@@ -395,6 +395,7 @@ function EmptyState({ onConnect }) {
             <GoogleAuthButton
                 onLoginSuccess={onConnect}
                 onLoginError={(err) => alert("Falha no login: " + JSON.stringify(err))}
+                className="w-full"
             />
         </div>
     );

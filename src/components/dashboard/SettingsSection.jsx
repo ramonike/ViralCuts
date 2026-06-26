@@ -46,6 +46,7 @@ export function SettingsSection({ state, actions }) {
                                     <GoogleAuthButton
                                         onLoginSuccess={setYouTubeToken}
                                         onLoginError={(err) => alert("Falha no login: " + JSON.stringify(err))}
+                                        className="w-full sm:w-auto"
                                     />
                                     <Button
                                         variant="ghost"

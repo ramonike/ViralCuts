@@ -91,6 +91,7 @@ function ApprovedState({ onLoginSuccess, onLoginError }) {
                         onLoginSuccess={onLoginSuccess}
                         onLoginError={onLoginError}
                         text="Conectar YouTube"
+                        className="w-full"
                     />
                 </div>
             </div>

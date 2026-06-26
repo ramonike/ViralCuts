@@ -43,7 +43,7 @@ export function GoogleAuthButton({ onLoginSuccess, onLoginError, text = "Conecta
                 login();
             }}
             variant={variant}
-            className={`w-full sm:w-auto ${className || ''}`}
+            className={className || ''}
         >
             {text}
         </Button>
