@@ -61,6 +61,11 @@ model Account {
   password              String?
   displayName           String?   @map("display_name")
   avatarUrl             String?   @map("avatar_url")
+  bioDescription        String?   @map("bio_description")
+  followerCount         Int?      @map("follower_count")
+  followingCount        Int?      @map("following_count")
+  likesCount            Int?      @map("likes_count")
+  videoCount            Int?      @map("video_count")
   createdAt             DateTime  @default(now()) @map("created_at")
   updatedAt             DateTime  @updatedAt @map("updated_at")
   user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)

@@ -68,6 +68,14 @@ admin.get("/users", async (c) => {
               idToken: true,
             },
           },
+          subscription: {
+            select: {
+              plan: {
+                select: { name: true, displayName: true, maxChannels: true },
+              },
+              status: true,
+            },
+          },
           _count: {
             select: { uploads: true },
           },
@@ -121,6 +129,9 @@ admin.get("/users", async (c) => {
         connectedAt: acc.createdAt,
       }));
 
+      const planName = u.subscription?.plan?.name || "free";
+      const planDisplayName = u.subscription?.plan?.displayName || "Free";
+
       return {
         id: u.id,
         name: u.name,
@@ -135,6 +146,10 @@ admin.get("/users", async (c) => {
         totalUploads: u._count.uploads,
         betaStatus: betaMap[u.id]?.status || "none",
         betaRequestId: betaMap[u.id]?.id || null,
+        plan: {
+          name: planName,
+          displayName: planDisplayName,
+        },
       };
     });
 
@@ -211,6 +226,66 @@ admin.post("/users/:userId/beta", async (c) => {
   } catch (err) {
     console.error("[Admin] Error updating user beta status:", err);
     return c.json({ error: "Erro ao atualizar status beta" }, 500);
+  }
+});
+
+// ── GET /api/admin/plans — lista todos os planos disponíveis ─────────────────
+admin.get("/plans", async (c) => {
+  try {
+    const plans = await prisma.plan.findMany({
+      where: { active: true },
+      select: { name: true, displayName: true, maxChannels: true, priceMonthly: true },
+      orderBy: { priceMonthly: "asc" },
+    });
+    return c.json({ plans });
+  } catch (error) {
+    console.error("[Admin] Error fetching plans:", error);
+    return c.json({ error: "Erro ao buscar planos" }, 500);
+  }
+});
+
+// ── POST /api/admin/users/:userId/plan — admin altera plano do usuário ──────
+admin.post("/users/:userId/plan", async (c) => {
+  const { userId } = c.req.param();
+  const { planName } = await c.req.json();
+
+  const validPlans = ["free", "starter", "pro", "agency"];
+  if (!validPlans.includes(planName)) {
+    return c.json({ error: "Plano inválido. Use: free, starter, pro ou agency" }, 400);
+  }
+
+  try {
+    const targetUser = await prisma.user.findUnique({ where: { id: userId }, select: { id: true } });
+    if (!targetUser) {
+      return c.json({ error: "Usuário não encontrado" }, 404);
+    }
+
+    const plan = await prisma.plan.findUnique({ where: { name: planName } });
+    if (!plan) {
+      return c.json({ error: "Plano não encontrado no banco" }, 404);
+    }
+
+    // Upsert subscription — cria se nao existir, atualiza se existir
+    const sub = await prisma.subscription.upsert({
+      where: { userId },
+      update: {
+        planId: plan.id,
+        status: "active",
+        cancelAtPeriodEnd: false,
+      },
+      create: {
+        userId,
+        planId: plan.id,
+        status: "active",
+        billingCycle: "monthly",
+      },
+    });
+
+    console.log(`[Admin] Plan updated: user ${userId} → ${planName}`);
+    return c.json({ success: true, plan: { name: plan.name, displayName: plan.displayName } });
+  } catch (err) {
+    console.error("[Admin] Error updating plan:", err);
+    return c.json({ error: "Erro ao atualizar plano" }, 500);
   }
 });
 

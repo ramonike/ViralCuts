@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import {
     User, Youtube, BarChart, Users, RefreshCw, Trash2,
     ExternalLink, Video, Calendar, ChevronRight, MoreVertical, CheckCircle,
-    Link2, Loader2,
+    Link2, Loader2, Heart, Music2,
 } from "lucide-react";
 import { useDashboardState } from "../hooks/useDashboardState";
 import { useTikTokAuth } from "../hooks/useTikTokAuth";
@@ -130,6 +130,62 @@ function ChannelHero({ channelStats, onRefresh }) {
                         { icon: <Youtube className="w-4 h-4 text-purple-400" />, label: "Vídeos", value: formatNumber(channelStats?.statistics?.videoCount), hover: "hover:border-purple-500/30" },
                     ].map((s, i) => (
                         <div key={i} className={`bg-surface-800/50 rounded-xl p-4 border border-surface-700/30 ${s.hover} transition-colors`}>
+                            <div className="flex items-center gap-2 mb-1">{s.icon}<span className="text-[11px] text-slate-500 uppercase tracking-wider font-medium">{s.label}</span></div>
+                            <p className="text-2xl font-bold text-white">{s.value}</p>
+                        </div>
+                    ))}
+                </div>
+            </div>
+        </div>
+    );
+}
+
+// ─── TikTok Hero ──────────────────────────────────────────────────────────────
+function TikTokHero({ account }) {
+    return (
+        <div className="glass-panel rounded-2xl border border-surface-700/50 overflow-hidden">
+            <div className="h-32 bg-gradient-to-br from-pink-900/40 via-surface-800 to-surface-900 relative overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-t from-surface-900/80 via-transparent to-transparent" />
+            </div>
+
+            <div className="px-6 pb-6">
+                <div className="flex items-end gap-4 -mt-10 mb-5 relative z-10">
+                    {account.avatar ? (
+                        <img src={account.avatar} alt={account.name}
+                            className="w-20 h-20 rounded-2xl border-4 border-surface-900 object-cover shrink-0 shadow-xl" />
+                    ) : (
+                        <div className="w-20 h-20 rounded-2xl border-4 border-surface-900 bg-zinc-800 flex items-center justify-center shrink-0 shadow-xl">
+                            <span className="text-2xl font-bold text-white">
+                                {(account.name || 'T')[0].toUpperCase()}
+                            </span>
+                        </div>
+                    )}
+                    <div className="flex-1 min-w-0 pb-1">
+                        <div className="flex items-center gap-2 flex-wrap">
+                            <h2 className="text-xl font-bold text-white truncate">{account.name}</h2>
+                        </div>
+                        <p className="text-sm text-slate-400">@{account.accountId}</p>
+                    </div>
+                    <a href={`https://tiktok.com/@${account.accountId}`} target="_blank" rel="noopener noreferrer"
+                        className="shrink-0 flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium text-white bg-pink-600/80 hover:bg-pink-600 transition-colors">
+                        Ver TikTok
+                    </a>
+                </div>
+
+                {account.bioDescription && (
+                    <p className="text-sm text-slate-400 leading-relaxed line-clamp-2 mb-5">
+                        {account.bioDescription}
+                    </p>
+                )}
+
+                <div className="grid grid-cols-4 gap-3">
+                    {[
+                        { icon: <Users className="w-4 h-4 text-pink-400" />, label: "Seguidores", value: account.followerCount != null ? formatNumber(account.followerCount) : "—" },
+                        { icon: <Users className="w-4 h-4 text-blue-400" />, label: "Seguindo", value: account.followingCount != null ? formatNumber(account.followingCount) : "—" },
+                        { icon: <Heart className="w-4 h-4 text-red-400" />, label: "Curtidas", value: account.likesCount != null ? formatNumber(account.likesCount) : "—" },
+                        { icon: <Video className="w-4 h-4 text-purple-400" />, label: "Vídeos", value: account.videoCount != null ? formatNumber(account.videoCount) : "—" },
+                    ].map((s, i) => (
+                        <div key={i} className="bg-surface-800/50 rounded-xl p-4 border border-surface-700/30 hover:border-surface-600 transition-colors">
                             <div className="flex items-center gap-2 mb-1">{s.icon}<span className="text-[11px] text-slate-500 uppercase tracking-wider font-medium">{s.label}</span></div>
                             <p className="text-2xl font-bold text-white">{s.value}</p>
                         </div>
@@ -404,6 +460,9 @@ export default function ProfilePage() {
                         ) : (
                             <EmptyState onConnect={actions.setYouTubeToken} />
                         )}
+                        {connectedTikTokAccounts.map(acc => (
+                            <TikTokHero key={acc.id} account={acc} />
+                        ))}
                     </div>
 
                     {/* Coluna direita — 1/3 */}

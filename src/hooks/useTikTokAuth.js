@@ -94,8 +94,13 @@ export function useTikTokAuth(state, setState) {
                     name: a.displayName || 'TikTok',
                     avatar: a.avatarUrl || null,
                     platform: 'tiktok',
-                    token: null,         // token fica no backend — não exposto ao frontend
+                    token: null,
                     expiresAt: a.accessTokenExpiresAt ? new Date(a.accessTokenExpiresAt).getTime() : null,
+                    bioDescription: a.bioDescription || null,
+                    followerCount: a.followerCount ?? null,
+                    followingCount: a.followingCount ?? null,
+                    likesCount: a.likesCount ?? null,
+                    videoCount: a.videoCount ?? null,
                     stats: null,
                 }));
 

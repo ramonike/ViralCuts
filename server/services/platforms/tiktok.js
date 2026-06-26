@@ -224,7 +224,7 @@ export async function revokeToken(token) {
  */
 export async function getUserInfo(accessToken) {
   const params = new URLSearchParams({
-    fields: 'open_id,union_id,avatar_url,display_name',
+    fields: 'open_id,union_id,avatar_url,avatar_url_100,avatar_url_720,display_name,bio_description,is_verified,follower_count,following_count,likes_count,video_count',
   });
 
   const response = await fetch(`${TIKTOK_USER_INFO_URL}?${params.toString()}`, {
@@ -246,11 +246,21 @@ export async function getUserInfo(accessToken) {
     throw new Error(`TikTok user info failed: ${errorMsg}`);
   }
 
+  const user = data.data?.user || {};
+
   return {
-    open_id: data.data?.user?.open_id,
-    union_id: data.data?.user?.union_id,
-    avatar_url: data.data?.user?.avatar_url,
-    display_name: data.data?.user?.display_name,
+    open_id: user.open_id,
+    union_id: user.union_id,
+    avatar_url: user.avatar_url,
+    avatar_url_100: user.avatar_url_100,
+    avatar_url_720: user.avatar_url_720,
+    display_name: user.display_name,
+    bio_description: user.bio_description,
+    is_verified: user.is_verified,
+    follower_count: user.follower_count,
+    following_count: user.following_count,
+    likes_count: user.likes_count,
+    video_count: user.video_count,
   };
 }
 

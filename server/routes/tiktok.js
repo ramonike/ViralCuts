@@ -165,6 +165,11 @@ tiktok.get("/auth/callback", async (c) => {
         scope: tokens.scope,
         displayName: userInfo.display_name,
         avatarUrl: userInfo.avatar_url,
+        bioDescription: userInfo.bio_description,
+        followerCount: userInfo.follower_count,
+        followingCount: userInfo.following_count,
+        likesCount: userInfo.likes_count,
+        videoCount: userInfo.video_count,
         updatedAt: new Date(),
       },
       create: {
@@ -179,6 +184,11 @@ tiktok.get("/auth/callback", async (c) => {
         scope: tokens.scope,
         displayName: userInfo.display_name,
         avatarUrl: userInfo.avatar_url,
+        bioDescription: userInfo.bio_description,
+        followerCount: userInfo.follower_count,
+        followingCount: userInfo.following_count,
+        likesCount: userInfo.likes_count,
+        videoCount: userInfo.video_count,
       },
     });
 
@@ -286,6 +296,11 @@ tiktok.get("/accounts", authMiddleware, async (c) => {
         createdAt: true,
         displayName: true,
         avatarUrl: true,
+        bioDescription: true,
+        followerCount: true,
+        followingCount: true,
+        likesCount: true,
+        videoCount: true,
       },
     });
 

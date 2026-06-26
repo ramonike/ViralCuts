@@ -7,7 +7,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import {
     User, Search, Mail, CheckCircle2, XCircle, Calendar,
     RefreshCw, ChevronLeft, ChevronRight, Youtube, Upload,
-    Clock, Wifi, WifiOff, Shield, Activity, TrendingUp
+    Clock, Wifi, WifiOff, Shield, Activity, TrendingUp, Crown
 } from "lucide-react";
 
 // ─── API ──────────────────────────────────────────────────────────────────────
@@ -23,6 +23,26 @@ async function fetchAdminUsers(page = 1, pageSize = 20, search = "") {
 async function fetchAdminStats() {
     const res = await fetch(`${API_URL}/api/admin/stats`, { credentials: "include" });
     if (!res.ok) throw new Error("Falha ao buscar stats");
+    return res.json();
+}
+
+async function fetchPlans() {
+    const res = await fetch(`${API_URL}/api/admin/plans`, { credentials: "include" });
+    if (!res.ok) throw new Error("Falha ao buscar planos");
+    return res.json();
+}
+
+async function updateUserPlan(userId, planName) {
+    const res = await fetch(`${API_URL}/api/admin/users/${userId}/plan`, {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ planName }),
+    });
+    if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || "Falha ao atualizar plano");
+    }
     return res.json();
 }
 
@@ -136,6 +156,8 @@ export default function AdminPage() {
     const pageSize = 20;
     const [adminTab, setAdminTab] = useState('users');
     const [pendingCount, setPendingCount] = useState(0);
+    const [plans, setPlans] = useState([]);
+    const [changingPlan, setChangingPlan] = useState(null);
 
     const loadUsers = useCallback(async () => {
         try {
@@ -174,6 +196,9 @@ export default function AdminPage() {
     useEffect(() => { loadUsers(); }, [loadUsers]);
     useEffect(() => { loadStats(); }, [loadStats]);
     useEffect(() => { loadPendingCount(); }, [loadPendingCount]);
+    useEffect(() => {
+        fetchPlans().then(d => setPlans(d.plans)).catch(() => {});
+    }, []);
 
     const handleUpdateUserBeta = async (userId, status) => {
         try {
@@ -188,6 +213,18 @@ export default function AdminPage() {
             loadPendingCount();
         } catch (err) {
             alert(err.message || "Erro ao atualizar");
+        }
+    };
+
+    const handleUpdatePlan = async (userId, planName) => {
+        setChangingPlan(userId);
+        try {
+            await updateUserPlan(userId, planName);
+            await loadUsers();
+        } catch (err) {
+            alert(err.message || "Erro ao atualizar plano");
+        } finally {
+            setChangingPlan(null);
         }
     };
 
@@ -304,7 +341,7 @@ export default function AdminPage() {
                                         <table className="vc-table">
                                             <thead>
                                                 <tr>
-                                                    {["Usuário", "Email", "Status email", "Status Beta", "Sessão", "YouTube / Canais", "Uploads", "Cadastro"].map(h => (
+                                                    {["Usuário", "Email", "Status email", "Status Beta", "Sessão", "Plano", "YouTube / Canais", "Uploads", "Cadastro"].map(h => (
                                                         <th key={h}>{h}</th>
                                                     ))}
                                                 </tr>
@@ -415,6 +452,42 @@ export default function AdminPage() {
                                                                 status={user.sessionStatus}
                                                                 lastSeenAt={user.lastSeenAt}
                                                             />
+                                                        </td>
+
+                                                        {/* Plano */}
+                                                        <td>
+                                                            <div style={{ position: "relative" }}>
+                                                                <select
+                                                                    value={user.plan?.name || "free"}
+                                                                    onChange={(e) => {
+                                                                        if (confirm(`Alterar plano de "${user.name}" para "${e.target.options[e.target.selectedIndex].text}"?`)) {
+                                                                            handleUpdatePlan(user.id, e.target.value);
+                                                                        } else {
+                                                                            e.target.value = user.plan?.name || "free";
+                                                                        }
+                                                                    }}
+                                                                    disabled={changingPlan === user.id}
+                                                                    style={{
+                                                                        fontSize: "0.75rem",
+                                                                        padding: "4px 8px",
+                                                                        borderRadius: "var(--radius-sm)",
+                                                                        border: "1px solid var(--border-subtle)",
+                                                                        background: "var(--bg-elevated)",
+                                                                        color: "var(--text-primary)",
+                                                                        fontFamily: "var(--font-display)",
+                                                                        fontWeight: 600,
+                                                                        cursor: "pointer",
+                                                                        maxWidth: 110,
+                                                                        opacity: changingPlan === user.id ? 0.5 : 1,
+                                                                    }}
+                                                                >
+                                                                    {plans.map(p => (
+                                                                        <option key={p.name} value={p.name}>
+                                                                            {p.displayName}
+                                                                        </option>
+                                                                    ))}
+                                                                </select>
+                                                            </div>
                                                         </td>
 
                                                         {/* YouTube */}
