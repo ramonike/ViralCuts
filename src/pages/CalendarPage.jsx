@@ -422,20 +422,17 @@ export default function CalendarPage() {
     };
 
     const handleScheduleSubmit = async (videoData) => {
-        try {
-            await supabase.actions.addToQueue(videoData);
-            success("Vídeo agendado com sucesso!");
-            // Reload silencioso em background — não bloqueia fechamento do modal
-            loadUploads(true).catch(() => { });
-        } catch (err) {
-            // Fallback local se backend falhar
-            actions.addToUploadQueue(videoData);
-            showError("Erro ao agendar no servidor. Salvo localmente.");
-        } finally {
-            // Sempre fecha o modal, independente de erro ou timeout
-            setScheduleModalOpen(false);
-            setSelectedScheduleDate(null);
-        }
+        // Apenas salva na fila — NÃO fecha o modal aqui
+        // O modal controla seu próprio fechamento via onAllDone
+        await supabase.actions.addToQueue(videoData);
+    };
+
+    // Chamado pelo modal quando TODOS os items terminam com sucesso
+    const handleScheduleDone = () => {
+        setScheduleModalOpen(false);
+        setSelectedScheduleDate(null);
+        success('Vídeo(s) agendado(s) com sucesso!');
+        loadUploads(true).catch(() => { });
     };
 
     const handleRescheduleVideo = async (videoId, newScheduledAt) => {
@@ -544,6 +541,7 @@ export default function CalendarPage() {
                 onClose={() => { setScheduleModalOpen(false); setSelectedScheduleDate(null); }}
                 selectedDate={selectedScheduleDate}
                 onSchedule={handleScheduleSubmit}
+                onAllDone={handleScheduleDone}
             />
 
             <VideoDetailModal

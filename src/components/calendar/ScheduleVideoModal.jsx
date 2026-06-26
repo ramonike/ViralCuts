@@ -321,7 +321,7 @@ function DropZone({ onFiles, compact }) {
 }
 
 // ─── Main Modal ───────────────────────────────────────────────────────────────
-export function ScheduleVideoModal({ isOpen, onClose, selectedDate, onSchedule }) {
+export function ScheduleVideoModal({ isOpen, onClose, selectedDate, onSchedule, onAllDone }) {
     const { state } = useDashboardState();
 
     // Contas conectadas com token válido, agrupadas por plataforma
@@ -442,7 +442,9 @@ export function ScheduleVideoModal({ isOpen, onClose, selectedDate, onSchedule }
         setSubmitting(false);
         setItems(prev => {
             if (prev.every(i => i.status === 'done' || i.status === 'error')) {
-                if (prev.every(i => i.status === 'done')) setTimeout(() => onClose(), 1400);
+                if (prev.every(i => i.status === 'done')) {
+                    setTimeout(() => (onAllDone ? onAllDone() : onClose()), 1400);
+                }
             }
             return prev;
         });
