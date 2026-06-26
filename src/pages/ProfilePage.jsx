@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
     User, Youtube, BarChart, Users, RefreshCw, Trash2,
@@ -21,8 +21,37 @@ const formatNumber = (num) => {
     return n.toLocaleString("pt-BR");
 };
 
+// ─── Account Switcher ─────────────────────────────────────────────────────────
+function AccountSwitcher({ accounts, activeId, onSwitch, platformColor = 'primary' }) {
+    if (accounts.length <= 1) return null;
+    return (
+        <div className="flex gap-2 px-6 pb-3 pt-3 overflow-x-auto border-b border-surface-700/20">
+            {accounts.map(acc => (
+                <button
+                    key={acc.id}
+                    onClick={() => onSwitch(acc.id)}
+                    className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium transition-all shrink-0 ${
+                        acc.id === activeId
+                            ? 'bg-primary/15 text-primary border border-primary/30'
+                            : 'bg-surface-800/50 text-slate-400 border border-surface-700/30 hover:border-surface-600 hover:text-white'
+                    }`}
+                >
+                    {acc.avatar ? (
+                        <img src={acc.avatar} className="w-5 h-5 rounded-full object-cover" alt="" />
+                    ) : (
+                        <div className="w-5 h-5 rounded-full bg-surface-700 flex items-center justify-center text-[10px] font-bold shrink-0">
+                            {(acc.name || '?')[0].toUpperCase()}
+                        </div>
+                    )}
+                    {acc.name}
+                </button>
+            ))}
+        </div>
+    );
+}
+
 // ─── Channel Hero ─────────────────────────────────────────────────────────────
-function ChannelHero({ channelStats, onRefresh }) {
+function ChannelHero({ channelStats, onRefresh, youtubeAccounts, activeId, onSwitch }) {
     const [showMenu, setShowMenu] = useState(false);
 
     const avatarUrl =
@@ -81,6 +110,8 @@ function ChannelHero({ channelStats, onRefresh }) {
                     </div>
                 </div>
             </div>
+
+            <AccountSwitcher accounts={youtubeAccounts} activeId={activeId} onSwitch={onSwitch} />
 
             {/* Conteúdo */}
             <div className="px-6 pb-6">
@@ -141,12 +172,17 @@ function ChannelHero({ channelStats, onRefresh }) {
 }
 
 // ─── TikTok Hero ──────────────────────────────────────────────────────────────
-function TikTokHero({ account }) {
+function TikTokHero({ accounts, activeId, onSwitch }) {
+    const account = accounts.find(a => a.id === activeId) || accounts[0];
+    if (!account) return null;
+
     return (
         <div className="glass-panel rounded-2xl border border-surface-700/50 overflow-hidden">
             <div className="h-32 bg-gradient-to-br from-pink-900/40 via-surface-800 to-surface-900 relative overflow-hidden">
                 <div className="absolute inset-0 bg-gradient-to-t from-surface-900/80 via-transparent to-transparent" />
             </div>
+
+            <AccountSwitcher accounts={accounts} activeId={activeId} onSwitch={onSwitch} />
 
             <div className="px-6 pb-6">
                 <div className="flex items-end gap-4 -mt-10 mb-5 relative z-10">
@@ -197,7 +233,7 @@ function TikTokHero({ account }) {
 }
 
 // ─── Canais e Contas Conectados ───────────────────────────────────────────────
-function ConnectedChannels({ connectedAccounts, activeAccountId, onSwitch, onDisconnect, onAdd, onConnectTikTok }) {
+function ConnectedChannels({ connectedAccounts, activeAccountId, activeTikTokId, onSwitch, onSwitchTikTok, onDisconnect, onAdd, onConnectTikTok }) {
     const getPlatformInfo = (account) => {
         const platform = account.platform || 'youtube';
         const config = {
@@ -217,7 +253,9 @@ function ConnectedChannels({ connectedAccounts, activeAccountId, onSwitch, onDis
             </div>
             <div className="p-3 space-y-2">
                 {connectedAccounts.map(account => {
-                    const isActive = account.id === activeAccountId;
+                    const isActive = account.platform === 'tiktok'
+                        ? account.id === activeTikTokId
+                        : account.id === activeAccountId;
                     const platform = getPlatformInfo(account);
                     return (
                         <div key={account.id} className={`p-3 rounded-lg border transition-all ${isActive ? "bg-primary/10 border-primary/20" : "bg-surface-800/50 border-transparent hover:border-surface-600"}`}>
@@ -240,16 +278,20 @@ function ConnectedChannels({ connectedAccounts, activeAccountId, onSwitch, onDis
                                     <p className="text-sm font-medium text-white truncate">{account.name}</p>
                                     <p className="text-xs text-slate-500">{platform.name}</p>
                                 </div>
-                                {account.platform === 'youtube' && isActive ? (
-                                    <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-primary/10 text-primary border border-primary/20 shrink-0">ATIVO</span>
-                                ) : account.platform === 'youtube' ? (
+                                {isActive ? (
+                                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded shrink-0 ${
+                                        account.platform === 'tiktok'
+                                            ? 'bg-pink-500/10 text-pink-400 border border-pink-500/20'
+                                            : 'bg-primary/10 text-primary border border-primary/20'
+                                    }`}>ATIVO</span>
+                                ) : (
                                     <button
-                                        onClick={() => onSwitch(account.id)}
+                                        onClick={() => account.platform === 'tiktok' ? onSwitchTikTok(account.id) : onSwitch(account.id)}
                                         className="text-[10px] font-medium px-2 py-1 rounded text-slate-400 bg-surface-700 hover:bg-surface-600 hover:text-white transition-colors shrink-0"
                                     >
                                         Usar este
                                     </button>
-                                ) : null}
+                                )}
                             </div>
                             <div className="mt-2 pt-2 border-t border-surface-700/30 flex justify-end">
                                 <button
@@ -423,6 +465,16 @@ export default function ProfilePage() {
         error: tiktokError,
     } = useTikTokAuth(state, setState);
 
+    // TikTok active account state
+    const [activeTikTokId, setActiveTikTokId] = useState(null);
+    const youtubeAccounts = connectedAccounts.filter(a => !a.platform || a.platform === 'youtube');
+
+    useEffect(() => {
+        if (connectedTikTokAccounts.length > 0 && !connectedTikTokAccounts.find(a => a.id === activeTikTokId)) {
+            setActiveTikTokId(connectedTikTokAccounts[0].id);
+        }
+    }, [connectedTikTokAccounts, activeTikTokId]);
+
     // Canais com token ainda válido (qualquer plataforma)
     const validChannels = connectedAccounts.filter(a => a.expiresAt && a.expiresAt > Date.now());
 
@@ -445,13 +497,20 @@ export default function ProfilePage() {
                             <ChannelHero
                                 channelStats={channelStats}
                                 onRefresh={() => actions.refreshChannelStats()}
+                                youtubeAccounts={youtubeAccounts}
+                                activeId={activeAccountId}
+                                onSwitch={(id) => actions.switchAccount(id)}
                             />
                         ) : (
                             <EmptyState onConnect={actions.setYouTubeToken} />
                         )}
-                        {connectedTikTokAccounts.map(acc => (
-                            <TikTokHero key={acc.id} account={acc} />
-                        ))}
+                        {connectedTikTokAccounts.length > 0 && (
+                            <TikTokHero
+                                accounts={connectedTikTokAccounts}
+                                activeId={activeTikTokId}
+                                onSwitch={setActiveTikTokId}
+                            />
+                        )}
                     </div>
 
                     {/* Coluna direita — 1/3 */}
@@ -459,7 +518,9 @@ export default function ProfilePage() {
                         <ConnectedChannels
                             connectedAccounts={connectedAccounts}
                             activeAccountId={activeAccountId}
+                            activeTikTokId={activeTikTokId}
                             onSwitch={(id) => actions.switchAccount(id)}
+                            onSwitchTikTok={setActiveTikTokId}
                             onDisconnect={(id) => actions.disconnectAccount(id)}
                             onAdd={(tokenResponse) => {
                                 if (validChannels.length >= maxChannels) {
