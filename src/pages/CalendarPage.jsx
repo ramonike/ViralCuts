@@ -231,9 +231,9 @@ export default function CalendarPage() {
 
     // ── Carrega uploads do backend ─────────────────────────────────────────
     const loadUploads = useCallback(async (silent = false) => {
-        if (!supabase.user) return;
-        // Se já temos dados, faz reload silencioso (não mostra loading)
+        // Não bloqueia UI se já temos dados (reload silencioso)
         if (!silent && !hasFetchedRef.current) setLoadingUploads(true);
+        else if (silent) setLoadingUploads(true);
         try {
             const raw = await fetchScheduledUploads(true, 200);
             const normalized = raw.map(normalizeUpload);
@@ -241,25 +241,34 @@ export default function CalendarPage() {
             hasFetchedRef.current = true;
         } catch (err) {
             console.error("Failed to load uploads:", err);
-            // Não limpa dados anteriores em caso de erro
+            // Mantém dados anteriores em caso de erro — não zera
         } finally {
             setLoadingUploads(false);
         }
-    }, [supabase.user]);
+    }, []); // sem deps — evita re-criar ao mudar token Google
 
     useEffect(() => { loadUploads(); }, [loadUploads]);
 
-    // ── Queue combinada: backend + local (sem duplicatas) ──────────────────
+    // ── Queue combinada: backend é fonte única quando logado ───────────────
+    // Não mescla supabase.uploadQueue com backendUploads pois ambos vêm de
+    // /api/uploads — causaria duplicatas e flash ao recarregar
     const combinedQueue = useMemo(() => {
-        const localQueue = supabase.user ? supabase.uploadQueue : state.uploadQueue;
-        const backendIds = new Set(backendUploads.map(u => u.id));
-        const merged = [
-            ...backendUploads,
-            ...localQueue.filter(item => !backendIds.has(item.id)),
-        ];
+        let merged;
+        if (supabase.user) {
+            // Logado: só usa dados do backend (já inclui tudo)
+            merged = backendUploads;
+        } else {
+            // Offline/não autenticado: usa estado local
+            const localQueue = state.uploadQueue;
+            const backendIds = new Set(backendUploads.map(u => u.id));
+            merged = [
+                ...backendUploads,
+                ...localQueue.filter(item => !backendIds.has(item.id)),
+            ];
+        }
         if (!shouldFilter) return merged;
         return merged.filter(item => !item.channelId || item.channelId === activeAccountId);
-    }, [backendUploads, supabase.user, supabase.uploadQueue, state.uploadQueue, shouldFilter, activeAccountId]);
+    }, [backendUploads, supabase.user, state.uploadQueue, shouldFilter, activeAccountId]);
 
     // ── Histórico filtrado por canal ───────────────────────────────────────
     const filteredHistory = useMemo(() => {
@@ -323,18 +332,13 @@ export default function CalendarPage() {
     };
 
     const handleScheduleSubmit = async (videoData) => {
-        if (supabase.user && !supabase.loading) {
-            try {
-                await supabase.actions.addToQueue(videoData);
-                // Reload silencioso — não pisca
-                await loadUploads(true);
-                success("Vídeo agendado com sucesso!");
-            } catch {
-                actions.addToUploadQueue(videoData);
-                showError("Erro ao agendar no servidor. Salvo localmente.");
-            }
-        } else {
+        try {
+            await supabase.actions.addToQueue(videoData);
+            await loadUploads(true);
+            success("Vídeo agendado com sucesso!");
+        } catch {
             actions.addToUploadQueue(videoData);
+            showError("Erro ao agendar no servidor. Salvo localmente.");
         }
         setScheduleModalOpen(false);
         setSelectedScheduleDate(null);
