@@ -118,7 +118,19 @@ tiktok.get("/auth/callback", async (c) => {
 
     if (error) {
       console.error("[TikTok Auth] OAuth error:", error, errorDescription);
-      return c.redirect(`${frontendUrl}/dashboard/settings?tiktok_error=${encodeURIComponent(errorDescription || error)}`);
+      const errMsg = errorDescription || error;
+      c.res.headers.set('Content-Type', 'text/html; charset=utf-8');
+      return c.html(`
+<!DOCTYPE html>
+<html><body><script>
+  if (window.opener) {
+    window.opener.postMessage({ type: 'tiktok_error', error: '${errMsg.replace(/'/g, "\\'")}' }, '*');
+    setTimeout(function(){ window.close(); }, 200);
+  } else {
+    window.location.href = '${frontendUrl}/dashboard/settings?tiktok_error=${encodeURIComponent(errMsg)}';
+  }
+<\/script></body></html>
+      `);
     }
 
     if (!code) {
@@ -192,17 +204,38 @@ tiktok.get("/auth/callback", async (c) => {
       },
     });
 
-    // Redirect to frontend with success
+    // Return HTML that posts message to parent and closes popup
     const displayName = userInfo.display_name || "TikTok User";
-    return c.redirect(
-      `${frontendUrl}/dashboard/settings?tiktok_connected=true&account=${encodeURIComponent(displayName)}`
-    );
+    c.res.headers.set('Content-Type', 'text/html; charset=utf-8');
+    return c.html(`
+<!DOCTYPE html>
+<html><body><script>
+  if (window.opener) {
+    window.opener.postMessage({ type: 'tiktok_connected', account: '${displayName.replace(/'/g, "\\'")}' }, '*');
+    setTimeout(function(){ window.close(); }, 200);
+    document.body.innerHTML = '<p style="font-family:sans-serif;text-align:center;padding:40px;color:#333">Conectado! Feche esta janela.</p>';
+  } else {
+    window.location.href = '${frontendUrl}/dashboard/settings?tiktok_connected=true&account=${encodeURIComponent(displayName)}';
+  }
+<\/script></body></html>
+    `);
   } catch (error) {
     console.error("[TikTok Auth] Callback error:", error);
     const frontendUrl = process.env.FRONTEND_URL || "http://localhost:5173";
-    return c.redirect(
-      `${frontendUrl}/dashboard/settings?tiktok_error=${encodeURIComponent(error.message)}`
-    );
+    // Return HTML that posts error to parent and closes popup
+    c.res.headers.set('Content-Type', 'text/html; charset=utf-8');
+    return c.html(`
+<!DOCTYPE html>
+<html><body><script>
+  if (window.opener) {
+    window.opener.postMessage({ type: 'tiktok_error', error: '${(error.message || '').replace(/'/g, "\\'")}' }, '*');
+    setTimeout(function(){ window.close(); }, 200);
+    document.body.innerHTML = '<p style="font-family:sans-serif;text-align:center;padding:40px;color:#c00">Erro: ${(error.message || '').replace(/'/g, "\\'")}</p>';
+  } else {
+    window.location.href = '${frontendUrl}/dashboard/settings?tiktok_error=${encodeURIComponent(error.message)}';
+  }
+<\/script></body></html>
+    `);
   }
 });
 
