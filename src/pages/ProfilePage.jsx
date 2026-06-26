@@ -22,24 +22,24 @@ const formatNumber = (num) => {
 };
 
 // ─── Account Switcher ─────────────────────────────────────────────────────────
-function AccountSwitcher({ accounts, activeId, onSwitch, platformColor = 'primary' }) {
+function AccountSwitcher({ accounts, activeId, onSwitch }) {
     if (accounts.length <= 1) return null;
     return (
-        <div className="flex gap-2 px-6 pb-3 pt-3 overflow-x-auto border-b border-surface-700/20">
+        <div className="flex flex-wrap gap-1.5 justify-end">
             {accounts.map(acc => (
                 <button
                     key={acc.id}
                     onClick={() => onSwitch(acc.id)}
-                    className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium transition-all shrink-0 ${
+                    className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium transition-all shrink-0 ${
                         acc.id === activeId
                             ? 'bg-primary/15 text-primary border border-primary/30'
-                            : 'bg-surface-800/50 text-slate-400 border border-surface-700/30 hover:border-surface-600 hover:text-white'
+                            : 'text-slate-400 border border-transparent hover:border-surface-600 hover:text-white'
                     }`}
                 >
                     {acc.avatar ? (
-                        <img src={acc.avatar} className="w-5 h-5 rounded-full object-cover" alt="" />
+                        <img src={acc.avatar} className="w-4 h-4 rounded-full object-cover" alt="" />
                     ) : (
-                        <div className="w-5 h-5 rounded-full bg-surface-700 flex items-center justify-center text-[10px] font-bold shrink-0">
+                        <div className="w-4 h-4 rounded-full bg-surface-700 flex items-center justify-center text-[9px] font-bold shrink-0">
                             {(acc.name || '?')[0].toUpperCase()}
                         </div>
                     )}
@@ -111,8 +111,6 @@ function ChannelHero({ channelStats, onRefresh, youtubeAccounts, activeId, onSwi
                 </div>
             </div>
 
-            <AccountSwitcher accounts={youtubeAccounts} activeId={activeId} onSwitch={onSwitch} />
-
             {/* Conteúdo */}
             <div className="px-6 pb-6">
                 <div className="flex items-end gap-4 -mt-10 mb-5 relative z-10">
@@ -138,14 +136,17 @@ function ChannelHero({ channelStats, onRefresh, youtubeAccounts, activeId, onSwi
                             <p className="text-sm text-slate-400">{channelStats.customUrl}</p>
                         )}
                     </div>
-                    <a
-                        href={channelUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="shrink-0 flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium text-white bg-red-600/80 hover:bg-red-600 transition-colors"
-                    >
-                        <Youtube className="w-4 h-4" /> Ver canal
-                    </a>
+                    <div className="flex flex-col items-end gap-2 shrink-0">
+                        <AccountSwitcher accounts={youtubeAccounts} activeId={activeId} onSwitch={onSwitch} />
+                        <a
+                            href={channelUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium text-white bg-red-600/80 hover:bg-red-600 transition-colors"
+                        >
+                            <Youtube className="w-4 h-4" /> Ver canal
+                        </a>
+                    </div>
                 </div>
 
                 {channelStats?.description && (
@@ -182,8 +183,6 @@ function TikTokHero({ accounts, activeId, onSwitch }) {
                 <div className="absolute inset-0 bg-gradient-to-t from-surface-900/80 via-transparent to-transparent" />
             </div>
 
-            <AccountSwitcher accounts={accounts} activeId={activeId} onSwitch={onSwitch} />
-
             <div className="px-6 pb-6">
                 <div className="flex items-end gap-4 -mt-10 mb-5 relative z-10">
                     {account.avatar ? (
@@ -200,12 +199,15 @@ function TikTokHero({ accounts, activeId, onSwitch }) {
                         <div className="flex items-center gap-2 flex-wrap">
                             <h2 className="text-xl font-bold text-white truncate">{account.name}</h2>
                         </div>
-                        <p className="text-sm text-slate-400">@{account.accountId}</p>
+                        <p className="text-sm text-slate-400">@{account.name}</p>
                     </div>
-                    <a href={`https://tiktok.com/@${account.accountId}`} target="_blank" rel="noopener noreferrer"
-                        className="shrink-0 flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium text-white bg-pink-600/80 hover:bg-pink-600 transition-colors">
-                        Ver TikTok
-                    </a>
+                    <div className="flex flex-col items-end gap-2 shrink-0">
+                        <AccountSwitcher accounts={accounts} activeId={activeId} onSwitch={onSwitch} />
+                        <a href={`https://tiktok.com/@${encodeURIComponent(account.name)}`} target="_blank" rel="noopener noreferrer"
+                            className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium text-white bg-pink-600/80 hover:bg-pink-600 transition-colors">
+                            Ver TikTok
+                        </a>
+                    </div>
                 </div>
 
                 {account.bioDescription && (
