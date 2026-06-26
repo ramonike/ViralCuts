@@ -309,10 +309,55 @@ export default function CalendarPage() {
 
     // ── Histórico filtrado por canal ───────────────────────────────────────
     const filteredHistory = useMemo(() => {
-        const youtubeHistory = state.history || {};
-        const backendHistory = (supabase.user ? supabase.history : {}) || {};
+        // Mescla histórico de TODOS os canais quando filtro = 'all'
+        // Cada canal tem seu próprio history em state.channelsData
+        const allChannelsHistory = state.channelsData
+            ? Object.entries(state.channelsData).reduce((acc, [channelId, data]) => {
+                Object.entries(data.history || {}).forEach(([date, day]) => {
+                    const items = (day.completedItems || []).map(item => ({
+                        ...item,
+                        channelId: item.channelId || channelId,
+                        platform: item.platform || 'youtube',
+                    }));
+                    if (!acc[date]) {
+                        acc[date] = { ...day, completedItems: items };
+                    } else {
+                        const existingIds = new Set(acc[date].completedItems.map(i => i.id));
+                        const newItems = items.filter(i => !existingIds.has(i.id));
+                        acc[date] = {
+                            ...acc[date],
+                            completedItems: [...acc[date].completedItems, ...newItems],
+                        };
+                    }
+                });
+                return acc;
+            }, {})
+            : {};
 
-        const merged = { ...youtubeHistory };
+        // Inclui também o history do canal ativo (state.history)
+        const activeHistory = state.history || {};
+        const mergedYoutube = { ...allChannelsHistory };
+        Object.entries(activeHistory).forEach(([date, day]) => {
+            const items = (day.completedItems || []).map(item => ({
+                ...item,
+                channelId: item.channelId || activeAccountId,
+                platform: item.platform || 'youtube',
+            }));
+            if (!mergedYoutube[date]) {
+                mergedYoutube[date] = { ...day, completedItems: items };
+            } else {
+                const existingIds = new Set(mergedYoutube[date].completedItems.map(i => i.id));
+                const newItems = items.filter(i => !existingIds.has(i.id));
+                mergedYoutube[date] = {
+                    ...mergedYoutube[date],
+                    completedItems: [...mergedYoutube[date].completedItems, ...newItems],
+                };
+            }
+        });
+
+        // Mescla backend history (supabase.history)
+        const backendHistory = (supabase.user ? supabase.history : {}) || {};
+        const merged = { ...mergedYoutube };
         Object.entries(backendHistory).forEach(([date, day]) => {
             if (!merged[date]) {
                 merged[date] = day;
@@ -322,27 +367,24 @@ export default function CalendarPage() {
                 merged[date] = {
                     ...merged[date],
                     completedItems: [...(merged[date].completedItems || []), ...newItems],
-                    uploads: (merged[date].uploads || 0) + newItems.length,
                 };
             }
         });
 
         if (activeFilter === 'all') return merged;
 
-        // Agora os itens têm channelId real (tagueado no sync).
-        // Filtra apenas por channelId/accountId — sem fallback para activeAccountId.
+        // Filtra por canal específico
         const result = {};
         Object.entries(merged).forEach(([date, day]) => {
             const items = (day.completedItems || []).filter(item => {
                 const cid = item.channelId || item.accountId;
-                // Se o item não tem channelId (legado), mostra em todos os filtros
-                if (!cid) return true;
+                if (!cid) return true; // legado sem channelId — mostra sempre
                 return cid === activeFilter;
             });
             if (items.length > 0) result[date] = { ...day, completedItems: items, uploads: items.length };
         });
         return result;
-    }, [state.history, supabase.user, supabase.history, activeFilter, activeAccountId]);
+    }, [state.history, state.channelsData, supabase.user, supabase.history, activeFilter, activeAccountId]);
 
     // ── Stats ──────────────────────────────────────────────────────────────
     const now = new Date();
