@@ -584,4 +584,36 @@ export const backendAPI = {
   BackendError,
 };
 
+// ============================================
+// Named exports for useSupabaseDashboard
+// ============================================
+
+export async function getSession() {
+  return fetchWithRetry('/api/auth/get-session', { method: 'GET' });
+}
+
+export async function getQueue() {
+  return uploadsAPI.list();
+}
+
+export async function getHistory() {
+  return videosAPI.list();
+}
+
+export async function getSettings() {
+  return settingsAPI.get();
+}
+
+export async function saveSettings(data) {
+  return settingsAPI.update(data);
+}
+
+export async function addToQueue(item) {
+  return uploadsAPI.add(item);
+}
+
+export async function removeFromQueue(id) {
+  return uploadsAPI.remove(id);
+}
+
 export default backendAPI;

@@ -26,17 +26,34 @@ const codeVerifierStore = new Map();
 
 // Helper to get valid access token (refreshes if needed)
 async function getValidAccessToken(userId, accountId = null) {
-  const whereClause = accountId
-    ? { id: `tiktok_${userId}_${accountId}` }
-    : { userId, providerId: "tiktok" };
+  if (!accountId) {
+    const account = await prisma.account.findFirst({ where: { userId, providerId: "tiktok" } });
+    if (!account) throw new Error("TikTok account not found");
+    return getTokenWithRefresh(account);
+  }
 
-  const account = await prisma.account.findFirst({ where: whereClause });
+  // accountId may be bare openId or prefixed (tiktok_...)
+  const bareId = accountId.startsWith('tiktok_') ? accountId.slice(7) : accountId;
+
+  let account = await prisma.account.findFirst({
+    where: { id: `tiktok_${userId}_${bareId}` },
+  });
+
+  // Fallback: try with userId prefix (legacy format from ScheduleVideoModal)
+  if (!account) {
+    account = await prisma.account.findFirst({
+      where: { id: `tiktok_${userId}_${accountId}` },
+    });
+  }
 
   if (!account) {
     throw new Error("TikTok account not found");
   }
 
-  // Check if token is expired or about to expire (within 5 minutes)
+  return getTokenWithRefresh(account);
+}
+
+async function getTokenWithRefresh(account) {
   const isExpired = account.accessTokenExpiresAt
     ? new Date(account.accessTokenExpiresAt) < new Date(Date.now() + 5 * 60 * 1000)
     : true;
@@ -49,7 +66,7 @@ async function getValidAccessToken(userId, accountId = null) {
       where: { id: account.id },
       data: {
         accessToken: tokens.access_token,
-        refreshToken: tokens.refresh_token, // TikTok returns new refresh token
+        refreshToken: tokens.refresh_token,
         accessTokenExpiresAt: expiresAt,
         updatedAt: new Date(),
       },
@@ -64,7 +81,6 @@ async function getValidAccessToken(userId, accountId = null) {
 
   return account.accessToken;
 }
-
 
 /**
  * GET /api/tiktok/auth/url

@@ -416,7 +416,7 @@ export function ScheduleVideoModal({ isOpen, onClose, selectedDate, onSchedule }
                         title: item.title,
                         description: item.description,
                         platform: account.platform,
-                        accountId: account.id,
+                        accountId: account.accountId || account.id,
                         scheduledAt: item.publishNow ? null : dt.toISOString(),
                         publishAt: dt.toISOString(),
                         privacyStatus: item.privacyStatus,
