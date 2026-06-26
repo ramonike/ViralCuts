@@ -60,6 +60,7 @@ model Account {
   scope                 String?
   password              String?
   displayName           String?   @map("display_name")
+  username              String?   @map("username")
   avatarUrl             String?   @map("avatar_url")
   bioDescription        String?   @map("bio_description")
   followerCount         Int?      @map("follower_count")
