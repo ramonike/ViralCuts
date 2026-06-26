@@ -293,6 +293,7 @@ export default function CalendarPage() {
         }
         if (activeFilter === 'all') return merged;
         return merged.filter(item =>
+            !item.channelId || !item.accountId ||
             item.channelId === activeFilter || item.accountId === activeFilter
         );
     }, [backendUploads, supabase.user, state.uploadQueue, activeFilter]);
@@ -322,6 +323,7 @@ export default function CalendarPage() {
         const result = {};
         Object.entries(merged).forEach(([date, day]) => {
             const items = (day.completedItems || []).filter(item =>
+                !item.channelId || !item.accountId ||
                 item.channelId === activeFilter || item.accountId === activeFilter
             );
             if (items.length > 0) result[date] = { ...day, completedItems: items, uploads: items.length };
