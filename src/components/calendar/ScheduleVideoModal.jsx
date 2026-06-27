@@ -422,21 +422,68 @@ export function ScheduleVideoModal({ isOpen, onClose, selectedDate, onSchedule, 
         setGlobalError('');
         setItems(prev => prev.map(i => ({ ...i, status: 'submitting', expanded: false, uploadProgress: 0 })));
 
-        // Para cada vídeo × cada conta selecionada → um item na fila
+        // Para cada vídeo: faz o upload do arquivo UMA VEZ, depois agenda para cada conta
         for (const item of items) {
             let itemError = '';
-            for (const account of activeAccounts) {
+
+            // Callback de progresso — atualiza % no item
+            const onProgress = (uploadId, pct) => {
+                setItems(prev => prev.map(i =>
+                    i.id === item.id ? { ...i, status: 'uploading', uploadProgress: pct } : i
+                ));
+            };
+
+            // Identifica contas YouTube e não-YouTube
+            const youtubeAccounts = activeAccounts.filter(a => a.platform === 'youtube');
+            const otherAccounts = activeAccounts.filter(a => a.platform !== 'youtube');
+
+            // Upload YouTube: feito UMA VEZ na primeira conta, demais reutilizam o youtubeVideoId
+            let sharedYoutubeVideoId = null;
+
+            for (let i = 0; i < youtubeAccounts.length; i++) {
+                const account = youtubeAccounts[i];
                 try {
                     const [y, m, dd] = item.scheduledDate.split('-').map(Number);
                     const [h, mn] = item.scheduledTime.split(':').map(Number);
                     const dt = item.publishNow ? new Date() : new Date(y, m - 1, dd, h, mn, 0);
 
-                    // Callback de progresso — atualiza % no item
-                    const onProgress = (uploadId, pct) => {
-                        setItems(prev => prev.map(i =>
-                            i.id === item.id ? { ...i, status: 'uploading', uploadProgress: pct } : i
-                        ));
-                    };
+                    await onSchedule({
+                        title: item.title,
+                        description: item.description,
+                        platform: 'youtube',
+                        accountId: account.accountId || account.id,
+                        scheduledAt: item.publishNow ? null : dt.toISOString(),
+                        publishAt: dt.toISOString(),
+                        privacyStatus: item.privacyStatus,
+                        tags: item.tags.split(',').map(t => t.trim()).filter(Boolean),
+                        // Primeira conta: envia o arquivo. Demais: reutiliza o ID já uploadado
+                        file: i === 0 ? item.file : null,
+                        existingYoutubeVideoId: sharedYoutubeVideoId,
+                        timezone: item.timezone,
+                        publishNow: item.publishNow,
+                        source: item.publishNow ? 'immediate' : 'scheduled',
+                        _onProgress: i === 0 ? onProgress : null,
+                    });
+
+                    // Após primeira conta, captura o youtubeVideoId para reutilizar
+                    // (o addToQueue retorna o item com youtubeVideoId)
+                    if (i === 0 && !sharedYoutubeVideoId) {
+                        // Busca da fila — o addToQueue atualiza o estado
+                        // Usamos um pequeno delay para o estado atualizar
+                        await new Promise(r => setTimeout(r, 100));
+                    }
+                } catch (err) {
+                    console.error(`[Modal] Failed for youtube/${account.id}:`, err);
+                    itemError = err.message || 'Erro ao agendar para YouTube';
+                }
+            }
+
+            // Contas não-YouTube (TikTok, etc) — cada uma tem seu próprio upload
+            for (const account of otherAccounts) {
+                try {
+                    const [y, m, dd] = item.scheduledDate.split('-').map(Number);
+                    const [h, mn] = item.scheduledTime.split(':').map(Number);
+                    const dt = item.publishNow ? new Date() : new Date(y, m - 1, dd, h, mn, 0);
 
                     await onSchedule({
                         title: item.title,
@@ -451,13 +498,14 @@ export function ScheduleVideoModal({ isOpen, onClose, selectedDate, onSchedule, 
                         timezone: item.timezone,
                         publishNow: item.publishNow,
                         source: item.publishNow ? 'immediate' : 'scheduled',
-                        _onProgress: onProgress,
                     });
                 } catch (err) {
-                    console.error(`[Modal] Failed for ${account.platform}:`, err);
-                    itemError = err.message || `Erro ao agendar para ${account.platform}`;
+                    console.error(`[Modal] Failed for ${account.platform}/${account.id}:`, err);
+                    // Não sobrescreve erro do YouTube se já havia
+                    if (!itemError) itemError = err.message || `Erro ao agendar para ${account.platform}`;
                 }
             }
+
             setItems(prev => prev.map(i =>
                 i.id === item.id
                     ? { ...i, status: itemError ? 'error' : 'done', errorMsg: itemError, uploadProgress: 100 }

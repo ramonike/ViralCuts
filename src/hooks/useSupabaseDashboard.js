@@ -134,7 +134,33 @@ export function useSupabaseDashboard() {
             }
 
             // Etapa 2: Se há arquivo e plataforma YouTube, faz upload DIRETO browser→YouTube
-            if (file && (item.platform === 'youtube' || !item.platform)) {
+            if ((file || item.existingYoutubeVideoId) && (item.platform === 'youtube' || !item.platform)) {
+
+                // Se já tem youtubeVideoId (segunda conta YouTube), só cria o registro no banco
+                if (item.existingYoutubeVideoId) {
+                    await fetch('/api/youtube/upload-complete', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        credentials: 'include',
+                        body: JSON.stringify({
+                            uploadId,
+                            youtubeVideoId: item.existingYoutubeVideoId,
+                            scheduledAt: item.scheduledAt || null,
+                            title: item.title,
+                            description: item.description || '',
+                            tags: item.tags || [],
+                            privacyStatus: item.privacyStatus || 'private',
+                        }),
+                    });
+                    const doneUpdater = prev => prev.map(q =>
+                        q.id === uploadId
+                            ? { ...q, status: 'scheduled', youtubeVideoId: item.existingYoutubeVideoId, uploadProgress: 100 }
+                            : q
+                    );
+                    setUploadQueue(doneUpdater);
+                    rawQueueRef.current = doneUpdater(rawQueueRef.current);
+                    return { ...newItem, id: uploadId, status: 'scheduled', youtubeVideoId: item.existingYoutubeVideoId };
+                }
                 const updater = prev => prev.map(q =>
                     q.id === uploadId ? { ...q, status: 'uploading', uploadProgress: 0 } : q
                 );
