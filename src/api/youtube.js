@@ -478,7 +478,7 @@ export async function rescheduleUpload(uploadId, scheduledAt) {
     console.log("[YouTube API] rescheduleUpload called for:", uploadId);
 
     try {
-        const response = await fetch(`/api/youtube/schedule/${uploadId}`, {
+        const response = await fetch(`/api/uploads/${uploadId}`, {
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/json',
@@ -508,7 +508,7 @@ export async function cancelScheduledUpload(uploadId) {
     console.log("[YouTube API] cancelScheduledUpload called for:", uploadId);
 
     try {
-        const response = await fetch(`/api/youtube/schedule/${uploadId}`, {
+        const response = await fetch(`/api/uploads/${uploadId}`, {
             method: 'DELETE',
             credentials: 'include',
         });
