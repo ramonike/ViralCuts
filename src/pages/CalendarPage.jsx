@@ -417,9 +417,10 @@ export default function CalendarPage() {
     };
 
     const handleScheduleSubmit = async (videoData) => {
+        // Extrai callback de progresso (não deve ir para o backend)
+        const { _onProgress, ...cleanVideoData } = videoData;
         // Apenas salva na fila — NÃO fecha o modal aqui
-        // O modal controla seu próprio fechamento via onAllDone
-        await supabase.actions.addToQueue(videoData);
+        await supabase.actions.addToQueue(cleanVideoData, _onProgress);
     };
 
     // Chamado pelo modal quando TODOS os items terminam com sucesso

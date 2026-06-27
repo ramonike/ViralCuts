@@ -211,6 +211,23 @@ function VideoCard({ item, onUpdate, onRemove }) {
                         )}
                         {item.publishNow && <span className="vc-badge vc-badge-amber" style={{ fontSize: '0.5rem' }}>Agora</span>}
                         {item.status === 'error' && <span style={{ fontSize: '0.6875rem', color: 'var(--accent-coral)' }}>{item.errorMsg}</span>}
+                        {(item.status === 'uploading' || item.status === 'submitting') && (
+                            <div style={{ marginTop: 6 }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.625rem', color: 'var(--text-muted)', marginBottom: 3 }}>
+                                    <span>{item.status === 'uploading' ? 'Enviando para YouTube...' : 'Aguardando...'}</span>
+                                    {item.uploadProgress > 0 && <span>{item.uploadProgress}%</span>}
+                                </div>
+                                <div style={{ height: 3, background: 'var(--bg-elevated)', borderRadius: 2, overflow: 'hidden' }}>
+                                    <div style={{
+                                        height: '100%',
+                                        width: `${item.uploadProgress || 0}%`,
+                                        background: 'linear-gradient(90deg, var(--accent-coral), var(--accent-amber))',
+                                        borderRadius: 2,
+                                        transition: 'width 0.3s ease',
+                                    }} />
+                                </div>
+                            </div>
+                        )}
                     </div>
                 </div>
                 {item.status === 'idle' && (
@@ -403,7 +420,7 @@ export function ScheduleVideoModal({ isOpen, onClose, selectedDate, onSchedule, 
         }
         setSubmitting(true);
         setGlobalError('');
-        setItems(prev => prev.map(i => ({ ...i, status: 'submitting', expanded: false })));
+        setItems(prev => prev.map(i => ({ ...i, status: 'submitting', expanded: false, uploadProgress: 0 })));
 
         // Para cada vídeo × cada conta selecionada → um item na fila
         for (const item of items) {
@@ -413,6 +430,14 @@ export function ScheduleVideoModal({ isOpen, onClose, selectedDate, onSchedule, 
                     const [y, m, dd] = item.scheduledDate.split('-').map(Number);
                     const [h, mn] = item.scheduledTime.split(':').map(Number);
                     const dt = item.publishNow ? new Date() : new Date(y, m - 1, dd, h, mn, 0);
+
+                    // Callback de progresso — atualiza % no item
+                    const onProgress = (uploadId, pct) => {
+                        setItems(prev => prev.map(i =>
+                            i.id === item.id ? { ...i, status: 'uploading', uploadProgress: pct } : i
+                        ));
+                    };
+
                     await onSchedule({
                         title: item.title,
                         description: item.description,
@@ -426,6 +451,7 @@ export function ScheduleVideoModal({ isOpen, onClose, selectedDate, onSchedule, 
                         timezone: item.timezone,
                         publishNow: item.publishNow,
                         source: item.publishNow ? 'immediate' : 'scheduled',
+                        _onProgress: onProgress,
                     });
                 } catch (err) {
                     console.error(`[Modal] Failed for ${account.platform}:`, err);
@@ -434,7 +460,7 @@ export function ScheduleVideoModal({ isOpen, onClose, selectedDate, onSchedule, 
             }
             setItems(prev => prev.map(i =>
                 i.id === item.id
-                    ? { ...i, status: itemError ? 'error' : 'done', errorMsg: itemError }
+                    ? { ...i, status: itemError ? 'error' : 'done', errorMsg: itemError, uploadProgress: 100 }
                     : i
             ));
         }

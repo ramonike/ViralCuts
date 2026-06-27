@@ -106,11 +106,11 @@ export function useSupabaseDashboard() {
         }
     };
 
-    // ── Adicionar à fila — grava accountId no metadata ────────────────────
-    const addToQueue = async (item) => {
+    // ── Adicionar à fila — 2 etapas: criar registro + upload do arquivo ────
+    const addToQueue = async (item, onProgress = null) => {
         try {
-            // Remove campo `file` (objeto File do browser) — não serializável em JSON
-            const { file: _file, ...itemWithoutFile } = item;
+            // Etapa 1: Cria registro no banco (sem o arquivo)
+            const { file, ...itemWithoutFile } = item;
             const enriched = {
                 ...itemWithoutFile,
                 metadata: {
@@ -122,15 +122,84 @@ export function useSupabaseDashboard() {
                     privacyStatus: item.privacyStatus || 'private',
                 },
             };
+
             const res = await api.addToQueue(enriched);
-            const newItem = { ...enriched, id: res.id, status: res.status };
+            const uploadId = res.id;
+            const newItem = { ...enriched, id: uploadId, status: 'pending' };
 
             rawQueueRef.current = [...rawQueueRef.current, newItem];
-
-            // Só exibe se for do canal ativo (ou sem canal definido = legado)
             const itemAccountId = newItem.metadata?.accountId;
             if (!activeAccountId || !itemAccountId || itemAccountId === activeAccountId) {
                 setUploadQueue(prev => [...prev, newItem]);
+            }
+
+            // Etapa 2: Se há arquivo e plataforma YouTube, faz upload real
+            if (file && (item.platform === 'youtube' || !item.platform)) {
+                // Atualizar status para "uploading" na UI
+                const updater = prev => prev.map(q =>
+                    q.id === uploadId ? { ...q, status: 'uploading' } : q
+                );
+                setUploadQueue(updater);
+                rawQueueRef.current = updater(rawQueueRef.current);
+
+                try {
+                    const formData = new FormData();
+                    formData.append('file', file);
+                    formData.append('uploadId', uploadId);
+                    formData.append('title', item.title || '');
+                    formData.append('description', item.description || '');
+                    formData.append('tags', (item.tags || []).join(','));
+                    formData.append('privacyStatus', item.privacyStatus || 'private');
+                    formData.append('accountId', item.accountId || '');
+                    if (item.scheduledAt) formData.append('scheduledAt', item.scheduledAt);
+
+                    // Usar XMLHttpRequest para progresso
+                    const uploadResult = await new Promise((resolve, reject) => {
+                        const xhr = new XMLHttpRequest();
+                        xhr.open('POST', '/api/youtube/upload');
+                        xhr.withCredentials = true;
+
+                        xhr.upload.onprogress = (e) => {
+                            if (e.lengthComputable && onProgress) {
+                                const pct = Math.round((e.loaded / e.total) * 100);
+                                onProgress(uploadId, pct);
+                            }
+                        };
+
+                        xhr.onload = () => {
+                            if (xhr.status >= 200 && xhr.status < 300) {
+                                resolve(JSON.parse(xhr.responseText));
+                            } else {
+                                const err = JSON.parse(xhr.responseText || '{}');
+                                reject(new Error(err.error || `HTTP ${xhr.status}`));
+                            }
+                        };
+                        xhr.onerror = () => reject(new Error('Erro de rede no upload'));
+                        xhr.send(formData);
+                    });
+
+                    // Atualizar status para "scheduled" após upload bem-sucedido
+                    const doneUpdater = prev => prev.map(q =>
+                        q.id === uploadId
+                            ? { ...q, status: 'scheduled', youtubeVideoId: uploadResult.youtubeVideoId }
+                            : q
+                    );
+                    setUploadQueue(doneUpdater);
+                    rawQueueRef.current = doneUpdater(rawQueueRef.current);
+
+                    console.log(`[addToQueue] Upload concluído: ${uploadResult.youtubeVideoId}`);
+                    return { ...newItem, id: uploadId, status: 'scheduled', youtubeVideoId: uploadResult.youtubeVideoId };
+
+                } catch (uploadErr) {
+                    console.error('[addToQueue] Falha no upload do arquivo:', uploadErr);
+                    // Marcar como falho na UI mas não lançar — o registro já foi criado
+                    const failUpdater = prev => prev.map(q =>
+                        q.id === uploadId ? { ...q, status: 'failed', errorMsg: uploadErr.message } : q
+                    );
+                    setUploadQueue(failUpdater);
+                    rawQueueRef.current = failUpdater(rawQueueRef.current);
+                    throw uploadErr;
+                }
             }
 
             return newItem;
