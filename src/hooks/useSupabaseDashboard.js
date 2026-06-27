@@ -133,62 +133,97 @@ export function useSupabaseDashboard() {
                 setUploadQueue(prev => [...prev, newItem]);
             }
 
-            // Etapa 2: Se há arquivo e plataforma YouTube, faz upload real
+            // Etapa 2: Se há arquivo e plataforma YouTube, faz upload DIRETO browser→YouTube
             if (file && (item.platform === 'youtube' || !item.platform)) {
-                // Atualizar status para "uploading" na UI
                 const updater = prev => prev.map(q =>
-                    q.id === uploadId ? { ...q, status: 'uploading' } : q
+                    q.id === uploadId ? { ...q, status: 'uploading', uploadProgress: 0 } : q
                 );
                 setUploadQueue(updater);
                 rawQueueRef.current = updater(rawQueueRef.current);
 
                 try {
-                    const formData = new FormData();
-                    formData.append('file', file);
-                    formData.append('uploadId', uploadId);
-                    formData.append('title', item.title || '');
-                    formData.append('description', item.description || '');
-                    formData.append('tags', (item.tags || []).join(','));
-                    formData.append('privacyStatus', item.privacyStatus || 'private');
-                    formData.append('accountId', item.accountId || '');
-                    if (item.scheduledAt) formData.append('scheduledAt', item.scheduledAt);
+                    // Etapa 2a: Servidor inicia sessão resumable e retorna uploadUrl
+                    const initRes = await fetch('/api/youtube/upload-init', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        credentials: 'include',
+                        body: JSON.stringify({
+                            uploadId,
+                            title: item.title || '',
+                            description: item.description || '',
+                            tags: item.tags || [],
+                            privacyStatus: item.privacyStatus || 'private',
+                            accountId: item.accountId || '',
+                            scheduledAt: item.scheduledAt || null,
+                            fileSize: file.size,
+                            mimeType: file.type || 'video/mp4',
+                        }),
+                    });
 
-                    // Usar XMLHttpRequest para progresso
+                    if (!initRes.ok) {
+                        const err = await initRes.json().catch(() => ({}));
+                        throw new Error(err.error || 'Falha ao iniciar sessão de upload');
+                    }
+
+                    const { uploadUrl } = await initRes.json();
+
+                    // Etapa 2b: Browser envia arquivo DIRETAMENTE para o Google (sem passar pelo Render)
                     const uploadResult = await new Promise((resolve, reject) => {
                         const xhr = new XMLHttpRequest();
-                        xhr.open('POST', '/api/youtube/upload');
-                        xhr.withCredentials = true;
+                        xhr.open('PUT', uploadUrl);
+                        xhr.setRequestHeader('Content-Type', file.type || 'video/mp4');
 
                         xhr.upload.onprogress = (e) => {
                             if (e.lengthComputable && onProgress) {
                                 const pct = Math.round((e.loaded / e.total) * 100);
                                 onProgress(uploadId, pct);
+                                // Atualiza progresso na fila
+                                setUploadQueue(prev => prev.map(q =>
+                                    q.id === uploadId ? { ...q, uploadProgress: pct } : q
+                                ));
                             }
                         };
 
                         xhr.onload = () => {
-                            if (xhr.status >= 200 && xhr.status < 300) {
-                                resolve(JSON.parse(xhr.responseText));
+                            if (xhr.status === 200 || xhr.status === 201) {
+                                const data = JSON.parse(xhr.responseText);
+                                resolve(data);
                             } else {
-                                const err = JSON.parse(xhr.responseText || '{}');
-                                reject(new Error(err.error || `HTTP ${xhr.status}`));
+                                reject(new Error(`Upload falhou: HTTP ${xhr.status}`));
                             }
                         };
                         xhr.onerror = () => reject(new Error('Erro de rede no upload'));
-                        xhr.send(formData);
+                        xhr.send(file);
                     });
 
-                    // Atualizar status para "scheduled" após upload bem-sucedido
+                    const youtubeVideoId = uploadResult.id;
+
+                    // Etapa 2c: Notifica servidor que upload concluiu
+                    await fetch('/api/youtube/upload-complete', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        credentials: 'include',
+                        body: JSON.stringify({
+                            uploadId,
+                            youtubeVideoId,
+                            scheduledAt: item.scheduledAt || null,
+                            title: item.title,
+                            description: item.description || '',
+                            tags: item.tags || [],
+                            privacyStatus: item.privacyStatus || 'private',
+                        }),
+                    });
+
                     const doneUpdater = prev => prev.map(q =>
                         q.id === uploadId
-                            ? { ...q, status: 'scheduled', youtubeVideoId: uploadResult.youtubeVideoId }
+                            ? { ...q, status: 'scheduled', youtubeVideoId, uploadProgress: 100 }
                             : q
                     );
                     setUploadQueue(doneUpdater);
                     rawQueueRef.current = doneUpdater(rawQueueRef.current);
 
-                    console.log(`[addToQueue] Upload concluído: ${uploadResult.youtubeVideoId}`);
-                    return { ...newItem, id: uploadId, status: 'scheduled', youtubeVideoId: uploadResult.youtubeVideoId };
+                    console.log(`[addToQueue] Upload direto concluído: ${youtubeVideoId}`);
+                    return { ...newItem, id: uploadId, status: 'scheduled', youtubeVideoId };
 
                 } catch (uploadErr) {
                     console.error('[addToQueue] Falha no upload do arquivo:', uploadErr);

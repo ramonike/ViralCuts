@@ -912,86 +912,47 @@ youtube.delete("/schedule/:uploadId", authMiddleware, async (c) => {
 });
 
 /**
- * POST /api/youtube/upload
- * Faz upload de um arquivo de vídeo para o YouTube como privado.
- * Usa resumable upload para suportar arquivos grandes sem timeout do Render.
- * Após o upload, atualiza o registro de upload com youtubeVideoId e status="scheduled".
+ * POST /api/youtube/upload-init
+ * Inicia uma sessão de upload resumable no YouTube e retorna a URL.
+ * O browser faz o upload diretamente para o Google — evita timeout do Render.
  */
-youtube.post("/upload", authMiddleware, async (c) => {
+youtube.post("/upload-init", authMiddleware, async (c) => {
   try {
     const userId = c.get("userId");
+    const body = await c.req.json();
+    const { uploadId, title, description, tags = [], privacyStatus = "private", scheduledAt, accountId, fileSize, mimeType = "video/mp4" } = body;
 
-    // Parse multipart form data
-    const formData = await c.req.formData();
-    const file = formData.get("file");
-    const uploadId = formData.get("uploadId");
-    const title = formData.get("title") || "Sem título";
-    const description = formData.get("description") || "";
-    const tagsRaw = formData.get("tags") || "";
-    const tags = tagsRaw ? tagsRaw.split(",").map(t => t.trim()).filter(Boolean) : [];
-    const privacyStatus = formData.get("privacyStatus") || "private";
-    const scheduledAt = formData.get("scheduledAt") || null;
-    const accountId = formData.get("accountId") || null;
-
-    if (!file || !uploadId) {
-      return c.json({ error: "file e uploadId são obrigatórios" }, 400);
+    if (!uploadId || !fileSize) {
+      return c.json({ error: "uploadId e fileSize são obrigatórios" }, 400);
     }
 
-    // Buscar token de acesso do YouTube para o usuário
-    const whereClause = accountId
-      ? { userId, id: { contains: accountId } }
-      : { userId, providerId: "youtube" };
-
-    let account = await prisma.account.findFirst({ where: whereClause });
+    // Buscar token
+    let account = accountId
+      ? await prisma.account.findFirst({ where: { userId, id: { contains: accountId } } })
+      : null;
     if (!account) {
-      // Fallback: qualquer conta youtube do usuário
       account = await prisma.account.findFirst({ where: { userId, providerId: "youtube" } });
     }
-    if (!account) {
-      return c.json({ error: "Conta YouTube não encontrada. Reconecte sua conta." }, 401);
-    }
+    if (!account) return c.json({ error: "Conta YouTube não encontrada" }, 401);
 
-    // Refresh token se expirado
     let accessToken = account.accessToken;
     const isExpired = account.accessTokenExpiresAt
       ? new Date(account.accessTokenExpiresAt) < new Date(Date.now() + 2 * 60 * 1000)
       : true;
 
     if (isExpired && account.refreshToken) {
-      console.log("[YouTube Upload] Token expirado, renovando...");
       const tokens = await refreshYouTubeToken(account.refreshToken);
       accessToken = tokens.access_token;
       await prisma.account.update({
         where: { id: account.id },
-        data: {
-          accessToken: tokens.access_token,
-          accessTokenExpiresAt: new Date(Date.now() + tokens.expires_in * 1000),
-          updatedAt: new Date(),
-        },
+        data: { accessToken: tokens.access_token, accessTokenExpiresAt: new Date(Date.now() + tokens.expires_in * 1000), updatedAt: new Date() },
       });
     }
 
-    if (!accessToken) {
-      return c.json({ error: "Token de acesso inválido. Reconecte sua conta YouTube." }, 401);
-    }
+    if (!accessToken) return c.json({ error: "Token inválido. Reconecte sua conta YouTube." }, 401);
 
-    // Metadados do vídeo para o YouTube
-    const videoMetadata = {
-      snippet: { title, description, tags, categoryId: "22" },
-      status: {
-        privacyStatus: "private", // sempre privado no upload — job muda para público
-        selfDeclaredMadeForKids: false,
-      },
-    };
-
-    const fileBuffer = await file.arrayBuffer();
-    const fileSize = fileBuffer.byteLength;
-    const mimeType = file.type || "video/mp4";
-
-    console.log(`[YouTube Upload] Iniciando upload: "${title}" (${Math.round(fileSize / 1024 / 1024)}MB)`);
-
-    // ── Iniciar resumable upload session ────────────────────────────────────
-    const initResponse = await fetch(
+    // Iniciar sessão resumable no YouTube
+    const initRes = await fetch(
       "https://www.googleapis.com/upload/youtube/v3/videos?uploadType=resumable&part=snippet,status",
       {
         method: "POST",
@@ -1001,90 +962,66 @@ youtube.post("/upload", authMiddleware, async (c) => {
           "X-Upload-Content-Type": mimeType,
           "X-Upload-Content-Length": String(fileSize),
         },
-        body: JSON.stringify(videoMetadata),
+        body: JSON.stringify({
+          snippet: { title, description, tags, categoryId: "22" },
+          status: { privacyStatus: "private", selfDeclaredMadeForKids: false },
+        }),
       }
     );
 
-    if (!initResponse.ok) {
-      const err = await initResponse.json().catch(() => ({}));
-      const msg = err.error?.message || `HTTP ${initResponse.status}`;
-      console.error("[YouTube Upload] Falha ao iniciar sessão:", msg);
-      return c.json({ error: `Falha ao iniciar upload no YouTube: ${msg}` }, 502);
+    if (!initRes.ok) {
+      const err = await initRes.json().catch(() => ({}));
+      return c.json({ error: `YouTube rejeitou o upload: ${err.error?.message || initRes.status}` }, 502);
     }
 
-    const uploadUrl = initResponse.headers.get("Location");
-    if (!uploadUrl) {
-      return c.json({ error: "YouTube não retornou URL de upload" }, 502);
+    const uploadUrl = initRes.headers.get("Location");
+    if (!uploadUrl) return c.json({ error: "YouTube não retornou URL de upload" }, 502);
+
+    console.log(`[YouTube Upload Init] uploadId=${uploadId} sessionUrl obtida`);
+
+    return c.json({ uploadUrl, uploadId });
+  } catch (error) {
+    console.error("[YouTube Upload Init] Erro:", error);
+    return c.json({ error: error.message }, 500);
+  }
+});
+
+/**
+ * POST /api/youtube/upload-complete
+ * Chamado pelo frontend após o upload direto terminar.
+ * Salva o youtubeVideoId no registro de upload.
+ */
+youtube.post("/upload-complete", authMiddleware, async (c) => {
+  try {
+    const { uploadId, youtubeVideoId, scheduledAt, title, description, tags = [], privacyStatus } = await c.req.json();
+
+    if (!uploadId || !youtubeVideoId) {
+      return c.json({ error: "uploadId e youtubeVideoId são obrigatórios" }, 400);
     }
 
-    // ── Enviar o arquivo ────────────────────────────────────────────────────
-    const uploadResponse = await fetch(uploadUrl, {
-      method: "PUT",
-      headers: {
-        "Content-Type": mimeType,
-        "Content-Length": String(fileSize),
-      },
-      body: fileBuffer,
-    });
-
-    if (!uploadResponse.ok && uploadResponse.status !== 201) {
-      const err = await uploadResponse.json().catch(() => ({}));
-      const msg = err.error?.message || `HTTP ${uploadResponse.status}`;
-      console.error("[YouTube Upload] Falha ao enviar arquivo:", msg);
-
-      // Marcar upload como falho no banco
-      await prisma.upload.update({
-        where: { id: uploadId },
-        data: {
-          status: "failed",
-          metadata: { error: msg, failedAt: new Date().toISOString() },
-          updatedAt: new Date(),
-        },
-      });
-
-      return c.json({ error: `Falha no upload do arquivo: ${msg}` }, 502);
-    }
-
-    const videoData = await uploadResponse.json();
-    const youtubeVideoId = videoData.id;
-
-    console.log(`[YouTube Upload] Upload concluído! videoId: ${youtubeVideoId}`);
-
-    // ── Atualizar registro no banco ─────────────────────────────────────────
-    const updatedUpload = await prisma.upload.update({
+    const updated = await prisma.upload.update({
       where: { id: uploadId },
       data: {
         youtubeVideoId,
         status: "scheduled",
         scheduledAt: scheduledAt ? new Date(scheduledAt) : null,
         updatedAt: new Date(),
-        metadata: {
-          title,
-          description,
-          tags,
-          privacyStatus,
-          youtubeVideoId,
-          uploadedAt: new Date().toISOString(),
-        },
+        metadata: { title, description, tags, privacyStatus, youtubeVideoId, uploadedAt: new Date().toISOString() },
       },
     });
+
+    console.log(`[YouTube Upload Complete] uploadId=${uploadId} youtubeVideoId=${youtubeVideoId}`);
 
     return c.json({
       success: true,
       uploadId,
       youtubeVideoId,
       status: "scheduled",
-      videoUrl: `https://youtube.com/watch?v=${youtubeVideoId}`,
-      upload: {
-        ...updatedUpload,
-        fileSize: updatedUpload.fileSize ? Number(updatedUpload.fileSize) : null,
-        bytesUploaded: updatedUpload.bytesUploaded ? Number(updatedUpload.bytesUploaded) : 0,
-      },
+      upload: { ...updated, fileSize: updated.fileSize ? Number(updated.fileSize) : null, bytesUploaded: updated.bytesUploaded ? Number(updated.bytesUploaded) : 0 },
     });
   } catch (error) {
-    console.error("[YouTube Upload] Erro inesperado:", error);
-    return c.json({ error: error.message || "Erro interno no upload" }, 500);
+    console.error("[YouTube Upload Complete] Erro:", error);
+    return c.json({ error: error.message }, 500);
   }
 });
-
 export default youtube;
