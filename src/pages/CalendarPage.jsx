@@ -7,7 +7,7 @@ import { VideoDetailModal } from "../components/dashboard/VideoDetailModal";
 import { PageLayout } from "../components/layout/PageLayout";
 import { useNotification } from "../contexts/NotificationContext";
 import { useTheme } from "../contexts/ThemeContext";
-import { fetchScheduledUploads, rescheduleUpload, cancelScheduledUpload } from "../api/youtube";
+import { rescheduleUpload, cancelScheduledUpload } from "../api/youtube";
 import { CalendarDays, Clock, CheckCircle2, TrendingUp, GitBranch, Video, Loader2, RefreshCw } from "lucide-react";
 import { PlatformIcon } from "../components/shared/PlatformIcon";
 
@@ -236,11 +236,6 @@ export default function CalendarPage() {
     const { success, error: showError } = useNotification();
     const { theme } = useTheme();
 
-    const [backendUploads, setBackendUploads] = useState([]);
-    const [loadingUploads, setLoadingUploads] = useState(false);
-    // Ref para não limpar dados anteriores durante reload
-    const hasFetchedRef = useRef(false);
-
     const [isScheduleModalOpen, setScheduleModalOpen] = useState(false);
     const [selectedScheduleDate, setSelectedScheduleDate] = useState(null);
     const [selectedVideo, setSelectedVideo] = useState(null);
@@ -259,25 +254,28 @@ export default function CalendarPage() {
         }));
     }, [connectedAccounts]);
 
-    // ── Carrega uploads do backend ─────────────────────────────────────────
+    // ── Queue: usa supabase.uploadQueue (mesma fonte do Dashboard) ─────────
+    // Não faz fetch próprio — evita 504 em cold start do Render
+    const backendUploads = useMemo(() =>
+        (supabase.uploadQueue || state.uploadQueue || []).map(item => ({
+            ...item,
+            // Garante campos normalizados
+            title: item.metadata?.title || item.fileName || item.title || 'Sem título',
+            platform: (item.platform || item.platforms?.[0] || 'youtube').toLowerCase(),
+            scheduledAt: item.scheduledAt || item.publishAt || null,
+            channelId: item.metadata?.accountId || item.accountId || item.channelId || null,
+        })),
+        [supabase.uploadQueue, state.uploadQueue]
+    );
+
+    const loadingUploads = supabase.loading || false;
+    const hasFetchedRef = useRef(true); // sempre true — dados vêm do supabase hook
+
+    // Refresh manual da fila (botão de reload na sidebar)
     const loadUploads = useCallback(async (silent = false) => {
-        if (!silent && !hasFetchedRef.current) setLoadingUploads(true);
-        else if (silent) setLoadingUploads(true);
-
-        try {
-            const raw = await fetchScheduledUploads(true, 200);
-            const normalized = raw.map(normalizeUpload);
-            setBackendUploads(normalized);
-            hasFetchedRef.current = true;
-        } catch (err) {
-            console.error('Failed to load uploads:', err);
-            // Mantém dados anteriores — nunca zera
-        } finally {
-            setLoadingUploads(false);
-        }
+        // supabase.uploadQueue é atualizado automaticamente pelo useSupabaseDashboard
+        // Não precisamos de fetch manual — apenas force re-render aguardando o hook
     }, []);
-
-    useEffect(() => { loadUploads(); }, [loadUploads]);
 
     // ── Queue combinada: backend é sempre incluído ─────────────────────────
     const combinedQueue = useMemo(() => {
@@ -429,7 +427,7 @@ export default function CalendarPage() {
         setScheduleModalOpen(false);
         setSelectedScheduleDate(null);
         success('Vídeo(s) agendado(s) com sucesso!');
-        loadUploads(true).catch(() => { });
+        // supabase.uploadQueue atualiza automaticamente via useSupabaseDashboard
     };
 
     const handleRescheduleVideo = async (videoId, newScheduledAt) => {
@@ -464,7 +462,7 @@ export default function CalendarPage() {
         }
     };
 
-    const isFirstLoad = loadingUploads && !hasFetchedRef.current;
+    const isFirstLoad = supabase.loading && backendUploads.length === 0;
 
     return (
         <PageLayout maxWidth="7xl" spacing="standard">
