@@ -6,6 +6,7 @@
 
 import { prisma } from "../db/prisma.js";
 import { refreshToken } from "../services/youtube-auth.js";
+import { uploadVideo as uploadTikTokVideo } from "../services/platforms/tiktok.js";
 
 // Job configuration
 const JOB_CONFIG = {
@@ -51,7 +52,7 @@ async function notifyVideoPublished(userId, notification) {
       console.error("[Scheduled Uploads] Notification callback error:", error);
     }
   }
-  
+
   // Store notification in database for later retrieval
   try {
     await prisma.notification.create({
@@ -156,80 +157,114 @@ async function publishVideoOnYouTube(videoId, accessToken) {
  * @returns {Promise<{success: boolean, error?: string}>}
  */
 async function processScheduledUpload(upload) {
-  console.log(`[Scheduled Uploads] Processing upload ${upload.id} for video ${upload.youtubeVideoId}`);
+  console.log(`[Scheduled Uploads] Processing upload ${upload.id} platform=${upload.platform}`);
 
   try {
-    // Get valid access token
-    const { accessToken } = await getValidAccessToken(upload.userId);
+    // ── TikTok ────────────────────────────────────────────────────────────
+    if (upload.platform === "tiktok") {
+      const fileUrl = upload.metadata?.fileUrl;
+      if (!fileUrl) {
+        throw new Error("TikTok upload sem fileUrl no metadata");
+      }
 
-    // If video is already uploaded to YouTube, just update privacy status
-    if (upload.youtubeVideoId) {
-      await publishVideoOnYouTube(upload.youtubeVideoId, accessToken);
-      
-      // Update upload status
+      // Buscar token TikTok do usuário
+      const tiktokAccount = await prisma.account.findFirst({
+        where: { userId: upload.userId, providerId: "tiktok" },
+      });
+      if (!tiktokAccount?.accessToken) throw new Error("Conta TikTok não encontrada");
+
+      // Baixar o arquivo do Supabase Storage
+      const fileRes = await fetch(fileUrl);
+      if (!fileRes.ok) throw new Error(`Não foi possível baixar o vídeo: HTTP ${fileRes.status}`);
+      const videoBuffer = Buffer.from(await fileRes.arrayBuffer());
+
+      // Upload para o TikTok
+      const metadata = {
+        title: upload.metadata?.title || upload.fileName || "ViralCuts Video",
+        description: upload.metadata?.description || "",
+        tags: upload.metadata?.tags || [],
+        privacyLevel: "PUBLIC_TO_EVERYONE",
+        disableDuet: false,
+        disableStitch: false,
+        disableComment: false,
+      };
+
+      await uploadTikTokVideo(videoBuffer, metadata, tiktokAccount.accessToken);
+
+      // Atualiza status
       await prisma.upload.update({
         where: { id: upload.id },
-        data: {
-          status: "published",
-          publishedAt: new Date(),
-          updatedAt: new Date(),
-        },
+        data: { status: "published", publishedAt: new Date(), updatedAt: new Date() },
       });
 
-      console.log(`[Scheduled Uploads] Successfully published video ${upload.youtubeVideoId}`);
-      
-      // Send notification to user
+      // Limpa arquivo do storage após publicação
+      try {
+        const { deleteVideoFromStorage } = await import("../db/supabase.js");
+        const ext = (upload.mimeType || "video/mp4").split("/")[1] || "mp4";
+        await deleteVideoFromStorage(upload.userId, upload.id, ext);
+      } catch (e) {
+        console.warn("[Scheduled Uploads] Não foi possível limpar storage:", e.message);
+      }
+
+      await notifyVideoPublished(upload.userId, {
+        type: "video_published",
+        title: "🎉 Vídeo Publicado no TikTok!",
+        message: `"${metadata.title}" foi publicado com sucesso no TikTok.`,
+        data: { uploadId: upload.id, videoTitle: metadata.title, publishedAt: new Date().toISOString() },
+      });
+
+      return { success: true };
+    }
+
+    // ── YouTube ───────────────────────────────────────────────────────────
+
+    // ── YouTube ───────────────────────────────────────────────────────────
+    // O YouTube já publicou nativamente via publishAt definido no upload.
+    // O job só precisa atualizar o status no nosso banco.
+    if (upload.platform === "youtube") {
+      // Verifica se o vídeo realmente está público agora (opcional — confia no YouTube)
+      const youtubeVideoId = upload.youtubeVideoId || upload.metadata?.youtubeVideoId;
+
+      if (!youtubeVideoId) {
+        console.warn(`[Scheduled Uploads] Upload ${upload.id} sem youtubeVideoId — marcando como failed`);
+        await prisma.upload.update({
+          where: { id: upload.id },
+          data: { status: "failed", updatedAt: new Date() },
+        });
+        return { success: false, error: "No YouTube video ID" };
+      }
+
+      await prisma.upload.update({
+        where: { id: upload.id },
+        data: { status: "published", publishedAt: new Date(), updatedAt: new Date() },
+      });
+
+      console.log(`[Scheduled Uploads] YouTube video ${youtubeVideoId} marcado como publicado`);
+
       const videoTitle = upload.metadata?.title || upload.fileName || 'Seu vídeo';
-      const videoUrl = `https://youtube.com/watch?v=${upload.youtubeVideoId}`;
-      
       await notifyVideoPublished(upload.userId, {
         type: 'video_published',
         title: '🎉 Vídeo Publicado!',
         message: `"${videoTitle}" foi publicado com sucesso no YouTube.`,
         data: {
           uploadId: upload.id,
-          videoId: upload.youtubeVideoId,
+          videoId: youtubeVideoId,
           videoTitle,
-          videoUrl,
+          videoUrl: `https://youtube.com/watch?v=${youtubeVideoId}`,
           publishedAt: new Date().toISOString(),
         },
       });
-      
-      return { success: true, videoId: upload.youtubeVideoId };
-    } else {
-      // Video not yet uploaded - this shouldn't happen for scheduled uploads
-      // but we handle it gracefully
-      console.warn(`[Scheduled Uploads] Upload ${upload.id} has no YouTube video ID`);
-      
-      await prisma.upload.update({
-        where: { id: upload.id },
-        data: {
-          status: "failed",
-          metadata: {
-            ...upload.metadata,
-            error: "No YouTube video ID found for scheduled upload",
-          },
-          updatedAt: new Date(),
-        },
-      });
 
-      // Notify user of failure
-      await notifyVideoPublished(upload.userId, {
-        type: 'video_publish_failed',
-        title: '❌ Falha na Publicação',
-        message: `Não foi possível publicar "${upload.metadata?.title || 'seu vídeo'}". O vídeo não foi encontrado no YouTube.`,
-        data: {
-          uploadId: upload.id,
-          error: "No YouTube video ID found",
-        },
-      });
-
-      return { success: false, error: "No YouTube video ID found" };
+      return { success: true, videoId: youtubeVideoId };
     }
+
+    // Plataforma desconhecida
+    console.warn(`[Scheduled Uploads] Plataforma não suportada: ${upload.platform}`);
+    return { success: false, error: `Plataforma não suportada: ${upload.platform}` };
+
   } catch (error) {
     console.error(`[Scheduled Uploads] Error processing upload ${upload.id}:`, error);
 
-    // Update retry count and status
     const retryCount = (upload.metadata?.retryCount || 0) + 1;
     const shouldRetry = retryCount < JOB_CONFIG.maxRetries;
 
@@ -282,20 +317,20 @@ async function checkScheduledUploads() {
 
   try {
     const now = new Date();
-    const windowEnd = new Date(now.getTime() + JOB_CONFIG.publishWindowMs);
+    const windowStart = new Date(now.getTime() - JOB_CONFIG.publishWindowMs); // 2min atrás (tolerância)
+    const windowEnd = new Date(now.getTime() + JOB_CONFIG.publishWindowMs);   // 2min à frente
 
-    // Find uploads that are scheduled and due
+    // Busca uploads agendados dentro da janela de tempo (não todos os passados!)
     const dueUploads = await prisma.upload.findMany({
       where: {
         status: "scheduled",
         scheduledAt: {
-          lte: windowEnd,
+          gte: windowStart, // não mais antigo que 2min atrás (evita publicar atrasados acumulados)
+          lte: windowEnd,   // não mais distante que 2min no futuro
         },
-        platform: "youtube",
+        platform: { in: ["youtube", "tiktok"] },
       },
-      orderBy: {
-        scheduledAt: "asc",
-      },
+      orderBy: { scheduledAt: "asc" },
     });
 
     if (dueUploads.length === 0) {
@@ -331,13 +366,13 @@ export function startScheduledUploadsJob() {
   }
 
   console.log("[Scheduled Uploads] Starting job...");
-  
+
   // Run immediately on start
   checkScheduledUploads();
-  
+
   // Then run at regular intervals
   jobInterval = setInterval(checkScheduledUploads, JOB_CONFIG.checkIntervalMs);
-  
+
   console.log(`[Scheduled Uploads] Job started, checking every ${JOB_CONFIG.checkIntervalMs / 1000} seconds`);
 }
 

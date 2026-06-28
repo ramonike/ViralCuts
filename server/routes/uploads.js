@@ -259,4 +259,34 @@ uploads.delete("/:id", async (c) => {
   }
 });
 
+// POST /api/uploads/store-video - Save video to Supabase Storage for TikTok scheduling
+uploads.post("/store-video", async (c) => {
+  const userId = c.get("userId");
+
+  try {
+    const formData = await c.req.formData();
+    const file = formData.get("file");
+    const uploadId = formData.get("uploadId");
+
+    if (!file || !uploadId) {
+      return c.json({ error: "file e uploadId são obrigatórios" }, 400);
+    }
+
+    // Verificar que o upload pertence ao usuário
+    const existing = await prisma.upload.findFirst({ where: { id: uploadId, userId } });
+    if (!existing) return c.json({ error: "Upload não encontrado" }, 404);
+
+    const { uploadVideoToStorage } = await import("../db/supabase.js");
+    const buffer = Buffer.from(await file.arrayBuffer());
+    const mimeType = file.type || "video/mp4";
+
+    const fileUrl = await uploadVideoToStorage(buffer, userId, uploadId, mimeType);
+
+    return c.json({ success: true, fileUrl });
+  } catch (error) {
+    console.error("Error storing video:", error.message);
+    return c.json({ error: error.message || "Failed to store video" }, 500);
+  }
+});
+
 export default uploads;

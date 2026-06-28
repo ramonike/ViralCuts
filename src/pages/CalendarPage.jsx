@@ -465,8 +465,8 @@ export default function CalendarPage() {
         combinedQueue.forEach(v => {
             if (["done", "success", "published", "completed"].includes(v.status)) {
                 const titleNormalized = v.title?.trim().toLowerCase();
-                const alreadyInHistory = Object.values(filteredHistory || {}).some(day => 
-                    (day?.completedItems || []).some(item => 
+                const alreadyInHistory = Object.values(filteredHistory || {}).some(day =>
+                    (day?.completedItems || []).some(item =>
                         item.id === v.id || (item.title?.trim().toLowerCase() === titleNormalized)
                     )
                 );
@@ -485,22 +485,13 @@ export default function CalendarPage() {
     };
 
     const handleScheduleSubmit = async (videoData) => {
-        // Cria registro no banco (persistência)
         const supabaseItem = await supabase.actions.addToQueue(videoData);
         const uploadId = supabaseItem.id;
+        const platform = (videoData.platform || 'youtube').toLowerCase();
 
-        // Se existir youtubeVideoId (segunda conta+), só vincula sem upload
-        if (videoData.existingYoutubeVideoId) {
-            supabase.actions.markQueueStatus(uploadId, 'scheduled', {
-                youtubeVideoId: videoData.existingYoutubeVideoId,
-            });
-            return { ...supabaseItem, youtubeVideoId: videoData.existingYoutubeVideoId };
-        }
-
-        // YouTube com arquivo → upload client-side direto ao Google
-        if (videoData.file && videoData._accessToken) {
+        // ── YouTube: upload client-side direto ao Google ──────────────────
+        if (platform === 'youtube' && videoData.file && videoData._accessToken) {
             try {
-                // Inicia sessão resumable no Google
                 const ctrl = new AbortController();
                 const timer = setTimeout(() => ctrl.abort(), 45000);
                 let uploadUrl;
@@ -524,8 +515,12 @@ export default function CalendarPage() {
                                     categoryId: '22',
                                 },
                                 status: {
-                                    privacyStatus: videoData.privacyStatus || 'private',
+                                    privacyStatus: 'private',
                                     selfDeclaredMadeForKids: false,
+                                    // Agendamento nativo do YouTube — ele publica no horário sem depender do nosso job
+                                    ...(videoData.scheduledAt && !videoData.publishNow && {
+                                        publishAt: new Date(videoData.scheduledAt).toISOString(),
+                                    }),
                                 },
                             }),
                         }
@@ -540,12 +535,13 @@ export default function CalendarPage() {
                     clearTimeout(timer);
                 }
 
+                supabase.actions.markQueueStatus(uploadId, 'uploading', { uploadProgress: 0 });
+
                 const uploadResult = await new Promise((resolve, reject) => {
                     const xhr = new XMLHttpRequest();
                     xhr.open('PUT', uploadUrl);
                     xhr.setRequestHeader('Content-Type', videoData.file.type || 'video/mp4');
                     xhr.timeout = 300000;
-
                     if (videoData._onProgress) {
                         xhr.upload.onprogress = (e) => {
                             if (e.lengthComputable) {
@@ -553,13 +549,9 @@ export default function CalendarPage() {
                             }
                         };
                     }
-
                     xhr.onload = () => {
-                        if (xhr.status === 200 || xhr.status === 201) {
-                            resolve(JSON.parse(xhr.responseText));
-                        } else {
-                            reject(new Error(`Upload falhou: HTTP ${xhr.status}`));
-                        }
+                        if (xhr.status === 200 || xhr.status === 201) resolve(JSON.parse(xhr.responseText));
+                        else reject(new Error(`Upload falhou: HTTP ${xhr.status}`));
                     };
                     xhr.onerror = () => reject(new Error('Erro de rede no upload'));
                     xhr.ontimeout = () => reject(new Error('Upload excedeu tempo limite (5 min)'));
@@ -568,26 +560,81 @@ export default function CalendarPage() {
 
                 const youtubeVideoId = uploadResult.id;
 
-                // Marca como scheduled localmente + notifica servidor não-blockante
+                // Awaita upload-complete para garantir DB atualizado
+                try {
+                    const completeRes = await fetch('/api/youtube/upload-complete', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        credentials: 'include',
+                        body: JSON.stringify({
+                            uploadId,
+                            youtubeVideoId,
+                            scheduledAt: videoData.scheduledAt || null,
+                            title: videoData.title,
+                            description: videoData.description || '',
+                            tags: videoData.tags || [],
+                            privacyStatus: videoData.privacyStatus || 'private',
+                        }),
+                    });
+                    if (!completeRes.ok) console.warn('[ScheduleSubmit] upload-complete HTTP', completeRes.status);
+                } catch (completeErr) {
+                    console.error('[ScheduleSubmit] upload-complete falhou:', completeErr.message);
+                }
+
                 supabase.actions.markQueueStatus(uploadId, 'scheduled', { youtubeVideoId, uploadProgress: 100 });
-                fetch('/api/youtube/upload-complete', {
+                return { ...supabaseItem, youtubeVideoId };
+
+            } catch (err) {
+                console.error('[ScheduleSubmit] YouTube upload failed:', err);
+                supabase.actions.markQueueStatus(uploadId, 'failed', { errorMsg: err.message });
+                throw err;
+            }
+        }
+
+        // ── TikTok: salva arquivo no Storage para upload agendado ─────────
+        if (platform === 'tiktok' && videoData.file) {
+            try {
+                supabase.actions.markQueueStatus(uploadId, 'uploading', { uploadProgress: 0 });
+
+                const formData = new FormData();
+                formData.append('file', videoData.file);
+                formData.append('uploadId', uploadId);
+
+                const storageRes = await fetch('/api/uploads/store-video', {
                     method: 'POST',
+                    credentials: 'include',
+                    body: formData,
+                });
+
+                if (!storageRes.ok) {
+                    const err = await storageRes.json().catch(() => ({}));
+                    throw new Error(err.error || `Storage falhou: HTTP ${storageRes.status}`);
+                }
+
+                const { fileUrl } = await storageRes.json();
+
+                await fetch(`/api/uploads/${uploadId}`, {
+                    method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
                     credentials: 'include',
                     body: JSON.stringify({
-                        uploadId,
-                        youtubeVideoId,
-                        scheduledAt: videoData.scheduledAt || null,
-                        title: videoData.title,
-                        description: videoData.description || '',
-                        tags: videoData.tags || [],
-                        privacyStatus: videoData.privacyStatus || 'private',
+                        status: 'scheduled',
+                        metadata: {
+                            ...(supabaseItem.metadata || {}),
+                            fileUrl,
+                            title: videoData.title,
+                            description: videoData.description || '',
+                            tags: videoData.tags || [],
+                            privacyStatus: videoData.privacyStatus || 'public',
+                        },
                     }),
-                }).catch(() => {}); // fire-and-forget
+                });
 
-                return { ...supabaseItem, youtubeVideoId };
+                supabase.actions.markQueueStatus(uploadId, 'scheduled', { uploadProgress: 100 });
+                return { ...supabaseItem, status: 'scheduled' };
+
             } catch (err) {
-                console.error('[ScheduleSubmit] YouTube upload failed:', err);
+                console.error('[ScheduleSubmit] TikTok storage failed:', err);
                 supabase.actions.markQueueStatus(uploadId, 'failed', { errorMsg: err.message });
                 throw err;
             }
@@ -596,12 +643,10 @@ export default function CalendarPage() {
         return supabaseItem;
     };
 
-    // Chamado pelo modal quando TODOS os items terminam com sucesso
     const handleScheduleDone = () => {
         setScheduleModalOpen(false);
         setSelectedScheduleDate(null);
         success('Vídeo(s) agendado(s) com sucesso!');
-        // supabase.uploadQueue atualiza automaticamente via useSupabaseDashboard
     };
 
     const handleRescheduleVideo = async (videoId, newScheduledAt) => {

@@ -452,11 +452,10 @@ export function ScheduleVideoModal({ isOpen, onClose, selectedDate, onSchedule, 
             const otherAccounts = activeAccounts.filter(a => a.platform !== 'youtube');
 
             // Upload YouTube: feito UMA VEZ na primeira conta, demais reutilizam o youtubeVideoId
-            let sharedYoutubeVideoId = null;
             let youtubeFailed = false;
 
             for (let i = 0; i < youtubeAccounts.length; i++) {
-                if (youtubeFailed) break; // skip remaining accounts if first upload failed
+                if (youtubeFailed) break;
                 const account = youtubeAccounts[i];
                 try {
                     const [y, m, dd] = item.scheduledDate.split('-').map(Number);
@@ -472,18 +471,14 @@ export function ScheduleVideoModal({ isOpen, onClose, selectedDate, onSchedule, 
                         publishAt: dt.toISOString(),
                         privacyStatus: item.privacyStatus,
                         tags: item.tags.split(',').map(t => t.trim()).filter(Boolean),
-                        file: i === 0 ? item.file : null,
-                        existingYoutubeVideoId: sharedYoutubeVideoId,
+                        // Cada canal YouTube recebe seu próprio upload (IDs são por canal)
+                        file: item.file,
                         timezone: item.timezone,
                         publishNow: item.publishNow,
                         source: item.publishNow ? 'immediate' : 'scheduled',
                         _onProgress: i === 0 ? onProgress : null,
-                        _accessToken: i === 0 ? account.token : null,
+                        _accessToken: account.token,
                     });
-
-                    if (i === 0 && result?.youtubeVideoId) {
-                        sharedYoutubeVideoId = result.youtubeVideoId;
-                    }
                 } catch (err) {
                     console.error(`[Modal] Failed for youtube/${account.id}:`, err);
                     const isNetworkError = !err.message || err.message.includes('Failed to fetch') || err.message.includes('NetworkError') || err.message.includes('504') || err.message.includes('502') || err.message.includes('Load failed');
