@@ -443,9 +443,9 @@ export default function CalendarPage() {
     };
 
     const handleScheduleSubmit = async (videoData) => {
-        const { _onProgress, ...cleanVideoData } = videoData;
+        const { _onProgress, _accessToken, ...cleanVideoData } = videoData;
         try {
-            return await supabase.actions.addToQueue(cleanVideoData, _onProgress);
+            return await supabase.actions.addToQueue({ ...cleanVideoData, _accessToken }, _onProgress);
         } catch (err) {
             console.error('[ScheduleSubmit] addToQueue failed:', err);
             throw err;

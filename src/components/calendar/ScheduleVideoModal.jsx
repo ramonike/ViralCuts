@@ -478,6 +478,7 @@ export function ScheduleVideoModal({ isOpen, onClose, selectedDate, onSchedule, 
                         publishNow: item.publishNow,
                         source: item.publishNow ? 'immediate' : 'scheduled',
                         _onProgress: i === 0 ? onProgress : null,
+                        _accessToken: i === 0 ? account.token : null,
                     });
 
                     if (i === 0 && result?.youtubeVideoId) {

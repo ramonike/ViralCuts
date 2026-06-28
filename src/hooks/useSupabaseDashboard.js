@@ -107,9 +107,43 @@ export function useSupabaseDashboard() {
     };
 
     // ── Adicionar à fila — 2 etapas: criar registro + upload do arquivo ────
+    async function clientUploadInit(accessToken, fileObj, itemData) {
+        const initRes = await fetch(
+            'https://www.googleapis.com/upload/youtube/v3/videos?uploadType=resumable&part=snippet,status',
+            {
+                method: 'POST',
+                headers: {
+                    Authorization: `Bearer ${accessToken}`,
+                    'Content-Type': 'application/json',
+                    'X-Upload-Content-Length': String(fileObj.size),
+                    'X-Upload-Content-Type': fileObj.type || 'video/mp4',
+                },
+                body: JSON.stringify({
+                    snippet: {
+                        title: itemData.title || '',
+                        description: itemData.description || '',
+                        tags: itemData.tags || [],
+                        categoryId: '22',
+                    },
+                    status: {
+                        privacyStatus: itemData.privacyStatus || 'private',
+                        selfDeclaredMadeForKids: false,
+                    },
+                }),
+            }
+        );
+        if (!initRes.ok) {
+            const errData = await initRes.json().catch(() => ({}));
+            throw new Error(`YouTube rejeitou: ${errData.error?.message || initRes.status}`);
+        }
+        const uploadUrl = initRes.headers.get('Location');
+        if (!uploadUrl) throw new Error('YouTube não retornou URL de upload');
+        return uploadUrl;
+    }
+
     const addToQueue = async (item, onProgress = null) => {
         try {
-            const { file, ...itemWithoutFile } = item;
+            const { file, _accessToken, ...itemWithoutFile } = item;
             const enriched = {
                 ...itemWithoutFile,
                 metadata: {
@@ -185,31 +219,47 @@ export function useSupabaseDashboard() {
                 rawQueueRef.current = updater(rawQueueRef.current);
 
                 try {
-                    // Etapa 2a: Servidor inicia sessão resumable e retorna uploadUrl (timeout 90s)
-                    const initRes = await fetchWithTimeout('/api/youtube/upload-init', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        credentials: 'include',
-                        body: JSON.stringify({
-                            uploadId,
-                            title: item.title || '',
-                            description: item.description || '',
-                            tags: item.tags || [],
-                            privacyStatus: item.privacyStatus || 'private',
-                            accountId: item.accountId || '',
-                            scheduledAt: item.scheduledAt || null,
-                            fileSize: file.size,
-                            mimeType: file.type || 'video/mp4',
-                        }),
-                    }, 90000, 'iniciar sessão YouTube (upload-init)');
+                    // Etapa 2a: Inicia sessão resumable — tenta servidor primeiro, fallback client-side
+                    let uploadUrl;
 
-                    if (!initRes.ok) {
-                        const err = await initRes.json().catch(() => ({}));
-                        const msg = err.error || `Servidor retornou ${initRes.status} — tente novamente em alguns segundos`;
-                        throw new Error(msg);
+                    try {
+                        const initRes = await fetchWithTimeout('/api/youtube/upload-init', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            credentials: 'include',
+                            body: JSON.stringify({
+                                uploadId,
+                                title: item.title || '',
+                                description: item.description || '',
+                                tags: item.tags || [],
+                                privacyStatus: item.privacyStatus || 'private',
+                                accountId: item.accountId || '',
+                                scheduledAt: item.scheduledAt || null,
+                                fileSize: file.size,
+                                mimeType: file.type || 'video/mp4',
+                            }),
+                        }, 45000, 'iniciar sessão YouTube (servidor)');
+
+                        if (!initRes.ok) {
+                            const err = await initRes.json().catch(() => ({}));
+                            throw new Error(err.error || `Servidor retornou ${initRes.status}`);
+                        }
+
+                        const data = await initRes.json();
+                        uploadUrl = data.uploadUrl;
+                        console.log('[addToQueue] Upload-init via servidor OK');
+                    } catch (serverErr) {
+                        if (_accessToken) {
+                            console.log('[addToQueue] Servidor falhou, tentando client-side...', serverErr.message);
+                            uploadUrl = await clientUploadInit(_accessToken, file, item);
+                            console.log('[addToQueue] Upload-init via client OK');
+                        } else {
+                            throw new Error(serverErr.message.includes('Timeout')
+                                ? 'Servidor demorou a responder e não há token para fallback — tente novamente'
+                                : serverErr.message
+                            );
+                        }
                     }
-
-                    const { uploadUrl } = await initRes.json();
 
                     // Etapa 2b: Browser envia arquivo DIRETAMENTE para o Google (sem passar pelo Render)
                     const uploadResult = await new Promise((resolve, reject) => {
