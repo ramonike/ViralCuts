@@ -122,9 +122,23 @@ export function useSupabaseDashboard() {
                 },
             };
 
+            // Helper para fetch com timeout e abort
+            const fetchWithTimeout = (url, opts, ms, stepLabel) => {
+                const ctrl = new AbortController();
+                const timer = setTimeout(() => ctrl.abort(), ms);
+                return fetch(url, { ...opts, signal: ctrl.signal })
+                    .finally(() => clearTimeout(timer))
+                    .catch(err => {
+                        if (err.name === 'AbortError') {
+                            throw new Error(`Timeout (${ms / 1000}s) em ${stepLabel} — servidor pode estar ocupado, tente novamente`);
+                        }
+                        throw err;
+                    });
+            };
+
             // Etapa 1: Cria registro no banco com timeout
             const queueTimeout = new Promise((_, reject) =>
-                setTimeout(() => reject(new Error('Servidor não respondeu (timeout ao criar agendamento)')), 20000)
+                setTimeout(() => reject(new Error('Timeout ao salvar agendamento — servidor não respondeu')), 30000)
             );
             const res = await Promise.race([api.addToQueue(enriched), queueTimeout]);
             const uploadId = res.id;
@@ -135,14 +149,6 @@ export function useSupabaseDashboard() {
             if (!activeAccountId || !itemAccountId || itemAccountId === activeAccountId) {
                 setUploadQueue(prev => [...prev, newItem]);
             }
-
-            // Helper para fetch com timeout e abort
-            const fetchWithTimeout = (url, opts, ms = 20000) => {
-                const ctrl = new AbortController();
-                const timer = setTimeout(() => ctrl.abort(), ms);
-                return fetch(url, { ...opts, signal: ctrl.signal })
-                    .finally(() => clearTimeout(timer));
-            };
 
             // Etapa 2: Se há arquivo e plataforma YouTube, faz upload DIRETO browser→YouTube
             if ((file || item.existingYoutubeVideoId) && (item.platform === 'youtube' || !item.platform)) {
@@ -162,7 +168,7 @@ export function useSupabaseDashboard() {
                             tags: item.tags || [],
                             privacyStatus: item.privacyStatus || 'private',
                         }),
-                    });
+                    }, 30000, 'notificar servidor (upload-complete)');
                     const doneUpdater = prev => prev.map(q =>
                         q.id === uploadId
                             ? { ...q, status: 'scheduled', youtubeVideoId: item.existingYoutubeVideoId, uploadProgress: 100 }
@@ -179,7 +185,7 @@ export function useSupabaseDashboard() {
                 rawQueueRef.current = updater(rawQueueRef.current);
 
                 try {
-                    // Etapa 2a: Servidor inicia sessão resumable e retorna uploadUrl (timeout 30s)
+                    // Etapa 2a: Servidor inicia sessão resumable e retorna uploadUrl (timeout 90s)
                     const initRes = await fetchWithTimeout('/api/youtube/upload-init', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
@@ -195,7 +201,7 @@ export function useSupabaseDashboard() {
                             fileSize: file.size,
                             mimeType: file.type || 'video/mp4',
                         }),
-                    }, 30000);
+                    }, 90000, 'iniciar sessão YouTube (upload-init)');
 
                     if (!initRes.ok) {
                         const err = await initRes.json().catch(() => ({}));
@@ -237,7 +243,7 @@ export function useSupabaseDashboard() {
 
                     const youtubeVideoId = uploadResult.id;
 
-                    // Etapa 2c: Notifica servidor que upload concluiu (timeout 20s)
+                    // Etapa 2c: Notifica servidor que upload concluiu (timeout 60s)
                     await fetchWithTimeout('/api/youtube/upload-complete', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
@@ -251,7 +257,7 @@ export function useSupabaseDashboard() {
                             tags: item.tags || [],
                             privacyStatus: item.privacyStatus || 'private',
                         }),
-                    });
+                    }, 60000, 'finalizar agendamento (upload-complete)');
 
                     const doneUpdater = prev => prev.map(q =>
                         q.id === uploadId
