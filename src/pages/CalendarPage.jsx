@@ -443,10 +443,13 @@ export default function CalendarPage() {
     };
 
     const handleScheduleSubmit = async (videoData) => {
-        // Extrai callback de progresso (não deve ir para o backend)
         const { _onProgress, ...cleanVideoData } = videoData;
-        // Apenas salva na fila — NÃO fecha o modal aqui
-        await supabase.actions.addToQueue(cleanVideoData, _onProgress);
+        try {
+            return await supabase.actions.addToQueue(cleanVideoData, _onProgress);
+        } catch (err) {
+            console.error('[ScheduleSubmit] addToQueue failed:', err);
+            throw err;
+        }
     };
 
     // Chamado pelo modal quando TODOS os items terminam com sucesso

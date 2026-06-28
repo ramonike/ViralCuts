@@ -461,7 +461,7 @@ export function ScheduleVideoModal({ isOpen, onClose, selectedDate, onSchedule, 
                     const [h, mn] = item.scheduledTime.split(':').map(Number);
                     const dt = item.publishNow ? new Date() : new Date(y, m - 1, dd, h, mn, 0);
 
-                    await onSchedule({
+                    const result = await onSchedule({
                         title: item.title,
                         description: item.description,
                         platform: 'youtube',
@@ -470,7 +470,6 @@ export function ScheduleVideoModal({ isOpen, onClose, selectedDate, onSchedule, 
                         publishAt: dt.toISOString(),
                         privacyStatus: item.privacyStatus,
                         tags: item.tags.split(',').map(t => t.trim()).filter(Boolean),
-                        // Primeira conta: envia o arquivo. Demais: reutiliza o ID já uploadado
                         file: i === 0 ? item.file : null,
                         existingYoutubeVideoId: sharedYoutubeVideoId,
                         timezone: item.timezone,
@@ -479,12 +478,8 @@ export function ScheduleVideoModal({ isOpen, onClose, selectedDate, onSchedule, 
                         _onProgress: i === 0 ? onProgress : null,
                     });
 
-                    // Após primeira conta, captura o youtubeVideoId para reutilizar
-                    // (o addToQueue retorna o item com youtubeVideoId)
-                    if (i === 0 && !sharedYoutubeVideoId) {
-                        // Busca da fila — o addToQueue atualiza o estado
-                        // Usamos um pequeno delay para o estado atualizar
-                        await new Promise(r => setTimeout(r, 100));
+                    if (i === 0 && result?.youtubeVideoId) {
+                        sharedYoutubeVideoId = result.youtubeVideoId;
                     }
                 } catch (err) {
                     console.error(`[Modal] Failed for youtube/${account.id}:`, err);

@@ -199,6 +199,7 @@ export function useSupabaseDashboard() {
                         const xhr = new XMLHttpRequest();
                         xhr.open('PUT', uploadUrl);
                         xhr.setRequestHeader('Content-Type', file.type || 'video/mp4');
+                        xhr.timeout = 300000; // 5 min timeout — evita travamento eterno
 
                         xhr.upload.onprogress = (e) => {
                             if (e.lengthComputable && onProgress) {
@@ -220,6 +221,7 @@ export function useSupabaseDashboard() {
                             }
                         };
                         xhr.onerror = () => reject(new Error('Erro de rede no upload'));
+                        xhr.ontimeout = () => reject(new Error('Upload excedeu tempo limite (5 min)'));
                         xhr.send(file);
                     });
 
