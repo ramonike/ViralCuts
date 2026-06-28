@@ -725,37 +725,18 @@ export default function CalendarPage() {
 
             {/* Grid */}
             <div style={{ display: "grid", gridTemplateColumns: "1fr 300px", gap: 20, alignItems: "start" }}>
-                <div className="vc-card" style={{ overflow: "hidden", padding: 0 }}>
-                    <div style={{ padding: "14px 20px", borderBottom: "1px solid var(--border-subtle)", display: "flex", alignItems: "center", justifyContent: "space-between", position: "relative" }}>
-                        <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 2, background: "var(--accent-coral)" }} />
-                        <div>
-                            <span className="vc-metric-label" style={{ marginBottom: 2 }}>Calendário</span>
-                            <p style={{ margin: 0, fontSize: "0.75rem", color: "var(--text-muted)" }}>Agendamentos e histórico</p>
-                        </div>
-                        <div style={{ display: "flex", gap: 12, fontSize: "0.6875rem", color: "var(--text-muted)" }}>
-                            <span style={{ display: "flex", alignItems: "center", gap: 5 }}>
-                                <div style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--accent-teal)" }} /> Publicado
-                            </span>
-                            <span style={{ display: "flex", alignItems: "center", gap: 5 }}>
-                                <div style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--accent-coral)" }} /> Agendado
-                            </span>
-                        </div>
-                    </div>
-                    <div style={{ padding: "0 4px 4px" }}>
-                        <ModernCalendar
-                            history={filteredHistory}
-                            uploadQueue={combinedQueue}
-                            onScheduleVideo={handleScheduleVideo}
-                            onEditVideo={(video) => { setSelectedVideo(video); setVideoModalOpen(true); }}
-                            onDeleteVideo={handleDeleteVideo}
-                            onViewVideo={(video) => { setSelectedVideo(video); setVideoModalOpen(true); }}
-                            channelFilter={channelFilter}
-                            activeFilter={activeFilter}
-                            onFilterChange={setActiveFilter}
-                            loading={isFirstLoad}
-                        />
-                    </div>
-                </div>
+                <ModernCalendar
+                    history={filteredHistory}
+                    uploadQueue={combinedQueue}
+                    onScheduleVideo={handleScheduleVideo}
+                    onEditVideo={(video) => { setSelectedVideo(video); setVideoModalOpen(true); }}
+                    onDeleteVideo={handleDeleteVideo}
+                    onViewVideo={(video) => { setSelectedVideo(video); setVideoModalOpen(true); }}
+                    channelFilter={channelFilter}
+                    activeFilter={activeFilter}
+                    onFilterChange={setActiveFilter}
+                    loading={isFirstLoad}
+                />
 
                 <QueueSidebar
                     queue={combinedQueue}
