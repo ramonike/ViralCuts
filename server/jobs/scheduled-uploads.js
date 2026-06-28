@@ -200,7 +200,7 @@ async function processScheduledUpload(upload) {
       // Limpa arquivo do storage após publicação
       try {
         const { deleteVideoFromStorage } = await import("../db/supabase.js");
-        const ext = (upload.mimeType || "video/mp4").split("/")[1] || "mp4";
+        const ext = (upload.metadata?.mimeType || "video/mp4").split("/")[1] || "mp4";
         await deleteVideoFromStorage(upload.userId, upload.id, ext);
       } catch (e) {
         console.warn("[Scheduled Uploads] Não foi possível limpar storage:", e.message);
