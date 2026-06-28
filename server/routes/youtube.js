@@ -928,7 +928,7 @@ youtube.post("/upload-init", authMiddleware, async (c) => {
 
     // Buscar token
     let account = accountId
-      ? await prisma.account.findFirst({ where: { userId, id: { contains: accountId } } })
+      ? await prisma.account.findFirst({ where: { userId, id: `youtube_${userId}_${accountId}` } })
       : null;
     if (!account) {
       account = await prisma.account.findFirst({ where: { userId, providerId: "youtube" } });

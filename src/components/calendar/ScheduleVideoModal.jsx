@@ -453,8 +453,10 @@ export function ScheduleVideoModal({ isOpen, onClose, selectedDate, onSchedule, 
 
             // Upload YouTube: feito UMA VEZ na primeira conta, demais reutilizam o youtubeVideoId
             let sharedYoutubeVideoId = null;
+            let youtubeFailed = false;
 
             for (let i = 0; i < youtubeAccounts.length; i++) {
+                if (youtubeFailed) break; // skip remaining accounts if first upload failed
                 const account = youtubeAccounts[i];
                 try {
                     const [y, m, dd] = item.scheduledDate.split('-').map(Number);
@@ -487,6 +489,7 @@ export function ScheduleVideoModal({ isOpen, onClose, selectedDate, onSchedule, 
                     itemError = isNetworkError
                         ? 'Servidor iniciando — aguarde 30s e tente novamente'
                         : (err.message || 'Erro ao agendar para YouTube');
+                    if (i === 0) youtubeFailed = true;
                 }
             }
 
