@@ -29,29 +29,47 @@ export const SidebarLeft = () => {
 
     // Pipeline está em destaque — é o coração do produto
     const navMain = [
-        { icon: Home,       label: 'Dashboard',  path: '/dashboard' },
+        { icon: Home, label: 'Dashboard', path: '/dashboard' },
         {
             icon: GitBranch,
             label: 'Pipeline',       // era "Calendário"
             path: '/dashboard/calendar',
             highlight: true,         // acento visual especial
         },
-        { icon: Youtube,     label: 'Canal',      path: '/dashboard/videos' },
-        { icon: Sparkles,   label: 'Criação IA', path: '/dashboard/creation' },
-        { icon: TrendingUp, label: 'Analytics',  path: '/dashboard/analytics' },
+        { icon: Youtube, label: 'Canal', path: '/dashboard/videos' },
+        { icon: Sparkles, label: 'Criação IA', path: '/dashboard/creation' },
+        { icon: TrendingUp, label: 'Analytics', path: '/dashboard/analytics' },
     ];
 
     const navAccount = [
-        { icon: User,     label: 'Perfil',          path: '/dashboard/profile' },
-        { icon: Settings, label: 'Configurações',    path: '/dashboard/settings' },
+        { icon: User, label: 'Perfil', path: '/dashboard/profile' },
+        { icon: Settings, label: 'Configurações', path: '/dashboard/settings' },
     ];
 
     return (
         <div className="vc-sidebar">
             {/* Logo */}
             <div className="vc-logo">
-                <div className="vc-logo-mark">VC</div>
-                <span className="vc-logo-text">ViralCuts</span>
+                <div className="vc-logo-mark" style={{
+                    background: 'linear-gradient(135deg, var(--accent-coral), var(--accent-amber))',
+                    clipPath: 'none',
+                    borderRadius: 'var(--radius-md)',
+                }}>VC</div>
+                <div>
+                    <div className="vc-logo-text">ViralCuts</div>
+                    {plan && (
+                        <div style={{
+                            fontSize: '10px',
+                            fontWeight: 700,
+                            color: 'var(--accent-amber)',
+                            letterSpacing: '0.06em',
+                            lineHeight: 1,
+                            fontFamily: 'var(--font-display)',
+                        }}>
+                            {plan.displayName?.toUpperCase() || 'FREE'}
+                        </div>
+                    )}
+                </div>
             </div>
 
             {/* Nav */}

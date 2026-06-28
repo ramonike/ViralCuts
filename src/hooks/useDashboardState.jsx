@@ -353,8 +353,19 @@ export function useDashboardLogic() {
 
 
         } else {
-            console.log("[useDashboardState] No token, clearing channelStats");
-            setState(prev => ({ ...prev, channelStats: null }));
+            console.log("[useDashboardState] No token, clearing channelStats and history");
+            setState(prev => ({
+                ...prev,
+                channelStats: null,
+                history: {},
+                channelsData: {},
+                recentUploads: [],
+                auth: {
+                    ...prev.auth,
+                    activeAccountId: null,
+                    connectedAccounts: [],
+                },
+            }));
         }
     }, [state.auth.youtubeToken]);
 

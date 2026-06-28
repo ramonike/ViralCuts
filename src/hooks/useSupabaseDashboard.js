@@ -188,7 +188,8 @@ export function useSupabaseDashboard() {
 
                     if (!initRes.ok) {
                         const err = await initRes.json().catch(() => ({}));
-                        throw new Error(err.error || 'Falha ao iniciar sessão de upload');
+                        const msg = err.error || `Servidor retornou ${initRes.status} — tente novamente em alguns segundos`;
+                        throw new Error(msg);
                     }
 
                     const { uploadUrl } = await initRes.json();

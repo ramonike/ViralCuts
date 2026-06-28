@@ -8,7 +8,7 @@ import { PageLayout } from "../components/layout/PageLayout";
 import { useNotification } from "../contexts/NotificationContext";
 import { useTheme } from "../contexts/ThemeContext";
 import { rescheduleUpload, cancelScheduledUpload } from "../api/youtube";
-import { CalendarDays, Clock, CheckCircle2, TrendingUp, GitBranch, Video, Loader2, RefreshCw } from "lucide-react";
+import { CalendarDays, Clock, CheckCircle2, TrendingUp, GitBranch, Video, Loader2, RefreshCw, Plus } from "lucide-react";
 import { PlatformIcon } from "../components/shared/PlatformIcon";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -34,27 +34,38 @@ function normalizeUpload(u) {
 
 // ─── Stat Card ────────────────────────────────────────────────────────────────
 
-function PipelineStat({ icon: Icon, label, value, accent = "neutral", loading }) {
+function PipelineStat({ icon: Icon, label, value, sublabel, accent = "neutral", loading }) {
+    const accentColor = accent === "coral" ? "var(--accent-coral)"
+        : accent === "amber" ? "var(--accent-amber)"
+            : accent === "teal" ? "var(--accent-teal)"
+                : "var(--text-muted)";
+    const accentBg = accent === "coral" ? "var(--accent-coral-3)"
+        : accent === "amber" ? "var(--accent-amber-3)"
+            : accent === "teal" ? "var(--accent-teal-3)"
+                : "var(--bg-elevated)";
     return (
         <div className={`vc-metric-card metric-${accent}`}>
-            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
                 <div style={{
-                    width: 32, height: 32, borderRadius: "var(--radius-md)",
-                    background: "var(--bg-elevated)",
+                    width: 28, height: 28, borderRadius: "var(--radius-md)",
+                    background: accentBg,
                     display: "flex", alignItems: "center", justifyContent: "center",
+                    flexShrink: 0,
                 }}>
-                    <Icon size={15} style={{
-                        color: accent === "coral" ? "var(--accent-coral)"
-                            : accent === "amber" ? "var(--accent-amber)"
-                                : accent === "teal" ? "var(--accent-teal)"
-                                    : "var(--text-muted)"
-                    }} />
+                    <Icon size={14} style={{ color: accentColor }} />
                 </div>
                 <span className="vc-metric-label" style={{ marginBottom: 0 }}>{label}</span>
             </div>
             {loading
-                ? <div style={{ height: 32, width: 40, borderRadius: 6, background: "var(--bg-elevated)", animation: "pulse 1.5s ease-in-out infinite" }} />
-                : <div className="vc-metric-value">{value}</div>
+                ? <div style={{ height: 28, width: 40, borderRadius: 6, background: "var(--bg-elevated)", animation: "pulse 1.5s ease-in-out infinite" }} />
+                : <>
+                    <div className="vc-metric-value" style={{ fontSize: '1.625rem' }}>{value}</div>
+                    {sublabel && (
+                        <div style={{ fontSize: '10px', color: 'var(--text-muted)', marginTop: 4, fontFamily: 'var(--font-body)' }}>
+                            {sublabel}
+                        </div>
+                    )}
+                </>
             }
         </div>
     );
@@ -91,9 +102,12 @@ function QueueSidebar({ queue, onScheduleNow, loading, onRefresh }) {
     const statusBadge = (status) => {
         if (["done", "success", "published", "completed"].includes(status)) return "vc-badge-teal";
         if (["uploading", "processing"].includes(status)) return "vc-badge-amber";
-        if (status === "scheduled") return "vc-badge-coral";
-        return "vc-badge-muted";
+        if (status === "scheduled") return "vc-badge-teal"; // agendado = teal (positivo), não coral
+        return "vc-badge-muted"; // pending = neutro
     };
+
+    const ytCount = queue.filter(v => v.platform === 'youtube').length;
+    const tkCount = queue.filter(v => v.platform === 'tiktok').length;
 
     return (
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
@@ -105,7 +119,19 @@ function QueueSidebar({ queue, onScheduleNow, loading, onRefresh }) {
                     </div>
                     <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                         <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-                            <span className="vc-badge vc-badge-muted">{queue.length} {queue.length === 1 ? "item" : "itens"}</span>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                <span className="vc-badge vc-badge-muted">{queue.length} {queue.length === 1 ? "item" : "itens"}</span>
+                                {ytCount > 0 && (
+                                    <span style={{ display: 'flex', alignItems: 'center', gap: 3, fontSize: '10px', color: 'var(--text-muted)' }}>
+                                        <PlatformIcon platform="youtube" size={10} />{ytCount}
+                                    </span>
+                                )}
+                                {tkCount > 0 && (
+                                    <span style={{ display: 'flex', alignItems: 'center', gap: 3, fontSize: '10px', color: 'var(--text-muted)' }}>
+                                        <PlatformIcon platform="tiktok" size={10} />{tkCount}
+                                    </span>
+                                )}
+                            </div>
                             {/* Platform breakdown */}
                             {(() => {
                                 const counts = {};
@@ -470,24 +496,39 @@ export default function CalendarPage() {
             {/* Header */}
             <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", flexWrap: "wrap", gap: 12, marginBottom: 20 }}>
                 <div>
+                    {/* Breadcrumb */}
+                    <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
+                        <GitBranch size={12} style={{ color: "var(--text-muted)" }} />
+                        <span style={{ fontSize: "11px", color: "var(--text-muted)", fontFamily: "var(--font-body)" }}>Pipeline</span>
+                        <span style={{ fontSize: "11px", color: "var(--text-muted)" }}>/</span>
+                        <span style={{ fontSize: "11px", color: "var(--text-secondary)", fontWeight: 500, fontFamily: "var(--font-body)" }}>Calendário</span>
+                    </div>
                     <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
-                        <GitBranch size={18} style={{ color: "var(--accent-coral)" }} />
                         <h1 style={{ margin: 0, fontFamily: "var(--font-display)", fontWeight: 700, fontSize: "1.875rem", letterSpacing: "-0.035em", color: "var(--text-primary)", lineHeight: 1 }}>
                             Pipeline
                         </h1>
                     </div>
-                    <p style={{ margin: 0, fontSize: "0.9375rem", color: "var(--text-muted)" }}>
+                    <p style={{ margin: 0, fontSize: "0.875rem", color: "var(--text-muted)" }}>
                         Agendamento e distribuição multicanal dos seus Shorts
                     </p>
                 </div>
+                {/* CTA sempre visível no header */}
+                <button
+                    className="vc-btn vc-btn-primary"
+                    onClick={() => setScheduleModalOpen(true)}
+                    style={{ alignSelf: 'flex-end' }}
+                >
+                    <Plus size={15} />
+                    Novo upload
+                </button>
             </div>
 
             {/* Stats */}
             <div className="vc-grid-metrics" style={{ marginBottom: 20 }}>
-                <PipelineStat icon={CalendarDays} label="Esta semana" value={statsWeek} accent="coral" loading={isFirstLoad} />
-                <PipelineStat icon={Clock} label="Hoje" value={statsToday} accent="amber" loading={isFirstLoad} />
-                <PipelineStat icon={TrendingUp} label="Próximos" value={statsUpcoming} accent="neutral" loading={isFirstLoad} />
-                <PipelineStat icon={CheckCircle2} label="Publicados" value={statsPosted} accent="teal" loading={isFirstLoad} />
+                <PipelineStat icon={CalendarDays} label="Esta semana" value={statsWeek} sublabel="agendados" accent="coral" loading={isFirstLoad} />
+                <PipelineStat icon={Clock} label="Hoje" value={statsToday} sublabel="para publicar" accent="amber" loading={isFirstLoad} />
+                <PipelineStat icon={TrendingUp} label="Próximos" value={statsUpcoming} sublabel="nos próximos 7 dias" accent="neutral" loading={isFirstLoad} />
+                <PipelineStat icon={CheckCircle2} label="Publicados" value={statsPosted} sublabel="via ViralCuts" accent="teal" loading={isFirstLoad} />
             </div>
 
             {/* Grid */}

@@ -360,7 +360,21 @@ export function ScheduleVideoModal({ isOpen, onClose, selectedDate, onSchedule, 
 
     useEffect(() => {
         if (isOpen) {
-            setItems([]);
+            // Só reseta se não havia itens anteriores com erro (permite retry)
+            setItems(prev => {
+                const hadError = prev.some(i => i.status === 'error' || i.status === 'failed');
+                if (hadError) {
+                    // Reseta status para idle para permitir nova tentativa
+                    return prev.map(i => ({
+                        ...i,
+                        status: 'idle',
+                        errorMsg: '',
+                        uploadProgress: 0,
+                        expanded: true,
+                    }));
+                }
+                return []; // abre limpo se não havia erro
+            });
             setGlobalError('');
             setSubmitting(false);
             // Auto-selecionar todas as contas conectadas
@@ -474,7 +488,10 @@ export function ScheduleVideoModal({ isOpen, onClose, selectedDate, onSchedule, 
                     }
                 } catch (err) {
                     console.error(`[Modal] Failed for youtube/${account.id}:`, err);
-                    itemError = err.message || 'Erro ao agendar para YouTube';
+                    const isNetworkError = !err.message || err.message.includes('Failed to fetch') || err.message.includes('NetworkError') || err.message.includes('504') || err.message.includes('502') || err.message.includes('Load failed');
+                    itemError = isNetworkError
+                        ? 'Servidor iniciando — aguarde 30s e tente novamente'
+                        : (err.message || 'Erro ao agendar para YouTube');
                 }
             }
 
