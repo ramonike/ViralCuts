@@ -108,37 +108,49 @@ export function useSupabaseDashboard() {
 
     // ── Adicionar à fila — 2 etapas: criar registro + upload do arquivo ────
     async function clientUploadInit(accessToken, fileObj, itemData) {
-        const initRes = await fetch(
-            'https://www.googleapis.com/upload/youtube/v3/videos?uploadType=resumable&part=snippet,status',
-            {
-                method: 'POST',
-                headers: {
-                    Authorization: `Bearer ${accessToken}`,
-                    'Content-Type': 'application/json',
-                    'X-Upload-Content-Length': String(fileObj.size),
-                    'X-Upload-Content-Type': fileObj.type || 'video/mp4',
-                },
-                body: JSON.stringify({
-                    snippet: {
-                        title: itemData.title || '',
-                        description: itemData.description || '',
-                        tags: itemData.tags || [],
-                        categoryId: '22',
+        const ctrl = new AbortController();
+        const timer = setTimeout(() => ctrl.abort(), 45000);
+        try {
+            const initRes = await fetch(
+                'https://www.googleapis.com/upload/youtube/v3/videos?uploadType=resumable&part=snippet,status',
+                {
+                    signal: ctrl.signal,
+                    method: 'POST',
+                    headers: {
+                        Authorization: `Bearer ${accessToken}`,
+                        'Content-Type': 'application/json',
+                        'X-Upload-Content-Length': String(fileObj.size),
+                        'X-Upload-Content-Type': fileObj.type || 'video/mp4',
                     },
-                    status: {
-                        privacyStatus: itemData.privacyStatus || 'private',
-                        selfDeclaredMadeForKids: false,
-                    },
-                }),
+                    body: JSON.stringify({
+                        snippet: {
+                            title: itemData.title || '',
+                            description: itemData.description || '',
+                            tags: itemData.tags || [],
+                            categoryId: '22',
+                        },
+                        status: {
+                            privacyStatus: itemData.privacyStatus || 'private',
+                            selfDeclaredMadeForKids: false,
+                        },
+                    }),
+                }
+            );
+            if (!initRes.ok) {
+                const errData = await initRes.json().catch(() => ({}));
+                throw new Error(`YouTube rejeitou: ${errData.error?.message || initRes.status}`);
             }
-        );
-        if (!initRes.ok) {
-            const errData = await initRes.json().catch(() => ({}));
-            throw new Error(`YouTube rejeitou: ${errData.error?.message || initRes.status}`);
+            const uploadUrl = initRes.headers.get('Location');
+            if (!uploadUrl) throw new Error('YouTube não retornou URL de upload');
+            return uploadUrl;
+        } catch (err) {
+            if (err.name === 'AbortError') {
+                throw new Error('Timeout ao iniciar sessão no YouTube — verifique conexão');
+            }
+            throw err;
+        } finally {
+            clearTimeout(timer);
         }
-        const uploadUrl = initRes.headers.get('Location');
-        if (!uploadUrl) throw new Error('YouTube não retornou URL de upload');
-        return uploadUrl;
     }
 
     const addToQueue = async (item, onProgress = null) => {
