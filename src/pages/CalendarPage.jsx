@@ -443,13 +443,115 @@ export default function CalendarPage() {
     };
 
     const handleScheduleSubmit = async (videoData) => {
-        const { _onProgress, _accessToken, ...cleanVideoData } = videoData;
-        try {
-            return await supabase.actions.addToQueue({ ...cleanVideoData, _accessToken }, _onProgress);
-        } catch (err) {
-            console.error('[ScheduleSubmit] addToQueue failed:', err);
-            throw err;
+        // Cria registro no banco (persistência)
+        const supabaseItem = await supabase.actions.addToQueue(videoData);
+        const uploadId = supabaseItem.id;
+
+        // Se existir youtubeVideoId (segunda conta+), só vincula sem upload
+        if (videoData.existingYoutubeVideoId) {
+            supabase.actions.markQueueStatus(uploadId, 'scheduled', {
+                youtubeVideoId: videoData.existingYoutubeVideoId,
+            });
+            return { ...supabaseItem, youtubeVideoId: videoData.existingYoutubeVideoId };
         }
+
+        // YouTube com arquivo → upload client-side direto ao Google
+        if (videoData.file && videoData._accessToken) {
+            try {
+                // Inicia sessão resumable no Google
+                const ctrl = new AbortController();
+                const timer = setTimeout(() => ctrl.abort(), 45000);
+                let uploadUrl;
+                try {
+                    const initRes = await fetch(
+                        'https://www.googleapis.com/upload/youtube/v3/videos?uploadType=resumable&part=snippet,status',
+                        {
+                            signal: ctrl.signal,
+                            method: 'POST',
+                            headers: {
+                                Authorization: `Bearer ${videoData._accessToken}`,
+                                'Content-Type': 'application/json',
+                                'X-Upload-Content-Length': String(videoData.file.size),
+                                'X-Upload-Content-Type': videoData.file.type || 'video/mp4',
+                            },
+                            body: JSON.stringify({
+                                snippet: {
+                                    title: videoData.title || '',
+                                    description: videoData.description || '',
+                                    tags: videoData.tags || [],
+                                    categoryId: '22',
+                                },
+                                status: {
+                                    privacyStatus: videoData.privacyStatus || 'private',
+                                    selfDeclaredMadeForKids: false,
+                                },
+                            }),
+                        }
+                    );
+                    if (!initRes.ok) {
+                        const errData = await initRes.json().catch(() => ({}));
+                        throw new Error(errData.error?.message || `HTTP ${initRes.status}`);
+                    }
+                    uploadUrl = initRes.headers.get('Location');
+                    if (!uploadUrl) throw new Error('YouTube não retornou URL de upload');
+                } finally {
+                    clearTimeout(timer);
+                }
+
+                const uploadResult = await new Promise((resolve, reject) => {
+                    const xhr = new XMLHttpRequest();
+                    xhr.open('PUT', uploadUrl);
+                    xhr.setRequestHeader('Content-Type', videoData.file.type || 'video/mp4');
+                    xhr.timeout = 300000;
+
+                    if (videoData._onProgress) {
+                        xhr.upload.onprogress = (e) => {
+                            if (e.lengthComputable) {
+                                videoData._onProgress(uploadId, Math.round((e.loaded / e.total) * 100));
+                            }
+                        };
+                    }
+
+                    xhr.onload = () => {
+                        if (xhr.status === 200 || xhr.status === 201) {
+                            resolve(JSON.parse(xhr.responseText));
+                        } else {
+                            reject(new Error(`Upload falhou: HTTP ${xhr.status}`));
+                        }
+                    };
+                    xhr.onerror = () => reject(new Error('Erro de rede no upload'));
+                    xhr.ontimeout = () => reject(new Error('Upload excedeu tempo limite (5 min)'));
+                    xhr.send(videoData.file);
+                });
+
+                const youtubeVideoId = uploadResult.id;
+
+                // Marca como scheduled localmente + notifica servidor não-blockante
+                supabase.actions.markQueueStatus(uploadId, 'scheduled', { youtubeVideoId, uploadProgress: 100 });
+                fetch('/api/youtube/upload-complete', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({
+                        uploadId,
+                        youtubeVideoId,
+                        scheduledAt: videoData.scheduledAt || null,
+                        title: videoData.title,
+                        description: videoData.description || '',
+                        tags: videoData.tags || [],
+                        privacyStatus: videoData.privacyStatus || 'private',
+                    }),
+                }).catch(() => {}); // fire-and-forget
+
+                return { ...supabaseItem, youtubeVideoId };
+            } catch (err) {
+                console.error('[ScheduleSubmit] YouTube upload failed:', err);
+                supabase.actions.markQueueStatus(uploadId, 'failed', { errorMsg: err.message });
+                throw err;
+            }
+        }
+
+        return supabaseItem;
     };
 
     // Chamado pelo modal quando TODOS os items terminam com sucesso
