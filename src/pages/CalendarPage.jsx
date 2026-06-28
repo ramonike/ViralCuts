@@ -408,6 +408,19 @@ export default function CalendarPage() {
     const endOfWeek = new Date(startOfWeek);
     endOfWeek.setDate(startOfWeek.getDate() + 7);
 
+    // Coleciona títulos publicados para evitar contar duplicados da fila que já estão no histórico (sync delay)
+    const publishedTitles = useMemo(() => {
+        const titles = new Set();
+        Object.values(filteredHistory || {}).forEach(day => {
+            (day?.completedItems || []).forEach(item => {
+                if (item.title) {
+                    titles.add(item.title.trim().toLowerCase());
+                }
+            });
+        });
+        return titles;
+    }, [filteredHistory]);
+
     // Contar itens do histórico local como publicados também
     const historyPublishedCount = useMemo(() => {
         let count = 0;
@@ -417,24 +430,53 @@ export default function CalendarPage() {
         return count;
     }, [filteredHistory]);
 
-    const statsWeek = combinedQueue.filter(v => {
-        const d = new Date(v.scheduledAt || v.publishAt || v.publishedAt || 0);
-        return d >= startOfWeek && d < endOfWeek;
-    }).length;
+    const statsWeek = useMemo(() => {
+        return combinedQueue.filter(v => {
+            const d = new Date(v.scheduledAt || v.publishAt || 0);
+            const isPending = !["done", "success", "published", "completed"].includes(v.status);
+            const titleNormalized = v.title?.trim().toLowerCase();
+            const isAlreadyPublished = titleNormalized && publishedTitles.has(titleNormalized);
+            return isPending && !isAlreadyPublished && d >= startOfWeek && d < endOfWeek;
+        }).length;
+    }, [combinedQueue, startOfWeek, endOfWeek, publishedTitles]);
 
-    const statsToday = combinedQueue.filter(v => {
-        const d = new Date(v.scheduledAt || v.publishAt || v.publishedAt || 0);
-        return d.toDateString() === now.toDateString();
-    }).length;
+    const statsToday = useMemo(() => {
+        return combinedQueue.filter(v => {
+            const d = new Date(v.scheduledAt || v.publishAt || 0);
+            const isPending = !["done", "success", "published", "completed"].includes(v.status);
+            const titleNormalized = v.title?.trim().toLowerCase();
+            const isAlreadyPublished = titleNormalized && publishedTitles.has(titleNormalized);
+            return isPending && !isAlreadyPublished && d.toDateString() === now.toDateString();
+        }).length;
+    }, [combinedQueue, now, publishedTitles]);
 
-    const statsUpcoming = combinedQueue.filter(v => {
-        const d = new Date(v.scheduledAt || v.publishAt || 0);
-        return d > now && !["done", "success", "published", "completed"].includes(v.status);
-    }).length;
+    const statsUpcoming = useMemo(() => {
+        return combinedQueue.filter(v => {
+            const d = new Date(v.scheduledAt || v.publishAt || 0);
+            const isPending = !["done", "success", "published", "completed"].includes(v.status);
+            const titleNormalized = v.title?.trim().toLowerCase();
+            const isAlreadyPublished = titleNormalized && publishedTitles.has(titleNormalized);
+            return isPending && !isAlreadyPublished && d > now;
+        }).length;
+    }, [combinedQueue, now, publishedTitles]);
 
-    const statsPosted = combinedQueue.filter(v =>
-        ["done", "success", "published", "completed"].includes(v.status)
-    ).length + historyPublishedCount;
+    const statsPosted = useMemo(() => {
+        let count = historyPublishedCount;
+        combinedQueue.forEach(v => {
+            if (["done", "success", "published", "completed"].includes(v.status)) {
+                const titleNormalized = v.title?.trim().toLowerCase();
+                const alreadyInHistory = Object.values(filteredHistory || {}).some(day => 
+                    (day?.completedItems || []).some(item => 
+                        item.id === v.id || (item.title?.trim().toLowerCase() === titleNormalized)
+                    )
+                );
+                if (!alreadyInHistory) {
+                    count++;
+                }
+            }
+        });
+        return count;
+    }, [combinedQueue, filteredHistory, historyPublishedCount]);
 
     // ── Ações ──────────────────────────────────────────────────────────────
     const handleScheduleVideo = (date) => {

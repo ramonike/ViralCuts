@@ -368,7 +368,21 @@ export function ModernCalendar({
             const scheduledVideos = uploadQueue.filter(item => {
                 const raw = item.scheduledAt || item.publishAt;
                 if (!raw) return false;
-                return toLocalDateStr(new Date(raw)) === dateStr;
+
+                // Ignora se o status já for de publicação concluída
+                if (['done', 'success', 'published', 'completed'].includes(item.status)) {
+                    return false;
+                }
+
+                // Verifica se a data coincide com o dia do calendário
+                if (toLocalDateStr(new Date(raw)) !== dateStr) return false;
+
+                // Evita duplicidade se o vídeo já estiver na lista de publicados (postedVideos) do mesmo dia (sync delay)
+                const isAlreadyPosted = postedVideos.some(p => 
+                    p.title?.trim().toLowerCase() === item.title?.trim().toLowerCase()
+                );
+
+                return !isAlreadyPosted;
             });
 
             days.push({
