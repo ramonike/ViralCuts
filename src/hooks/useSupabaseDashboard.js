@@ -109,7 +109,6 @@ export function useSupabaseDashboard() {
     // ── Adicionar à fila — 2 etapas: criar registro + upload do arquivo ────
     const addToQueue = async (item, onProgress = null) => {
         try {
-            // Etapa 1: Cria registro no banco (sem o arquivo)
             const { file, ...itemWithoutFile } = item;
             const enriched = {
                 ...itemWithoutFile,
@@ -123,7 +122,11 @@ export function useSupabaseDashboard() {
                 },
             };
 
-            const res = await api.addToQueue(enriched);
+            // Etapa 1: Cria registro no banco com timeout
+            const queueTimeout = new Promise((_, reject) =>
+                setTimeout(() => reject(new Error('Servidor não respondeu (timeout ao criar agendamento)')), 20000)
+            );
+            const res = await Promise.race([api.addToQueue(enriched), queueTimeout]);
             const uploadId = res.id;
             const newItem = { ...enriched, id: uploadId, status: 'pending' };
 
@@ -133,12 +136,20 @@ export function useSupabaseDashboard() {
                 setUploadQueue(prev => [...prev, newItem]);
             }
 
+            // Helper para fetch com timeout e abort
+            const fetchWithTimeout = (url, opts, ms = 20000) => {
+                const ctrl = new AbortController();
+                const timer = setTimeout(() => ctrl.abort(), ms);
+                return fetch(url, { ...opts, signal: ctrl.signal })
+                    .finally(() => clearTimeout(timer));
+            };
+
             // Etapa 2: Se há arquivo e plataforma YouTube, faz upload DIRETO browser→YouTube
             if ((file || item.existingYoutubeVideoId) && (item.platform === 'youtube' || !item.platform)) {
 
                 // Se já tem youtubeVideoId (segunda conta YouTube), só cria o registro no banco
                 if (item.existingYoutubeVideoId) {
-                    await fetch('/api/youtube/upload-complete', {
+                    await fetchWithTimeout('/api/youtube/upload-complete', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         credentials: 'include',
@@ -168,8 +179,8 @@ export function useSupabaseDashboard() {
                 rawQueueRef.current = updater(rawQueueRef.current);
 
                 try {
-                    // Etapa 2a: Servidor inicia sessão resumable e retorna uploadUrl
-                    const initRes = await fetch('/api/youtube/upload-init', {
+                    // Etapa 2a: Servidor inicia sessão resumable e retorna uploadUrl (timeout 30s)
+                    const initRes = await fetchWithTimeout('/api/youtube/upload-init', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         credentials: 'include',
@@ -184,7 +195,7 @@ export function useSupabaseDashboard() {
                             fileSize: file.size,
                             mimeType: file.type || 'video/mp4',
                         }),
-                    });
+                    }, 30000);
 
                     if (!initRes.ok) {
                         const err = await initRes.json().catch(() => ({}));
@@ -205,7 +216,6 @@ export function useSupabaseDashboard() {
                             if (e.lengthComputable && onProgress) {
                                 const pct = Math.round((e.loaded / e.total) * 100);
                                 onProgress(uploadId, pct);
-                                // Atualiza progresso na fila
                                 setUploadQueue(prev => prev.map(q =>
                                     q.id === uploadId ? { ...q, uploadProgress: pct } : q
                                 ));
@@ -227,8 +237,8 @@ export function useSupabaseDashboard() {
 
                     const youtubeVideoId = uploadResult.id;
 
-                    // Etapa 2c: Notifica servidor que upload concluiu
-                    await fetch('/api/youtube/upload-complete', {
+                    // Etapa 2c: Notifica servidor que upload concluiu (timeout 20s)
+                    await fetchWithTimeout('/api/youtube/upload-complete', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         credentials: 'include',
@@ -256,7 +266,6 @@ export function useSupabaseDashboard() {
 
                 } catch (uploadErr) {
                     console.error('[addToQueue] Falha no upload do arquivo:', uploadErr);
-                    // Marcar como falho na UI mas não lançar — o registro já foi criado
                     const failUpdater = prev => prev.map(q =>
                         q.id === uploadId ? { ...q, status: 'failed', errorMsg: uploadErr.message } : q
                     );
