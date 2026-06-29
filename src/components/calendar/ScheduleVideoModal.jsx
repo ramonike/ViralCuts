@@ -525,14 +525,19 @@ export function ScheduleVideoModal({ isOpen, onClose, selectedDate, onSchedule, 
         }
 
         setSubmitting(false);
-        setItems(prev => {
-            if (prev.every(i => i.status === 'done' || i.status === 'error')) {
-                if (prev.every(i => i.status === 'done')) {
-                    setTimeout(() => (onAllDone ? onAllDone() : onClose()), 1400);
+
+        // Usar ref para evitar closure stale — React batches state updates
+        // O items atualizado já está via setItems anterior no loop
+        setTimeout(() => {
+            setItems(prev => {
+                const allDoneNow = prev.length > 0 && prev.every(i => i.status === 'done');
+                const allFinished = prev.every(i => i.status === 'done' || i.status === 'error');
+                if (allFinished && allDoneNow) {
+                    setTimeout(() => (onAllDone ? onAllDone() : onClose()), 1200);
                 }
-            }
-            return prev;
-        });
+                return prev;
+            });
+        }, 50); // pequeno delay para garantir que o setItems do loop já foi processado
     };
 
     return (

@@ -142,6 +142,17 @@ export function useSupabaseDashboard() {
         }
     };
 
+    const reloadQueue = async () => {
+        try {
+            const rawQ = await api.getQueue().catch(() => []);
+            rawQueueRef.current = rawQ;
+            const activeId = accountIdRef?.current;
+            setUploadQueue(filterQueue(rawQ, activeId));
+        } catch (err) {
+            console.error('reloadQueue error:', err);
+        }
+    };
+
     const updateQueueStatus = async (itemId, status, updates = {}) => {
         const updater = prev =>
             prev.map(item => item.id === itemId ? { ...item, status, ...updates } : item);
@@ -179,6 +190,7 @@ export function useSupabaseDashboard() {
             addToQueue,
             updateQueueStatus,
             markQueueStatus: updateQueueStatus,
+            reloadQueue,
             removeQueueItem: removeFromQueue,
             removeFromQueue,
             addToHistory,

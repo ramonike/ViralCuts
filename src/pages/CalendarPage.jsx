@@ -369,7 +369,7 @@ export default function CalendarPage() {
             }
         });
 
-        // Mescla backend history (supabase.history)
+        // Mescla backend history (supabase.history = tabela Video)
         const backendHistory = (supabase.user ? supabase.history : {}) || {};
         const merged = { ...mergedYoutube };
         Object.entries(backendHistory).forEach(([date, day]) => {
@@ -382,6 +382,38 @@ export default function CalendarPage() {
                     ...merged[date],
                     completedItems: [...(merged[date].completedItems || []), ...newItems],
                 };
+            }
+        });
+
+        // Mescla uploads agendados/publicados do banco (tabela Upload)
+        // Isso garante que novos agendamentos aparecem no calendário sem F5
+        const uploadItems = (supabase.user ? supabase.uploadQueue || [] : []);
+        uploadItems.forEach(upload => {
+            const dateRef = upload.scheduledAt || upload.publishedAt || upload.publishAt;
+            if (!dateRef) return;
+            const dateStr = new Date(dateRef).toLocaleDateString('en-CA');
+            const item = {
+                id: upload.id,
+                title: upload.metadata?.title || upload.title || upload.fileName || 'Sem título',
+                type: `${upload.platform || 'youtube'}_video`,
+                platform: upload.platform || 'youtube',
+                channelId: upload.metadata?.accountId || upload.channelId || null,
+                status: upload.status,
+                thumbnail: upload.metadata?.thumbnail || null,
+                scheduledAt: upload.scheduledAt,
+                publishedAt: upload.publishedAt,
+                publishAt: upload.publishAt,
+            };
+            if (!merged[dateStr]) {
+                merged[dateStr] = { completedItems: [item], uploads: 1 };
+            } else {
+                const existingIds = new Set((merged[dateStr].completedItems || []).map(i => i.id));
+                if (!existingIds.has(item.id)) {
+                    merged[dateStr] = {
+                        ...merged[dateStr],
+                        completedItems: [...(merged[dateStr].completedItems || []), item],
+                    };
+                }
             }
         });
 
@@ -398,7 +430,7 @@ export default function CalendarPage() {
             if (items.length > 0) result[date] = { ...day, completedItems: items, uploads: items.length };
         });
         return result;
-    }, [state.history, state.channelsData, supabase.user, supabase.history, activeFilter, activeAccountId]);
+    }, [state.history, state.channelsData, supabase.user, supabase.history, supabase.uploadQueue, activeFilter, activeAccountId]);
 
     // ── Stats ──────────────────────────────────────────────────────────────
     const now = new Date();
@@ -647,6 +679,8 @@ export default function CalendarPage() {
         setScheduleModalOpen(false);
         setSelectedScheduleDate(null);
         success('Vídeo(s) agendado(s) com sucesso!');
+        // Recarrega fila do banco para refletir status corretos (scheduled)
+        supabase.actions.reloadQueue?.();
     };
 
     const handleRescheduleVideo = async (videoId, newScheduledAt) => {
