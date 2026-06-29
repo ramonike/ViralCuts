@@ -341,16 +341,15 @@ function DropZone({ onFiles, compact }) {
 export function ScheduleVideoModal({ isOpen, onClose, selectedDate, onSchedule, onAllDone }) {
     const { state } = useDashboardState();
 
-    // Contas conectadas com token válido, agrupadas por plataforma
+    // Contas conectadas — mostra todas, mesmo com token expirado
+    // O servidor faz refresh automático se necessário
     const connectedAccounts = useMemo(() => {
         const accounts = state.auth?.connectedAccounts || [];
-        const now = Date.now();
-        return accounts
-            .filter(a => a.expiresAt && a.expiresAt > now)
-            .map(a => ({
-                ...a,
-                platform: (a.platform || 'youtube').toLowerCase(),
-            }));
+        return accounts.map(a => ({
+            ...a,
+            platform: (a.platform || 'youtube').toLowerCase(),
+            tokenExpired: a.expiresAt && a.expiresAt < Date.now(),
+        }));
     }, [state.auth?.connectedAccounts]);
 
     const [items, setItems] = useState([]);
@@ -457,6 +456,7 @@ export function ScheduleVideoModal({ isOpen, onClose, selectedDate, onSchedule, 
             for (let i = 0; i < youtubeAccounts.length; i++) {
                 if (youtubeFailed) break;
                 const account = youtubeAccounts[i];
+                console.log(`[Modal] YouTube[${i}]: id=${account.id} name=${account.name} hasToken=${!!account.token} expired=${account.tokenExpired}`);
                 try {
                     const [y, m, dd] = item.scheduledDate.split('-').map(Number);
                     const [h, mn] = item.scheduledTime.split(':').map(Number);

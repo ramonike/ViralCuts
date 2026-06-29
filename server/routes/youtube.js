@@ -920,33 +920,39 @@ youtube.post("/upload-init", authMiddleware, async (c) => {
   try {
     const userId = c.get("userId");
     const body = await c.req.json();
-    const { uploadId, title, description, tags = [], privacyStatus = "private", scheduledAt, accountId, fileSize, mimeType = "video/mp4" } = body;
+    const { uploadId, title, description, tags = [], privacyStatus = "private", scheduledAt, accountId, fileSize, mimeType = "video/mp4", accessToken: clientAccessToken } = body;
 
     if (!uploadId || !fileSize) {
       return c.json({ error: "uploadId e fileSize são obrigatórios" }, 400);
     }
 
-    // Buscar token
-    let account = accountId
-      ? await prisma.account.findFirst({ where: { userId, id: `youtube_${userId}_${accountId}` } })
-      : null;
-    if (!account) {
-      account = await prisma.account.findFirst({ where: { userId, providerId: "youtube" } });
-    }
-    if (!account) return c.json({ error: "Conta YouTube não encontrada" }, 401);
+    let accessToken = clientAccessToken || null;
 
-    let accessToken = account.accessToken;
-    const isExpired = account.accessTokenExpiresAt
-      ? new Date(account.accessTokenExpiresAt) < new Date(Date.now() + 2 * 60 * 1000)
-      : true;
+    // Se o frontend já enviou o accessToken (caso normal com múltiplas contas),
+    // usa direto — cada connectedAccount tem seu próprio token client-side.
+    // Só busca no banco se não veio token no body (fallback para compatibilidade).
+    if (!accessToken) {
+      let account = accountId
+        ? await prisma.account.findFirst({ where: { userId, id: { contains: accountId } } })
+        : null;
+      if (!account) {
+        account = await prisma.account.findFirst({ where: { userId, providerId: "youtube" } });
+      }
+      if (!account) return c.json({ error: "Conta YouTube não encontrada" }, 401);
 
-    if (isExpired && account.refreshToken) {
-      const tokens = await refreshYouTubeToken(account.refreshToken);
-      accessToken = tokens.access_token;
-      await prisma.account.update({
-        where: { id: account.id },
-        data: { accessToken: tokens.access_token, accessTokenExpiresAt: new Date(Date.now() + tokens.expires_in * 1000), updatedAt: new Date() },
-      });
+      accessToken = account.accessToken;
+      const isExpired = account.accessTokenExpiresAt
+        ? new Date(account.accessTokenExpiresAt) < new Date(Date.now() + 2 * 60 * 1000)
+        : true;
+
+      if (isExpired && account.refreshToken) {
+        const tokens = await refreshYouTubeToken(account.refreshToken);
+        accessToken = tokens.access_token;
+        await prisma.account.update({
+          where: { id: account.id },
+          data: { accessToken: tokens.access_token, accessTokenExpiresAt: new Date(Date.now() + tokens.expires_in * 1000), updatedAt: new Date() },
+        });
+      }
     }
 
     if (!accessToken) return c.json({ error: "Token inválido. Reconecte sua conta YouTube." }, 401);
