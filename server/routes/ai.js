@@ -1,11 +1,25 @@
 import { Hono } from "hono";
 import { authMiddleware } from "../middleware/auth.js";
 import { startVideoGeneration, getGenerationStatus } from "../services/replicate.js";
+import { generateWithGroq, testGroqKey } from "../services/groq.js";
 import { generateWithGemini, testGeminiKey, listModels } from "../services/gemini.js";
 
 const ai = new Hono();
 
 ai.use("/*", authMiddleware);
+
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+
+async function generateText(systemPrompt, userPrompt) {
+    const provider = process.env.AI_PROVIDER || "groq";
+    console.log(`[AI Route] Using provider=${provider}`);
+    if (provider === "groq") {
+        return await generateWithGroq(systemPrompt, userPrompt);
+    }
+    return await generateWithGemini(systemPrompt, userPrompt);
+}
+
+// ─── Video Generation ────────────────────────────────────────────────────────
 
 ai.post("/generate-video", async (c) => {
     try {
@@ -41,6 +55,8 @@ ai.get("/status/:id", async (c) => {
     }
 });
 
+// ─── Text Generation ─────────────────────────────────────────────────────────
+
 ai.post("/generate", async (c) => {
     try {
         const body = await c.req.json().catch(() => null);
@@ -48,26 +64,40 @@ ai.post("/generate", async (c) => {
             return c.json({ error: "Prompt is required" }, 400);
         }
 
-        const text = await generateWithGemini(body.system, body.prompt);
+        const text = await generateText(body.system, body.prompt);
         return c.json({ text });
     } catch (error) {
         console.error("[AI Route] Generate error:", error.message);
         console.error("[AI Route] Stack:", error.stack);
         return c.json({
-            error: `Gemini error: ${error.message}`,
+            error: `${process.env.AI_PROVIDER || "groq"} error: ${error.message}`,
             detail: process.env.NODE_ENV === 'development' ? error.stack : undefined
         }, 500);
     }
 });
 
+// ─── Diagnostics ─────────────────────────────────────────────────────────────
+
 ai.get("/diagnostic", async (c) => {
-    const currentModel = process.env.GEMINI_MODEL || "gemini-2.0-flash";
-    const result = await testGeminiKey(currentModel);
+    const provider = process.env.AI_PROVIDER || "groq";
+
+    if (provider === "gemini") {
+        const currentModel = process.env.GEMINI_MODEL || "gemini-2.0-flash";
+        const result = await testGeminiKey(currentModel);
+        return c.json({
+            ...result,
+            provider: "gemini",
+            currentModel,
+            hasKey: !!process.env.GEMINI_API_KEY,
+            nodeEnv: process.env.NODE_ENV,
+        });
+    }
+
+    const result = await testGroqKey();
     return c.json({
         ...result,
-        currentModel,
-        hasKey: !!process.env.GEMINI_API_KEY,
-        keyPrefix: process.env.GEMINI_API_KEY ? process.env.GEMINI_API_KEY.slice(0, 6) + "..." : "none",
+        provider: "groq",
+        hasKey: !!process.env.GROQ_API_KEY,
         nodeEnv: process.env.NODE_ENV,
     });
 });
