@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import { authMiddleware } from "../middleware/auth.js";
 import { startVideoGeneration, getGenerationStatus } from "../services/replicate.js";
-import { generateWithGemini } from "../services/gemini.js";
+import { generateWithGemini, testGeminiKey } from "../services/gemini.js";
 
 const ai = new Hono();
 
@@ -51,10 +51,23 @@ ai.post("/generate", async (c) => {
         const text = await generateWithGemini(body.system, body.prompt);
         return c.json({ text });
     } catch (error) {
-        console.error("[AI Route] Generate error:", error);
-        console.error("[AI Route] Generate error details:", error);
-        return c.json({ error: error.message || "Erro ao chamar a IA. Tente novamente.", detail: process.env.NODE_ENV === 'development' ? error.stack : undefined }, 500);
+        console.error("[AI Route] Generate error:", error.message);
+        console.error("[AI Route] Stack:", error.stack);
+        return c.json({
+            error: `Gemini error: ${error.message}`,
+            detail: process.env.NODE_ENV === 'development' ? error.stack : undefined
+        }, 500);
     }
+});
+
+ai.get("/diagnostic", async (c) => {
+    const result = await testGeminiKey();
+    return c.json({
+        ...result,
+        hasKey: !!process.env.GEMINI_API_KEY,
+        keyPrefix: process.env.GEMINI_API_KEY ? process.env.GEMINI_API_KEY.slice(0, 6) + "..." : "none",
+        nodeEnv: process.env.NODE_ENV,
+    });
 });
 
 export default ai;
