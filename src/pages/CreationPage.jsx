@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
-    Sparkles, FileText, Type, CheckSquare,
+    Sparkles, FileText, Type, CheckSquare, Image,
     Send, Copy, Check, RefreshCw, ChevronDown, ChevronUp,
-    Youtube, Hash, Clock, Target, Wand2, AlertCircle
+    Youtube, Hash, Clock, Target, Wand2, AlertCircle, ExternalLink
 } from 'lucide-react';
 import { PageLayout } from '../components/layout/PageLayout';
 import { useTheme } from '../contexts/ThemeContext';
@@ -521,10 +521,181 @@ function PublicationChecklist({ isDark }) {
     );
 }
 
+// ─── Ferramenta 4: Gerador de Thumbnail ──────────────────────────────────────
+function ThumbnailGenerator({ isDark }) {
+    const [prompt, setPrompt] = useState('');
+    const [aspectRatio, setAspectRatio] = useState('16:9');
+    const [loading, setLoading] = useState(false);
+    const [predictionId, setPredictionId] = useState(null);
+    const [status, setStatus] = useState(null);
+    const [output, setOutput] = useState(null);
+    const [error, setError] = useState('');
+
+    const pollStatus = useCallback(async (id) => {
+        try {
+            const res = await fetch(`${VITE_API_URL}/api/ai/thumbnail-status/${id}`, {
+                credentials: 'include',
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error);
+            setStatus(data.status);
+            if (data.status === 'succeeded' && data.output?.length) {
+                setOutput(data.output[0]);
+                setLoading(false);
+                return;
+            }
+            if (data.status === 'failed') {
+                throw new Error(data.error || 'Falha ao gerar thumbnail');
+            }
+            if (data.status === 'processing' || data.status === 'starting') {
+                setTimeout(() => pollStatus(id), 2000);
+            }
+        } catch (e) {
+            setError(e.message);
+            setLoading(false);
+        }
+    }, []);
+
+    useEffect(() => {
+        return () => setPredictionId(null);
+    }, []);
+
+    const generate = async () => {
+        if (!prompt.trim()) return;
+        setLoading(true); setError(''); setOutput(null); setStatus('starting');
+        try {
+            const res = await fetch(`${VITE_API_URL}/api/ai/generate-thumbnail`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({ prompt: prompt.trim(), aspectRatio }),
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error);
+            setPredictionId(data.id);
+            setStatus(data.status);
+            if (data.status === 'succeeded' && data.urls?.get) {
+                setOutput(data.urls.get);
+                setLoading(false);
+            } else {
+                pollStatus(data.id);
+            }
+        } catch (e) {
+            setError(e.message);
+            setLoading(false);
+        }
+    };
+
+    const ratios = [
+        { value: '16:9', label: 'YouTube (16:9)' },
+        { value: '9:16', label: 'Shorts/TikTok (9:16)' },
+        { value: '1:1', label: 'Instagram (1:1)' },
+        { value: '4:3', label: 'Padrão (4:3)' },
+    ];
+
+    return (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <div>
+                <label style={{ fontSize: 12, fontWeight: 600, color: isDark ? '#9ca3af' : '#6b7280', display: 'block', marginBottom: 6 }}>
+                    Descrição da thumbnail *
+                </label>
+                <Textarea
+                    value={prompt}
+                    onChange={setPrompt}
+                    placeholder="Ex: Close em rosto surpreso, fundo vermelho, texto 'VOCÊ NÃO VAI ACREDITAR', setas apontando, estilo youtuber"
+                    isDark={isDark}
+                    rows={3}
+                />
+            </div>
+
+            <div>
+                <label style={{ fontSize: 12, fontWeight: 600, color: isDark ? '#9ca3af' : '#6b7280', display: 'block', marginBottom: 6 }}>
+                    Proporção
+                </label>
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                    {ratios.map(r => (
+                        <button key={r.value} onClick={() => setAspectRatio(r.value)} style={{
+                            padding: '7px 14px', borderRadius: 8, cursor: 'pointer', fontFamily: 'inherit',
+                            fontSize: 12, fontWeight: 600,
+                            background: aspectRatio === r.value ? (isDark ? 'rgba(124,58,237,0.25)' : '#f3f0ff') : 'transparent',
+                            border: `1px solid ${aspectRatio === r.value ? (isDark ? 'rgba(124,58,237,0.4)' : '#ddd6fe') : (isDark ? 'rgba(255,255,255,0.1)' : '#e5e7eb')}`,
+                            color: aspectRatio === r.value ? (isDark ? '#a78bfa' : '#7c3aed') : (isDark ? '#9ca3af' : '#6b7280'),
+                        }}>
+                            {r.label}
+                        </button>
+                    ))}
+                </div>
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                <PrimaryBtn onClick={generate} disabled={!prompt.trim()} loading={loading} isDark={isDark}>
+                    <Image size={14} />
+                    {loading ? 'Gerando thumbnail...' : 'Gerar Thumbnail'}
+                </PrimaryBtn>
+            </div>
+
+            <ErrorBox error={error} isDark={isDark} />
+
+            {status && !output && !error && (
+                <div style={{
+                    marginTop: 16, padding: 16,
+                    background: isDark ? 'rgba(0,0,0,0.2)' : '#f9fafb',
+                    border: `1px solid ${isDark ? 'rgba(255,255,255,0.08)' : '#e5e7eb'}`,
+                    borderRadius: 12, textAlign: 'center',
+                }}>
+                    <RefreshCw size={24} style={{ animation: 'spin 1s linear infinite', margin: '0 auto 8px', display: 'block', color: '#a78bfa' }} />
+                    <p style={{ margin: 0, fontSize: 13, color: isDark ? '#9ca3af' : '#6b7280' }}>
+                        {status === 'starting' ? 'Iniciando geração...' : 'Gerando imagem...'}
+                    </p>
+                </div>
+            )}
+
+            {output && (
+                <div style={{
+                    marginTop: 16,
+                    background: isDark ? 'rgba(0,0,0,0.2)' : '#f9fafb',
+                    border: `1px solid ${isDark ? 'rgba(255,255,255,0.08)' : '#e5e7eb'}`,
+                    borderRadius: 12, overflow: 'hidden',
+                }}>
+                    <div style={{
+                        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                        padding: '10px 14px',
+                        borderBottom: `1px solid ${isDark ? 'rgba(255,255,255,0.06)' : '#e5e7eb'}`,
+                        background: isDark ? 'rgba(124,58,237,0.08)' : '#f3f0ff',
+                    }}>
+                        <span style={{ fontSize: 11, fontWeight: 700, color: isDark ? '#a78bfa' : '#7c3aed', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                            Thumbnail gerada ✨
+                        </span>
+                        <a href={output} target="_blank" rel="noopener noreferrer" style={{
+                            display: 'flex', alignItems: 'center', gap: 6,
+                            padding: '6px 12px', borderRadius: 8, cursor: 'pointer',
+                            background: isDark ? 'rgba(255,255,255,0.05)' : '#f9fafb',
+                            border: `1px solid ${isDark ? 'rgba(255,255,255,0.08)' : '#e5e7eb'}`,
+                            color: isDark ? '#9ca3af' : '#6b7280',
+                            fontSize: 12, fontWeight: 600, fontFamily: 'inherit',
+                            textDecoration: 'none',
+                        }}>
+                            <ExternalLink size={13} />
+                            Abrir original
+                        </a>
+                    </div>
+                    <div style={{ padding: 14, display: 'flex', justifyContent: 'center' }}>
+                        <img src={output} alt="Thumbnail" style={{
+                            maxWidth: '100%', maxHeight: 400, borderRadius: 8,
+                            boxShadow: '0 2px 12px rgba(0,0,0,0.15)',
+                        }} />
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+}
+
 // ─── Main Page ────────────────────────────────────────────────────────────────
 const TABS = [
     { id: 'script', label: 'Roteiro', icon: <FileText size={14} /> },
     { id: 'titles', label: 'Títulos e Descrição', icon: <Type size={14} /> },
+    { id: 'thumbnail', label: 'Miniatura', icon: <Image size={14} /> },
     { id: 'checklist', label: 'Checklist de Publicação', icon: <CheckSquare size={14} /> },
 ];
 
@@ -586,6 +757,19 @@ export default function CreationPage() {
                             </p>
                         </div>
                         <TitleGenerator isDark={isDark} />
+                    </>
+                )}
+                {activeTab === 'thumbnail' && (
+                    <>
+                        <div style={{ marginBottom: 18 }}>
+                            <h2 style={{ margin: '0 0 4px', fontSize: 16, fontWeight: 700, color: isDark ? '#f3f4f6' : '#111827' }}>
+                                Gerador de Thumbnail
+                            </h2>
+                            <p style={{ margin: 0, fontSize: 13, color: isDark ? '#6b7280' : '#9ca3af' }}>
+                                IA cria thumbnails profissionais com google/imagen-4. Descreva a cena e estilo.
+                            </p>
+                        </div>
+                        <ThumbnailGenerator isDark={isDark} />
                     </>
                 )}
                 {activeTab === 'checklist' && (
