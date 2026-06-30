@@ -531,6 +531,8 @@ function ThumbnailGenerator({ isDark }) {
     const [output, setOutput] = useState(null);
     const [error, setError] = useState('');
 
+    const [imgError, setImgError] = useState(false);
+
     const pollStatus = useCallback(async (id) => {
         try {
             const res = await fetch(`${VITE_API_URL}/api/ai/thumbnail-status/${id}`, {
@@ -539,8 +541,13 @@ function ThumbnailGenerator({ isDark }) {
             const data = await res.json();
             if (!res.ok) throw new Error(data.error);
             setStatus(data.status);
-            if (data.status === 'succeeded' && data.output?.length) {
-                setOutput(data.output[0]);
+            if (data.status === 'succeeded') {
+                const url = Array.isArray(data.output) ? data.output[0] : data.output?.url?.() || data.output?.url || data.output;
+                if (!url || typeof url !== 'string') {
+                    console.error("[Thumbnail] Invalid output:", data.output);
+                    throw new Error('Resposta inválida do gerador de imagem');
+                }
+                setOutput(url);
                 setLoading(false);
                 return;
             }
@@ -562,7 +569,7 @@ function ThumbnailGenerator({ isDark }) {
 
     const generate = async () => {
         if (!prompt.trim()) return;
-        setLoading(true); setError(''); setOutput(null); setStatus('starting');
+        setLoading(true); setError(''); setOutput(null); setImgError(false); setStatus('starting');
         try {
             const res = await fetch(`${VITE_API_URL}/api/ai/generate-thumbnail`, {
                 method: 'POST',
@@ -650,7 +657,7 @@ function ThumbnailGenerator({ isDark }) {
                 </div>
             )}
 
-            {output && (
+            {output && !imgError && (
                 <div style={{
                     marginTop: 16,
                     background: isDark ? 'rgba(0,0,0,0.2)' : '#f9fafb',
@@ -680,12 +687,15 @@ function ThumbnailGenerator({ isDark }) {
                         </a>
                     </div>
                     <div style={{ padding: 14, display: 'flex', justifyContent: 'center' }}>
-                        <img src={output} alt="Thumbnail" style={{
+                        <img src={output} alt="Thumbnail" onError={() => setImgError(true)} style={{
                             maxWidth: '100%', maxHeight: 400, borderRadius: 8,
                             boxShadow: '0 2px 12px rgba(0,0,0,0.15)',
                         }} />
                     </div>
                 </div>
+            )}
+            {imgError && (
+                <ErrorBox error={`Falha ao carregar imagem. URL retornada: ${output}`} isDark={isDark} />
             )}
         </div>
     );
