@@ -1,70 +1,48 @@
-/**
- * Replicate Service
- * Handles communication with Replicate API for video generation
- */
-
 const REPLICATE_API_URL = 'https://api.replicate.com/v1';
 
-/**
- * Start a prediction (video generation)
- * @param {string} prompt - The text prompt
- * @param {string} model - The model ID (default to HunyuanVideo or Kling)
- * @returns {Promise<Object>} The prediction object
- */
-export async function startVideoGeneration(prompt, model = 'lucataco/hunyuanvideo:8972883c076b47161b47926e8fb26a4270df7f33') {
+function getToken() {
     const token = process.env.REPLICATE_API_TOKEN;
-
-    if (!token) {
-        throw new Error('REPLICATE_API_TOKEN is not configured in .env');
-    }
-
-    const response = await fetch(`${REPLICATE_API_URL}/predictions`, {
-        method: 'POST',
-        headers: {
-            'Authorization': `Token ${token}`,
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-            version: model.split(':')[1],
-            input: {
-                prompt: prompt,
-                // Default quality settings
-                num_frames: 49,
-                guidance_scale: 6,
-                num_inference_steps: 50
-            },
-        }),
-    });
-
-    if (!response.ok) {
-        const error = await response.json();
-        throw new Error(`Replicate API Error: ${error.detail || response.statusText}`);
-    }
-
-    return await response.json();
+    if (!token) throw new Error('REPLICATE_API_TOKEN not configured');
+    return token;
 }
 
-/**
- * Get the status of a prediction
- * @param {string} predictionId - The ID of the prediction
- * @returns {Promise<Object>} The prediction object with current status
- */
-export async function getGenerationStatus(predictionId) {
-    const token = process.env.REPLICATE_API_TOKEN;
-
-    if (!token) {
-        throw new Error('REPLICATE_API_TOKEN is not configured in .env');
-    }
-
-    const response = await fetch(`${REPLICATE_API_URL}/predictions/${predictionId}`, {
+async function request(method, path, body) {
+    const res = await fetch(`${REPLICATE_API_URL}${path}`, {
+        method,
         headers: {
-            'Authorization': `Token ${token}`,
+            'Authorization': `Token ${getToken()}`,
+            'Content-Type': 'application/json',
+        },
+        body: body ? JSON.stringify(body) : undefined,
+    });
+    if (!res.ok) {
+        const err = await res.json().catch(() => ({ detail: res.statusText }));
+        throw new Error(`Replicate API (${res.status}): ${err.detail || res.statusText}`);
+    }
+    return res.json();
+}
+
+export async function startVideoGeneration(prompt, model = 'lucataco/hunyuanvideo:8972883c076b47161b47926e8fb26a4270df7f33') {
+    return request('POST', '/predictions', {
+        version: model.split(':')[1],
+        input: { prompt, num_frames: 49, guidance_scale: 6, num_inference_steps: 50 },
+    });
+}
+
+export async function getGenerationStatus(predictionId) {
+    return request('GET', `/predictions/${predictionId}`);
+}
+
+export async function generateImage({ prompt, aspectRatio = '16:9', model = 'google/imagen-4', safetyLevel = 'block_medium_and_above' }) {
+    return request('POST', `/models/${model}/predictions`, {
+        input: {
+            prompt,
+            aspect_ratio: aspectRatio,
+            safety_filter_level: safetyLevel,
         },
     });
+}
 
-    if (!response.ok) {
-        throw new Error(`Replicate API Error: ${response.statusText}`);
-    }
-
-    return await response.json();
+export async function getPrediction(predictionId) {
+    return request('GET', `/predictions/${predictionId}`);
 }

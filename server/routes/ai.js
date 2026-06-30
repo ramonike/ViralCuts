@@ -1,6 +1,6 @@
 import { Hono } from "hono";
 import { authMiddleware } from "../middleware/auth.js";
-import { startVideoGeneration, getGenerationStatus } from "../services/replicate.js";
+import { startVideoGeneration, getGenerationStatus, generateImage, getPrediction } from "../services/replicate.js";
 import { generateWithGroq, testGroqKey } from "../services/groq.js";
 import { generateWithGemini, testGeminiKey, listModels } from "../services/gemini.js";
 
@@ -49,6 +49,46 @@ ai.get("/status/:id", async (c) => {
             output: prediction.output,
             error: prediction.error,
             progress: prediction.logs ? "Processing..." : "Queued"
+        });
+    } catch (error) {
+        return c.json({ error: error.message }, 500);
+    }
+});
+
+// ─── Image Generation (Thumbnails) ───────────────────────────────────────────
+
+ai.post("/generate-thumbnail", async (c) => {
+    try {
+        const body = await c.req.json().catch(() => null);
+        if (!body || !body.prompt) {
+            return c.json({ error: "Prompt is required" }, 400);
+        }
+        const prediction = await generateImage({
+            prompt: body.prompt,
+            aspectRatio: body.aspectRatio || "16:9",
+            safetyLevel: body.safetyLevel || "block_medium_and_above",
+        });
+        return c.json({
+            id: prediction.id,
+            status: prediction.status,
+            urls: prediction.urls,
+            createdAt: prediction.created_at,
+        });
+    } catch (error) {
+        console.error("[AI Route] Thumbnail error:", error.message);
+        return c.json({ error: error.message }, 500);
+    }
+});
+
+ai.get("/thumbnail-status/:id", async (c) => {
+    try {
+        const id = c.req.param("id");
+        const prediction = await getPrediction(id);
+        return c.json({
+            id: prediction.id,
+            status: prediction.status,
+            output: prediction.output,
+            error: prediction.error,
         });
     } catch (error) {
         return c.json({ error: error.message }, 500);
