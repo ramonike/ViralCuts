@@ -316,12 +316,51 @@ function TitleGenerator({ isDark, onPipeline }) {
     const [assunto, setAssunto] = useState('');
     const [plataforma, setPlataforma] = useState('youtube');
     const [loading, setLoading] = useState(false);
-    const [result, setResult] = useState('');
     const [error, setError] = useState('');
+
+    // Dados parseados do resultado
+    const [titles, setTitles] = useState([]);
+    const [selectedTitle, setSelectedTitle] = useState('');
+    const [description, setDescription] = useState('');
+    const [tags, setTags] = useState('');
+
+    function parseResult(text) {
+        const lines = text.split('\n');
+        const parsedTitles = [];
+        let parsedDesc = '';
+        let parsedTags = '';
+        let section = null;
+
+        for (const line of lines) {
+            const trimmed = line.trim();
+            if (/##\s*5?.*?(?:OP[ÇC][ÕO]ES?\s*DE\s*)?T[ÍI]TULO/i.test(trimmed) || /##\s*OP[ÇC][ÕO]ES?\s*DE\s*T[ÍI]TULO/i.test(trimmed)) {
+                section = 'titles';
+                continue;
+            }
+            if (/##\s*DESCRI[ÇC][ÃA]O/i.test(trimmed)) { section = 'desc'; continue; }
+            if (/##\s*(?:20\s*)?HASHTAGS/i.test(trimmed)) { section = 'tags'; continue; }
+            if (/##\s*TAGS/i.test(trimmed)) { section = 'tags'; continue; }
+
+            if (section === 'titles') {
+                const m = trimmed.match(/^\d+[\.\)]\s*(.+)/);
+                if (m) parsedTitles.push(m[1].replace(/\*\*/g, '').trim());
+            } else if (section === 'desc') {
+                if (parsedDesc) parsedDesc += '\n';
+                parsedDesc += trimmed;
+            } else if (section === 'tags') {
+                if (trimmed && !trimmed.startsWith('#')) {
+                    if (parsedTags) parsedTags += ', ';
+                    parsedTags += trimmed.replace(/^#/, '').trim();
+                }
+            }
+        }
+
+        return { titles: parsedTitles, description: parsedDesc.trim(), tags: parsedTags };
+    }
 
     const generate = async () => {
         if (!assunto.trim()) return;
-        setLoading(true); setError(''); setResult('');
+        setLoading(true); setError(''); setTitles([]); setSelectedTitle(''); setDescription(''); setTags('');
         try {
             const text = await callClaude(
                 `Você é um especialista em SEO e marketing de conteúdo para criadores brasileiros. Cria títulos que maximizam CTR e descrições otimizadas para algoritmo.`,
@@ -345,12 +384,21 @@ Entregue:
 
 Tudo em português do Brasil.`
             );
-            setResult(text);
+            const parsed = parseResult(text);
+            setTitles(parsed.titles);
+            setSelectedTitle(parsed.titles[0] || '');
+            setDescription(parsed.description);
+            setTags(parsed.tags);
         } catch (e) {
             setError(e.message);
         } finally {
             setLoading(false);
         }
+    };
+
+    const handlePipeline = () => {
+        if (!onPipeline) return;
+        onPipeline({ title: selectedTitle, description, tags });
     };
 
     return (
@@ -399,10 +447,79 @@ Tudo em português do Brasil.`
             </div>
 
             <ErrorBox error={error} isDark={isDark} />
-            <ResultBox content={result} isDark={isDark} />
-            {result && onPipeline && (
+
+            {/* Títulos — selecionáveis */}
+            {titles.length > 0 && (
+                <div>
+                    <label style={{ fontSize: 12, fontWeight: 600, color: isDark ? '#9ca3af' : '#6b7280', display: 'block', marginBottom: 8 }}>
+                        Escolha 1 título
+                    </label>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                        {titles.map((t, i) => (
+                            <div key={i} onClick={() => setSelectedTitle(t)} style={{
+                                display: 'flex', alignItems: 'center', gap: 10,
+                                padding: '10px 14px', borderRadius: 10, cursor: 'pointer',
+                                background: selectedTitle === t
+                                    ? (isDark ? 'rgba(124,58,237,0.2)' : '#f3f0ff')
+                                    : (isDark ? 'rgba(255,255,255,0.02)' : '#fafafa'),
+                                border: `1px solid ${selectedTitle === t
+                                    ? (isDark ? 'rgba(124,58,237,0.4)' : '#ddd6fe')
+                                    : (isDark ? 'rgba(255,255,255,0.06)' : '#e5e7eb')}`,
+                                transition: 'all 0.15s',
+                            }}>
+                                <div style={{
+                                    width: 20, height: 20, borderRadius: '50%', flexShrink: 0,
+                                    background: selectedTitle === t ? '#7c3aed' : (isDark ? 'rgba(255,255,255,0.05)' : '#f3f4f6'),
+                                    border: `2px solid ${selectedTitle === t ? '#7c3aed' : (isDark ? 'rgba(255,255,255,0.15)' : '#d1d5db')}`,
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                }}>
+                                    {selectedTitle === t && <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#fff' }} />}
+                                </div>
+                                <span style={{ fontSize: 13, color: isDark ? '#e5e7eb' : '#374151' }}>{t}</span>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
+
+            {/* Descrição — editável */}
+            {description && (
+                <div>
+                    <label style={{ fontSize: 12, fontWeight: 600, color: isDark ? '#9ca3af' : '#6b7280', display: 'block', marginBottom: 6 }}>
+                        Descrição
+                    </label>
+                    <textarea value={description} onChange={e => setDescription(e.target.value)} rows={4} style={{
+                        width: '100%', padding: '12px 14px',
+                        background: isDark ? 'rgba(0,0,0,0.3)' : '#f9fafb',
+                        border: `1px solid ${isDark ? 'rgba(255,255,255,0.1)' : '#e5e7eb'}`,
+                        borderRadius: 10, color: isDark ? '#f3f4f6' : '#111827',
+                        fontSize: 13, lineHeight: 1.6, resize: 'vertical',
+                        fontFamily: 'inherit', outline: 'none',
+                        boxSizing: 'border-box',
+                    }} />
+                </div>
+            )}
+
+            {/* Tags — editável */}
+            {tags && (
+                <div>
+                    <label style={{ fontSize: 12, fontWeight: 600, color: isDark ? '#9ca3af' : '#6b7280', display: 'block', marginBottom: 6 }}>
+                        Tags (separadas por vírgula)
+                    </label>
+                    <input value={tags} onChange={e => setTags(e.target.value)} style={{
+                        width: '100%', padding: '10px 14px',
+                        background: isDark ? 'rgba(0,0,0,0.3)' : '#f9fafb',
+                        border: `1px solid ${isDark ? 'rgba(255,255,255,0.1)' : '#e5e7eb'}`,
+                        borderRadius: 10, color: isDark ? '#f3f4f6' : '#111827',
+                        fontSize: 13, fontFamily: 'inherit', outline: 'none',
+                        boxSizing: 'border-box',
+                    }} />
+                </div>
+            )}
+
+            {selectedTitle && onPipeline && (
                 <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 8 }}>
-                    <button onClick={() => onPipeline({ titleAndDesc: result })} style={{
+                    <button onClick={handlePipeline} style={{
                         display: 'flex', alignItems: 'center', gap: 6,
                         padding: '8px 16px', borderRadius: 10,
                         background: 'linear-gradient(135deg,#7c3aed,#2563eb)',
@@ -760,14 +877,23 @@ export default function CreationPage() {
     const [pipelineData, setPipelineData] = useState(null);
 
     const handlePipeline = (data) => {
-        // Acumula dados: se já tem script, add thumbnail sem perder
-        setPipelineData(prev => ({ ...prev, ...data }));
+        setPipelineData(prev => {
+            const merged = { ...prev };
+            // Script: só o texto do roteiro
+            if (data.script) merged.script = data.script;
+            // Titles: estrutura separada
+            if (data.title !== undefined) merged.title = data.title;
+            if (data.description !== undefined) merged.description = data.description;
+            if (data.tags !== undefined) merged.tags = data.tags;
+            // Thumbnail
+            if (data.thumbnailUrl) merged.thumbnailUrl = data.thumbnailUrl;
+            return merged;
+        });
         setPipelineModalOpen(true);
     };
 
     const handleClosePipeline = () => {
         setPipelineModalOpen(false);
-        // Não limpa pipelineData pra permitir reabrir
     };
 
     return (
@@ -858,9 +984,9 @@ export default function CreationPage() {
                 isOpen={pipelineModalOpen}
                 onClose={handleClosePipeline}
                 initialData={pipelineData ? {
-                    title: pipelineData.titleAndDesc || pipelineData.script || '',
-                    description: pipelineData.titleAndDesc || '',
-                    tags: '',
+                    title: pipelineData.title || '',
+                    description: pipelineData.description || '',
+                    tags: pipelineData.tags || '',
                 } : null}
             />
 
