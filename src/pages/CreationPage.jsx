@@ -2,10 +2,11 @@ import React, { useState, useEffect, useCallback } from 'react';
 import {
     Sparkles, FileText, Type, CheckSquare, Image,
     Send, Copy, Check, RefreshCw, ChevronDown, ChevronUp,
-    Youtube, Hash, Clock, Target, Wand2, AlertCircle, ExternalLink
+    Youtube, Hash, Clock, Target, Wand2, AlertCircle, ExternalLink, Calendar
 } from 'lucide-react';
 import { PageLayout } from '../components/layout/PageLayout';
 import { useTheme } from '../contexts/ThemeContext';
+import { ScheduleVideoModal } from '../components/calendar/ScheduleVideoModal';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 const VITE_API_URL = import.meta.env.VITE_API_URL || '';
@@ -172,7 +173,7 @@ function ErrorBox({ error, isDark }) {
 }
 
 // ─── Ferramenta 1: Gerador de Roteiro ────────────────────────────────────────
-function ScriptGenerator({ isDark }) {
+function ScriptGenerator({ isDark, onPipeline }) {
     const [tema, setTema] = useState('');
     const [formato, setFormato] = useState('shorts');
     const [duracao, setDuracao] = useState('60');
@@ -292,12 +293,26 @@ Formate com emojis e deixe claro o tempo de cada parte. Escreva em português do
 
             <ErrorBox error={error} isDark={isDark} />
             <ResultBox content={result} isDark={isDark} />
+            {result && onPipeline && (
+                <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 8 }}>
+                    <button onClick={() => onPipeline({ script: result })} style={{
+                        display: 'flex', alignItems: 'center', gap: 6,
+                        padding: '8px 16px', borderRadius: 10,
+                        background: 'linear-gradient(135deg,#7c3aed,#2563eb)',
+                        border: 'none', color: '#fff', cursor: 'pointer',
+                        fontSize: 12, fontWeight: 700, fontFamily: 'inherit',
+                    }}>
+                        <Calendar size={13} />
+                        Agendar no Pipeline
+                    </button>
+                </div>
+            )}
         </div>
     );
 }
 
 // ─── Ferramenta 2: Títulos e Descrições ──────────────────────────────────────
-function TitleGenerator({ isDark }) {
+function TitleGenerator({ isDark, onPipeline }) {
     const [assunto, setAssunto] = useState('');
     const [plataforma, setPlataforma] = useState('youtube');
     const [loading, setLoading] = useState(false);
@@ -385,6 +400,20 @@ Tudo em português do Brasil.`
 
             <ErrorBox error={error} isDark={isDark} />
             <ResultBox content={result} isDark={isDark} />
+            {result && onPipeline && (
+                <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 8 }}>
+                    <button onClick={() => onPipeline({ titleAndDesc: result })} style={{
+                        display: 'flex', alignItems: 'center', gap: 6,
+                        padding: '8px 16px', borderRadius: 10,
+                        background: 'linear-gradient(135deg,#7c3aed,#2563eb)',
+                        border: 'none', color: '#fff', cursor: 'pointer',
+                        fontSize: 12, fontWeight: 700, fontFamily: 'inherit',
+                    }}>
+                        <Calendar size={13} />
+                        Agendar no Pipeline
+                    </button>
+                </div>
+            )}
         </div>
     );
 }
@@ -522,7 +551,7 @@ function PublicationChecklist({ isDark }) {
 }
 
 // ─── Ferramenta 4: Gerador de Thumbnail ──────────────────────────────────────
-function ThumbnailGenerator({ isDark }) {
+function ThumbnailGenerator({ isDark, onPipeline }) {
     const [prompt, setPrompt] = useState('');
     const [aspectRatio, setAspectRatio] = useState('16:9');
     const [loading, setLoading] = useState(false);
@@ -692,6 +721,20 @@ function ThumbnailGenerator({ isDark }) {
                             boxShadow: '0 2px 12px rgba(0,0,0,0.15)',
                         }} />
                     </div>
+                    {onPipeline && (
+                        <div style={{ padding: '0 14px 14px', display: 'flex', justifyContent: 'flex-end' }}>
+                            <button onClick={() => onPipeline({ thumbnailUrl: output })} style={{
+                                display: 'flex', alignItems: 'center', gap: 6,
+                                padding: '8px 16px', borderRadius: 10,
+                                background: 'linear-gradient(135deg,#7c3aed,#2563eb)',
+                                border: 'none', color: '#fff', cursor: 'pointer',
+                                fontSize: 12, fontWeight: 700, fontFamily: 'inherit',
+                            }}>
+                                <Calendar size={13} />
+                                Agendar no Pipeline
+                            </button>
+                        </div>
+                    )}
                 </div>
             )}
             {imgError && (
@@ -713,6 +756,19 @@ export default function CreationPage() {
     const { theme } = useTheme();
     const isDark = theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
     const [activeTab, setActiveTab] = useState('script');
+    const [pipelineModalOpen, setPipelineModalOpen] = useState(false);
+    const [pipelineData, setPipelineData] = useState(null);
+
+    const handlePipeline = (data) => {
+        // Acumula dados: se já tem script, add thumbnail sem perder
+        setPipelineData(prev => ({ ...prev, ...data }));
+        setPipelineModalOpen(true);
+    };
+
+    const handleClosePipeline = () => {
+        setPipelineModalOpen(false);
+        // Não limpa pipelineData pra permitir reabrir
+    };
 
     return (
         <PageLayout maxWidth="4xl" spacing="standard">
@@ -753,7 +809,7 @@ export default function CreationPage() {
                                 Descreva o tema e a IA cria um roteiro completo com gancho, desenvolvimento e CTA.
                             </p>
                         </div>
-                        <ScriptGenerator isDark={isDark} />
+                        <ScriptGenerator isDark={isDark} onPipeline={handlePipeline} />
                     </>
                 )}
                 {activeTab === 'titles' && (
@@ -766,7 +822,7 @@ export default function CreationPage() {
                                 Gere 5 variações de título + descrição completa otimizada para SEO + hashtags para qualquer plataforma.
                             </p>
                         </div>
-                        <TitleGenerator isDark={isDark} />
+                        <TitleGenerator isDark={isDark} onPipeline={handlePipeline} />
                     </>
                 )}
                 {activeTab === 'thumbnail' && (
@@ -779,7 +835,7 @@ export default function CreationPage() {
                                 IA cria thumbnails profissionais com google/imagen-4. Descreva a cena e estilo.
                             </p>
                         </div>
-                        <ThumbnailGenerator isDark={isDark} />
+                        <ThumbnailGenerator isDark={isDark} onPipeline={handlePipeline} />
                     </>
                 )}
                 {activeTab === 'checklist' && (
@@ -796,6 +852,17 @@ export default function CreationPage() {
                     </>
                 )}
             </Card>
+
+            {/* Pipeline Modal */}
+            <ScheduleVideoModal
+                isOpen={pipelineModalOpen}
+                onClose={handleClosePipeline}
+                initialData={pipelineData ? {
+                    title: pipelineData.titleAndDesc || pipelineData.script || '',
+                    description: pipelineData.titleAndDesc || '',
+                    tags: '',
+                } : null}
+            />
 
             <style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
         </PageLayout>

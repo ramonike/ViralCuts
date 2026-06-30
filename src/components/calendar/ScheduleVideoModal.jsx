@@ -33,6 +33,38 @@ const TIMEZONES = [
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
+const VITE_API_URL = import.meta.env.VITE_API_URL || '';
+
+async function callAI(topic) {
+    const res = await fetch(`${VITE_API_URL}/api/ai/generate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+            system: `Você é um estrategista de SEO para YouTube/TikTok. Gere título, descrição e tags otimizados para engajamento e algoritmo. Retorne APENAS JSON neste formato exato:
+{
+  "title": "Título otimizado (máx 60 chars)",
+  "description": "Descrição com 200-400 palavras, parágrafos curtos, CTAs, hashtags",
+  "tags": "tag1, tag2, tag3, tag4, tag5, tag6, tag7, tag8, tag9, tag10, tag11, tag12, tag13, tag14, tag15"
+}`,
+            prompt: `Crie título, descrição e 15 tags SEO para um vídeo sobre: ${topic}. Título em português do Brasil, gancho forte, CTAs na descrição.`
+        }),
+    });
+    if (!res.ok) throw new Error('Erro ao chamar IA');
+    const data = await res.json();
+    try {
+        return JSON.parse(data.text);
+    } catch {
+        // fallback: extrair do texto livre
+        const t = data.text || '';
+        return {
+            title: t.match(/[Tt][íi]tulo[:\s]*([^\n]+)/)?.[1]?.trim() || topic,
+            description: t.match(/[Dd]escrição[:\s]*([\s\S]*?)(?=\n##|\n[Tt]ags|$)/)?.[1]?.trim() || t.slice(0, 300),
+            tags: t.match(/[Tt]ags[:\s]*([^\n]+)/)?.[1]?.trim() || topic,
+        };
+    }
+}
+
 function localTZ() {
     const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
     return TIMEZONES.find(t => t.value === tz)?.value || 'America/Sao_Paulo';
@@ -167,12 +199,17 @@ function VideoCard({ item, onUpdate, onRemove }) {
 
     const runAI = async () => {
         setLocalAiLoad(true);
-        await new Promise(r => setTimeout(r, 900));
         const topic = item.title || item.file.name.replace(/\.[^/.]+$/, '');
-        onUpdate(item.id, {
-            description: `Descubra tudo sobre ${topic}! Conteúdo exclusivo e dicas incríveis. Curta e inscreva-se! 🔥`,
-            tags: `${topic}, shorts, viral, dicas`,
-        });
+        try {
+            const result = await callAI(topic);
+            onUpdate(item.id, {
+                title: result.title || item.title,
+                description: result.description || item.description,
+                tags: result.tags || item.tags,
+            });
+        } catch (e) {
+            console.error('[VideoCard] AI error:', e);
+        }
         setLocalAiLoad(false);
     };
 
@@ -338,7 +375,7 @@ function DropZone({ onFiles, compact }) {
 }
 
 // ─── Main Modal ───────────────────────────────────────────────────────────────
-export function ScheduleVideoModal({ isOpen, onClose, selectedDate, onSchedule, onAllDone }) {
+export function ScheduleVideoModal({ isOpen, onClose, selectedDate, onSchedule, onAllDone, initialData }) {
     const { state } = useDashboardState();
 
     // Contas conectadas — mostra todas, mesmo com token expirado
@@ -359,11 +396,30 @@ export function ScheduleVideoModal({ isOpen, onClose, selectedDate, onSchedule, 
 
     useEffect(() => {
         if (isOpen) {
-            // Só reseta se não havia itens anteriores com erro (permite retry)
             setItems(prev => {
+                // Se tem initialData, cria item virtual sem arquivo
+                if (initialData) {
+                    const base = new Date(Date.now() + 10 * 60 * 1000);
+                    const item = {
+                        id: 'from-creation',
+                        file: { name: initialData.title || 'Vídeo', size: 0, type: 'video/mp4' },
+                        title: initialData.title || '',
+                        description: initialData.description || '',
+                        tags: initialData.tags || '',
+                        privacyStatus: 'public',
+                        publishNow: false,
+                        scheduledDate: localDateStr(base),
+                        scheduledTime: localTimeStr(base),
+                        timezone: localTZ(),
+                        expanded: true,
+                        aiLoading: false,
+                        status: 'idle',
+                        errorMsg: '',
+                    };
+                    return [item];
+                }
                 const hadError = prev.some(i => i.status === 'error' || i.status === 'failed');
                 if (hadError) {
-                    // Reseta status para idle para permitir nova tentativa
                     return prev.map(i => ({
                         ...i,
                         status: 'idle',
@@ -372,16 +428,15 @@ export function ScheduleVideoModal({ isOpen, onClose, selectedDate, onSchedule, 
                         expanded: true,
                     }));
                 }
-                return []; // abre limpo se não havia erro
+                return [];
             });
             setGlobalError('');
             setSubmitting(false);
-            // Auto-selecionar todas as contas conectadas
             const autoSelected = {};
             connectedAccounts.forEach(a => { autoSelected[a.id] = true; });
             setSelectedAccounts(autoSelected);
         }
-    }, [isOpen]);
+    }, [isOpen, initialData]);
 
     const addFiles = useCallback((files) => {
         const videoFiles = Array.from(files).filter(f => f.type.startsWith('video/'));
