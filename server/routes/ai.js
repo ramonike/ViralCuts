@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import { authMiddleware } from "../middleware/auth.js";
 import { startVideoGeneration, getGenerationStatus } from "../services/replicate.js";
-import { generateWithGemini, testGeminiKey } from "../services/gemini.js";
+import { generateWithGemini, testGeminiKey, listModels } from "../services/gemini.js";
 
 const ai = new Hono();
 
@@ -61,13 +61,20 @@ ai.post("/generate", async (c) => {
 });
 
 ai.get("/diagnostic", async (c) => {
-    const result = await testGeminiKey();
+    const currentModel = process.env.GEMINI_MODEL || "gemini-2.0-flash";
+    const result = await testGeminiKey(currentModel);
     return c.json({
         ...result,
+        currentModel,
         hasKey: !!process.env.GEMINI_API_KEY,
         keyPrefix: process.env.GEMINI_API_KEY ? process.env.GEMINI_API_KEY.slice(0, 6) + "..." : "none",
         nodeEnv: process.env.NODE_ENV,
     });
+});
+
+ai.get("/models", async (c) => {
+    const result = await listModels();
+    return c.json(result);
 });
 
 export default ai;
