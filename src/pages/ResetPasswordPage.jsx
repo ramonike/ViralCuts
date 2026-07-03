@@ -3,7 +3,6 @@ import { API_ENDPOINTS, API_URL } from '../config/api';
 import { useNavigate, useSearchParams, Link } from "react-router-dom";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "../components/ui/card";
 import { Lock, ArrowLeft } from "lucide-react";
 
 export default function ResetPasswordPage() {
@@ -41,20 +40,16 @@ export default function ResetPasswordPage() {
 
     if (success) {
         return (
-            <div className="vc-auth-shell">
-                <div className="vc-auth-form">
-                    <div className="vc-auth-form-inner">
-                        <Card>
-                            <CardHeader>
-                                <CardTitle>Senha Alterada!</CardTitle>
-                                <CardDescription>Sua senha foi alterada com sucesso</CardDescription>
-                            </CardHeader>
-                            <CardContent>
-                                <p className="text-sm text-[var(--text-secondary)]">
-                                    Redirecionando para a página de login...
-                                </p>
-                            </CardContent>
-                        </Card>
+            <div className="auth-page">
+                <div className="auth-form">
+                    <div className="form-wrap">
+                        <div className="card" style={{ textAlign: "center", padding: 40 }}>
+                            <div style={{ width: 48, height: 48, borderRadius: "var(--radius)", background: "var(--teal-3)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
+                                <Lock size={24} style={{ color: "var(--teal)" }} />
+                            </div>
+                            <h1 style={{ fontSize: 20, fontWeight: 700, marginBottom: 8 }}>Senha Alterada!</h1>
+                            <p style={{ fontSize: 14, color: "var(--text2)", lineHeight: 1.6 }}>Sua senha foi alterada com sucesso. Redirecionando para o login...</p>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -62,56 +57,41 @@ export default function ResetPasswordPage() {
     }
 
     return (
-        <div className="vc-auth-shell">
-            <div className="vc-auth-brand">
-                <Link to="/" className="vc-logo" style={{ padding: 0, border: 'none', marginBottom: 32 }}>
-                    <div className="vc-logo-mark">V</div>
-                    <span className="vc-logo-text">ViralCuts</span>
+        <div className="auth-page">
+            <div className="auth-brand">
+                <Link to="/" style={{ textDecoration: "none" }}>
+                    <div className="logo">ViralCuts</div>
                 </Link>
-                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-                    <h1 className="text-display mb-4">Nova senha</h1>
-                    <p className="text-lg text-[var(--text-secondary)]" style={{ lineHeight: 1.6 }}>
-                        Escolha uma senha forte para proteger sua conta ViralCuts.
-                    </p>
+                <h2>Nova senha</h2>
+                <p style={{ fontSize: 14, color: "var(--text2)", lineHeight: 1.6, marginBottom: 24 }}>
+                    Escolha uma senha forte para proteger sua conta ViralCuts.
+                </p>
+                <div className="features">
+                    <div className="feature">Upload automático para múltiplas plataformas</div>
+                    <div className="feature">Analytics detalhados do seu canal</div>
                 </div>
             </div>
-            <div className="vc-auth-form">
-                <div className="vc-auth-form-inner">
-                    <Link to="/login" className="inline-flex items-center gap-1.5 text-sm text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors mb-8">
+            <div className="auth-form">
+                <div className="form-wrap">
+                    <Link to="/login" style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 13, color: "var(--text3)", textDecoration: "none", marginBottom: 32 }}>
                         <ArrowLeft size={14} /> Voltar ao login
                     </Link>
-
-                    <h2 className="text-heading mb-1">Resetar senha</h2>
-                    <p className="text-sm text-[var(--text-secondary)] mb-8">Digite sua nova senha</p>
-
+                    <h1>Resetar senha</h1>
+                    <p className="subtitle">Digite sua nova senha</p>
                     {error && (
                         <div className="vc-toast vc-toast-coral mb-6">
                             <span>{error}</span>
                         </div>
                     )}
-
                     <div className="space-y-5">
-                        <Input
-                            label="Nova Senha"
-                            type="password"
-                            icon={Lock}
-                            value={newPassword}
+                        <Input label="Nova Senha" type="password" icon={Lock} value={newPassword}
                             onChange={(e) => setNewPassword(e.target.value)}
-                            placeholder="Mínimo 6 caracteres"
-                            disabled={loading || !token}
-                        />
-                        <Input
-                            label="Confirmar Senha"
-                            type="password"
-                            icon={Lock}
-                            value={confirmPassword}
+                            placeholder="Mínimo 6 caracteres" disabled={loading || !token} />
+                        <Input label="Confirmar Senha" type="password" icon={Lock} value={confirmPassword}
                             onChange={(e) => setConfirmPassword(e.target.value)}
                             onKeyPress={(e) => e.key === 'Enter' && handleSubmit()}
-                            placeholder="Repita a senha"
-                            disabled={loading || !token}
-                        />
+                            placeholder="Repita a senha" disabled={loading || !token} />
                     </div>
-
                     <div className="flex flex-col gap-3 mt-8">
                         <Button className="w-full" onClick={handleSubmit} disabled={loading || !token} size="lg">
                             {loading ? "Resetando..." : "Resetar Senha"}

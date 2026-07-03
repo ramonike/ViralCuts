@@ -56,42 +56,36 @@ export default function RegisterPage() {
     const handleKeyDown = (e) => { if (e.key === "Enter") handleRegister(e); };
 
     return (
-        <div className="vc-auth-shell">
-            <button onClick={toggleTheme}
-                className="fixed top-4 right-4 z-50 p-2.5 rounded-[var(--radius-md)] border border-[var(--border-default)] bg-[var(--bg-card)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-all">
-                {isDark ? <Sun size={18} /> : <Moon size={18} />}
+        <div className="auth-page">
+            <button onClick={toggleTheme} style={{ position: "fixed", top: 16, right: 16, zIndex: 50, padding: 8, background: "var(--bg-card2)", border: "1px solid var(--border)", borderRadius: 8, color: "var(--text2)", cursor: "pointer" }}>
+                {isDark ? <Sun size={16} /> : <Moon size={16} />}
             </button>
 
-            <div className="vc-auth-brand">
-                <Link to="/" className="inline-flex items-center gap-1.5 text-sm text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors mb-8">
-                    <ArrowLeft size={14} /> Voltar ao início
+            <div className="auth-brand">
+                <Link to="/" style={{ textDecoration: "none" }}>
+                    <div className="logo">ViralCuts</div>
                 </Link>
-
-                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-                    <div className="vc-logo-mark mb-6" style={{ width: 48, height: 48, fontSize: 20 }}>V</div>
-                    <h1 className="text-display mb-4">Criar conta</h1>
-                    <p className="text-lg text-[var(--text-secondary)] mb-8" style={{ lineHeight: 1.6 }}>
-                        Crie sua conta e comece a gerenciar seus vídeos de forma inteligente.
-                    </p>
-                    <div className="space-y-4">
-                        {["Upload automático para múltiplas plataformas", "Analytics detalhados do seu canal", "Agendamento inteligente de publicações"].map((text, i) => (
-                            <div key={i} className="flex items-center gap-3 text-[var(--text-secondary)]">
-                                <div className="w-2 h-2 rounded-full bg-[var(--accent-coral)]" />
-                                <span>{text}</span>
-                            </div>
-                        ))}
-                    </div>
+                <h2>Crie sua conta<br /><em>e comece agora</em></h2>
+                <div className="features">
+                    <div className="feature">Upload automático para múltiplas plataformas</div>
+                    <div className="feature">Analytics detalhados do seu canal</div>
+                    <div className="feature">Agendamento inteligente de publicações</div>
+                </div>
+                <div className="stats-bar">
+                    <div className="stat-item"><div className="num">1.2K+</div><div className="desc">Criadores</div></div>
+                    <div className="stat-item"><div className="num">50M+</div><div className="desc">Views geradas</div></div>
+                    <div className="stat-item"><div className="num">350+</div><div className="desc">Canais</div></div>
                 </div>
             </div>
 
-            <div className="vc-auth-form">
-                <div className="vc-auth-form-inner">
-                    <Link to="/" className="lg:hidden inline-flex items-center gap-1.5 text-sm text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors mb-8">
+            <div className="auth-form">
+                <div className="form-wrap">
+                    <Link to="/" className="lg:hidden" style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 13, color: "var(--text3)", textDecoration: "none", marginBottom: 32 }}>
                         <ArrowLeft size={14} /> Voltar
                     </Link>
 
-                    <h2 className="text-heading mb-1">Cadastro</h2>
-                    <p className="text-sm text-[var(--text-secondary)] mb-8">Preencha os dados para começar</p>
+                    <h1>Criar conta</h1>
+                    <p className="subtitle">Preencha os dados para começar</p>
 
                     {error && (
                         <div className="vc-toast vc-toast-coral mb-6">
@@ -101,62 +95,26 @@ export default function RegisterPage() {
                     )}
 
                     <form onSubmit={handleRegister} className="space-y-5">
-                        <Input
-                            label="Nome"
-                            type="text"
-                            icon={User}
-                            value={name}
+                        <Input label="Nome" type="text" icon={User} value={name}
                             onChange={(e) => { setName(e.target.value); setFieldErrors(prev => ({ ...prev, name: "" })); }}
-                            onKeyDown={handleKeyDown}
-                            placeholder="Seu nome"
-                            error={fieldErrors.name}
-                            disabled={isLoading}
-                        />
-
-                        <Input
-                            label="Email"
-                            type="email"
-                            icon={Mail}
-                            value={email}
+                            onKeyDown={handleKeyDown} placeholder="Seu nome" error={fieldErrors.name} disabled={isLoading} />
+                        <Input label="Email" type="email" icon={Mail} value={email}
                             onChange={(e) => { setEmail(e.target.value); setFieldErrors(prev => ({ ...prev, email: "" })); }}
-                            onKeyDown={handleKeyDown}
-                            placeholder="seu@email.com"
-                            error={fieldErrors.email}
-                            disabled={isLoading}
-                        />
-
-                        <Input
-                            label="Senha"
-                            type={showPassword ? "text" : "password"}
-                            icon={Lock}
-                            value={password}
+                            onKeyDown={handleKeyDown} placeholder="seu@email.com" error={fieldErrors.email} disabled={isLoading} />
+                        <Input label="Senha" type={showPassword ? "text" : "password"} icon={Lock} value={password}
                             onChange={(e) => { setPassword(e.target.value); setFieldErrors(prev => ({ ...prev, password: "" })); }}
-                            onKeyDown={handleKeyDown}
-                            placeholder="Mínimo 8 caracteres"
-                            error={fieldErrors.password}
-                            disabled={isLoading}
-                        />
-
-                        <Input
-                            label="Confirmar Senha"
-                            type={showConfirmPassword ? "text" : "password"}
-                            icon={Lock}
-                            value={confirmPassword}
+                            onKeyDown={handleKeyDown} placeholder="Mínimo 8 caracteres" error={fieldErrors.password} disabled={isLoading} />
+                        <Input label="Confirmar Senha" type={showConfirmPassword ? "text" : "password"} icon={Lock} value={confirmPassword}
                             onChange={(e) => { setConfirmPassword(e.target.value); setFieldErrors(prev => ({ ...prev, confirmPassword: "" })); }}
-                            onKeyDown={handleKeyDown}
-                            placeholder="Repita a senha"
-                            error={fieldErrors.confirmPassword}
-                            disabled={isLoading}
-                        />
-
+                            onKeyDown={handleKeyDown} placeholder="Repita a senha" error={fieldErrors.confirmPassword} disabled={isLoading} />
                         <Button type="submit" className="w-full" size="lg" loading={isLoading}>
                             {isLoading ? "Criando conta..." : "Cadastrar"}
                         </Button>
                     </form>
 
-                    <p className="mt-8 text-center text-sm text-[var(--text-muted)]">
+                    <p style={{ marginTop: 32, textAlign: "center", fontSize: 14, color: "var(--text3)" }}>
                         Já tem uma conta?{" "}
-                        <Link to="/login" className="text-[var(--accent-coral-2)] hover:underline font-medium">Entrar</Link>
+                        <Link to="/login" style={{ color: "var(--coral-2)", fontWeight: 600, textDecoration: "none" }}>Entrar</Link>
                     </p>
                 </div>
             </div>

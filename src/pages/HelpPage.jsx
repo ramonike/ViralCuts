@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { PageLayout } from '../components/layout/PageLayout';
-import { 
-    Search, HelpCircle, MessageSquare, MessageCircle, PlayCircle, 
+import {
+    Search, HelpCircle, MessageSquare, MessageCircle, PlayCircle,
     BookOpen, ChevronDown, ChevronUp, Send, CheckCircle
 } from 'lucide-react';
 
@@ -12,9 +12,9 @@ export default function HelpPage() {
     const [formData, setFormData] = useState({ name: '', email: '', message: '' });
 
     const categories = [
-        { icon: <BookOpen className="w-6 h-6 text-[#e8412a]" />, title: 'Como Começar', desc: 'Aprenda os primeiros passos no ViralCuts.' },
-        { icon: <PlayCircle className="w-6 h-6 text-[#f0a500]" />, title: 'Cortes com IA', desc: 'Como nosso algoritmo extrai os melhores clipes.' },
-        { icon: <CheckCircle className="w-6 h-6 text-[#00c9a7]" />, title: 'Contas & Conexões', desc: 'Gerencie suas integrações de redes sociais.' }
+        { icon: <BookOpen size={24} style={{ color: "var(--coral)" }} />, title: 'Como Começar', desc: 'Aprenda os primeiros passos no ViralCuts.' },
+        { icon: <PlayCircle size={24} style={{ color: "var(--amber)" }} />, title: 'Cortes com IA', desc: 'Como nosso algoritmo extrai os melhores clipes.' },
+        { icon: <CheckCircle size={24} style={{ color: "var(--teal)" }} />, title: 'Contas & Conexões', desc: 'Gerencie suas integrações de redes sociais.' }
     ];
 
     const faqs = [
@@ -24,8 +24,8 @@ export default function HelpPage() {
         { q: 'Como funciona o agendamento no calendário?', a: 'Basta arrastar seus cortes gerados para os horários disponíveis no calendário e habilitar a publicação automática. O ViralCuts cuidará do envio no horário exato.' }
     ];
 
-    const filteredFaqs = faqs.filter(faq => 
-        faq.q.toLowerCase().includes(searchQuery.toLowerCase()) || 
+    const filteredFaqs = faqs.filter(faq =>
+        faq.q.toLowerCase().includes(searchQuery.toLowerCase()) ||
         faq.a.toLowerCase().includes(searchQuery.toLowerCase())
     );
 
@@ -40,125 +40,94 @@ export default function HelpPage() {
 
     return (
         <PageLayout title="Central de Ajuda" subtitle="Tire suas dúvidas sobre o ViralCuts e fale com nosso time.">
-            <div className="space-y-8">
-                {/* Busca */}
-                <div className="vc-card p-6">
-                    <div className="relative max-w-xl mx-auto">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
-                        <input
-                            type="text"
-                            placeholder="Busque por dúvidas (ex: IA, limites, calendário)..."
-                            className="vc-input pl-10"
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                        />
+            <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+                <div className="card" style={{ padding: 24 }}>
+                    <div style={{ position: "relative", maxWidth: 560, margin: "0 auto" }}>
+                        <Search size={18} style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", color: "var(--text3)", pointerEvents: "none" }} />
+                        <input type="text" placeholder="Busque por dúvidas (ex: IA, limites, calendário)..."
+                            className="input" style={{ paddingLeft: 40 }}
+                            value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
                     </div>
                 </div>
 
-                {/* Categorias Rápidas */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="grid-3">
                     {categories.map((cat, idx) => (
-                        <div key={idx} className="vc-card p-5 hover:border-[#e8412a]/30 transition-all cursor-pointer">
-                            <div className="w-12 h-12 rounded-lg bg-slate-800/50 flex items-center justify-center mb-4">
+                        <div key={idx} className="card" style={{ cursor: "pointer", textAlign: "center", padding: 24 }}>
+                            <div style={{ width: 48, height: 48, borderRadius: "var(--radius)", background: "var(--bg-card2)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
                                 {cat.icon}
                             </div>
-                            <h3 className="font-display font-semibold text-base mb-1">{cat.title}</h3>
-                            <p className="text-sm text-slate-400 leading-relaxed">{cat.desc}</p>
+                            <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 6 }}>{cat.title}</h3>
+                            <p style={{ fontSize: 14, color: "var(--text2)", lineHeight: 1.5 }}>{cat.desc}</p>
                         </div>
                     ))}
                 </div>
 
-                {/* FAQs & Formulário */}
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    {/* Lista de FAQs - 2 colunas */}
-                    <div className="lg:col-span-2 space-y-4">
-                        <h2 className="font-display text-xl font-bold mb-4">Perguntas Frequentes</h2>
+                <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: 24 }}>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                        <h2 style={{ fontSize: 20, fontWeight: 700, marginBottom: 8 }}>Perguntas Frequentes</h2>
                         {filteredFaqs.length > 0 ? (
                             filteredFaqs.map((faq, idx) => {
                                 const isOpen = openFaq === idx;
                                 return (
-                                    <div key={idx} className="vc-card overflow-hidden">
-                                        <button 
-                                            onClick={() => setOpenFaq(isOpen ? null : idx)}
-                                            className="w-full flex items-center justify-between p-4 text-left font-semibold hover:bg-slate-800/20"
-                                        >
-                                            <span className="text-sm">{faq.q}</span>
-                                            {isOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-                                        </button>
-                                        {isOpen && (
-                                            <div className="px-4 pb-4 pt-1 text-sm text-slate-400 border-t border-slate-800/30">
-                                                {faq.a}
-                                            </div>
-                                        )}
+                                    <div key={idx} className={"accordion-item" + (isOpen ? " open" : "")}>
+                                        <div className="accordion-header" onClick={() => setOpenFaq(isOpen ? null : idx)}>
+                                            <span style={{ fontSize: 14, fontWeight: 600 }}>{faq.q}</span>
+                                            {isOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                                        </div>
+                                        {isOpen && <div className="accordion-body" style={{ display: "block" }}>{faq.a}</div>}
                                     </div>
                                 );
                             })
                         ) : (
-                            <p className="text-sm text-slate-500">Nenhum resultado encontrado para a busca.</p>
+                            <p style={{ fontSize: 14, color: "var(--text3)" }}>Nenhum resultado encontrado para a busca.</p>
                         )}
                     </div>
 
-                    {/* Formulário de Suporte */}
-                    <div className="space-y-6">
-                        <div className="vc-card p-5">
-                            <h3 className="font-display font-bold text-base mb-3 flex items-center gap-2">
-                                <MessageSquare className="w-5 h-5 text-[#e8412a]" /> Enviar Mensagem
+                    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                        <div className="card" style={{ padding: 24 }}>
+                            <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 12, display: "flex", alignItems: "center", gap: 8 }}>
+                                <MessageSquare size={18} style={{ color: "var(--coral)" }} /> Enviar Mensagem
                             </h3>
                             {formSubmitted ? (
-                                <div className="p-4 bg-green-500/10 border border-green-500/20 text-green-400 text-sm rounded-lg flex items-center gap-2">
-                                    <CheckCircle className="w-4 h-4" />
-                                    Mensagem enviada com sucesso!
+                                <div style={{ padding: 16, background: "var(--teal-3)", border: "1px solid rgba(0,201,167,0.2)", borderRadius: "var(--radius)", color: "var(--teal)", fontSize: 14, display: "flex", alignItems: "center", gap: 8 }}>
+                                    <CheckCircle size={16} /> Mensagem enviada com sucesso!
                                 </div>
                             ) : (
-                                <form onSubmit={handleSubmit} className="space-y-4">
+                                <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
                                     <div>
                                         <label className="vc-label">Nome</label>
-                                        <input 
-                                            type="text" 
-                                            required 
-                                            className="vc-input" 
-                                            value={formData.name}
-                                            onChange={e => setFormData({...formData, name: e.target.value})}
-                                        />
+                                        <input type="text" required className="input"
+                                            value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} />
                                     </div>
                                     <div>
                                         <label className="vc-label">E-mail</label>
-                                        <input 
-                                            type="email" 
-                                            required 
-                                            className="vc-input" 
-                                            value={formData.email}
-                                            onChange={e => setFormData({...formData, email: e.target.value})}
-                                        />
+                                        <input type="email" required className="input"
+                                            value={formData.email} onChange={e => setFormData({ ...formData, email: e.target.value })} />
                                     </div>
                                     <div>
                                         <label className="vc-label">Mensagem</label>
-                                        <textarea 
-                                            rows="4" 
-                                            required 
-                                            className="vc-input resize-none"
-                                            value={formData.message}
-                                            onChange={e => setFormData({...formData, message: e.target.value})}
-                                        />
+                                        <textarea rows="4" required className="input"
+                                            value={formData.message} onChange={e => setFormData({ ...formData, message: e.target.value })} />
                                     </div>
-                                    <button type="submit" className="vc-btn vc-btn-primary w-full justify-center">
-                                        <Send className="w-4 h-4" /> Enviar
+                                    <button type="submit" className="btn btn-primary" style={{ justifyContent: "center", width: "100%" }}>
+                                        <Send size={14} /> Enviar
                                     </button>
                                 </form>
                             )}
                         </div>
 
-                        {/* Comunidade */}
-                        <div className="vc-card p-5">
-                            <h3 className="font-display font-bold text-base mb-3 flex items-center gap-2">
-                                <MessageCircle className="w-5 h-5 text-[#f0a500]" /> Comunidades
+                        <div className="card" style={{ padding: 24 }}>
+                            <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 12, display: "flex", alignItems: "center", gap: 8 }}>
+                                <MessageCircle size={18} style={{ color: "var(--amber)" }} /> Comunidades
                             </h3>
-                            <div className="space-y-3">
-                                <a href="https://discord.gg" target="_blank" rel="noreferrer" className="vc-btn vc-btn-secondary w-full justify-start gap-3">
-                                    <span>👾 Discord Oficial</span>
+                            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                                <a href="https://discord.gg" target="_blank" rel="noreferrer"
+                                    className="btn btn-secondary" style={{ justifyContent: "flex-start", gap: 10 }}>
+                                    <span style={{ fontSize: 16 }}>👾</span> Discord Oficial
                                 </a>
-                                <a href="https://wa.me" target="_blank" rel="noreferrer" className="vc-btn vc-btn-secondary w-full justify-start gap-3">
-                                    <span>💬 Grupo do WhatsApp</span>
+                                <a href="https://wa.me" target="_blank" rel="noreferrer"
+                                    className="btn btn-secondary" style={{ justifyContent: "flex-start", gap: 10 }}>
+                                    <span style={{ fontSize: 16 }}>💬</span> Grupo do WhatsApp
                                 </a>
                             </div>
                         </div>
