@@ -168,7 +168,7 @@ export function UploadQueuePanel({ uploadQueue, markQueueStatus, removeQueueItem
         const hasFailedPlatform = platformStatuses.some(ps => ps.status === 'failed');
 
         return (
-            <div key={q.id} className="group bg-gradient-to-r from-slate-800/50 to-slate-700/30 border border-surface-700/50 hover:border-surface-600/70 rounded-xl p-3 transition-all duration-300 hover:from-slate-700/50 hover:to-slate-600/30 hover:scale-[1.01] relative overflow-hidden">
+            <div key={q.id} className="group bg-gradient-to-r from-slate-800/50 to-slate-700/30 border border-[var(--border-default)] hover:border-[var(--border-strong)] rounded-xl p-3 transition-all duration-300 hover:from-slate-700/50 hover:to-slate-600/30 hover:scale-[1.01] relative overflow-hidden">
                 {/* Background Pattern */}
                 <div className="absolute inset-0 bg-gradient-to-br from-white/[0.02] to-transparent rounded-xl"></div>
                 
@@ -320,9 +320,9 @@ export function UploadQueuePanel({ uploadQueue, markQueueStatus, removeQueueItem
     };
 
     return (
-        <div className="glass-panel rounded-xl overflow-hidden animate-in slide-in-from-bottom-4 duration-700 h-full flex flex-col">
+        <div className="vc-card rounded-xl overflow-hidden animate-in slide-in-from-bottom-4 duration-700 h-full flex flex-col">
             {/* Enhanced Header */}
-            <div className="p-4 border-b border-surface-700/50 bg-gradient-to-r from-blue-900/20 via-cyan-900/10 to-blue-900/20 relative overflow-hidden flex-shrink-0">
+            <div className="p-4 border-b border-[var(--border-default)] bg-gradient-to-r from-blue-900/20 via-cyan-900/10 to-blue-900/20 relative overflow-hidden flex-shrink-0">
                 {/* Background Pattern */}
                 <div className="absolute inset-0 bg-gradient-to-br from-blue-600/5 to-cyan-600/5"></div>
                 <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-blue-500/10 to-transparent rounded-full -translate-y-12 translate-x-12"></div>
@@ -353,7 +353,7 @@ export function UploadQueuePanel({ uploadQueue, markQueueStatus, removeQueueItem
 
             {isLoading ? (
                 <div className="p-4 space-y-4">
-                    <div className="flex gap-2 border-b border-surface-700/50 pb-2 mb-2">
+                    <div className="flex gap-2 border-b border-[var(--border-default)] pb-2 mb-2">
                         <Skeleton className="h-8 flex-1 rounded-md" />
                         <Skeleton className="h-8 flex-1 rounded-md" />
                     </div>
@@ -365,11 +365,11 @@ export function UploadQueuePanel({ uploadQueue, markQueueStatus, removeQueueItem
             ) : (
                 <>
                     {/* Enhanced Tabs */}
-                    <div className="flex border-b border-surface-700/50 bg-surface-900/30 flex-shrink-0">
+                    <div className="flex border-b border-[var(--border-default)] bg-[var(--bg-secondary)] flex-shrink-0">
                         <button
                             className={`flex-1 py-3 text-xs font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-2 ${activeTab === 'upcoming'
-                                ? 'bg-surface-800 text-blue-400 border-b-2 border-blue-400 shadow-lg'
-                                : 'text-slate-500 hover:text-slate-300 hover:bg-surface-800/50'
+                                ? 'bg-[var(--bg-card)] text-blue-400 border-b-2 border-blue-400 shadow-lg'
+                                : 'text-slate-500 hover:text-slate-300 hover:bg-[var(--bg-card)]'
                                 }`}
                             onClick={() => setActiveTab('upcoming')}
                         >
@@ -378,8 +378,8 @@ export function UploadQueuePanel({ uploadQueue, markQueueStatus, removeQueueItem
                         </button>
                         <button
                             className={`flex-1 py-3 text-xs font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-2 ${activeTab === 'posted'
-                                ? 'bg-surface-800 text-green-400 border-b-2 border-green-400 shadow-lg'
-                                : 'text-slate-500 hover:text-slate-300 hover:bg-surface-800/50'
+                                ? 'bg-[var(--bg-card)] text-green-400 border-b-2 border-green-400 shadow-lg'
+                                : 'text-slate-500 hover:text-slate-300 hover:bg-[var(--bg-card)]'
                                 }`}
                             onClick={() => setActiveTab('posted')}
                         >
@@ -394,7 +394,7 @@ export function UploadQueuePanel({ uploadQueue, markQueueStatus, removeQueueItem
                                     {/* Today Section */}
                                     {todayVideos.length > 0 && (
                                         <div className="space-y-2">
-                                            <div className="flex items-center gap-2 sticky top-0 bg-surface-900/95 backdrop-blur-sm py-2 z-10">
+                                            <div className="flex items-center gap-2 sticky top-0 bg-[var(--bg-secondary)] backdrop-blur-sm py-2 z-10">
                                                 <div className="w-2 h-2 rounded-full bg-primary animate-pulse"></div>
                                                 <h4 className="text-xs font-bold text-primary uppercase tracking-wider">
                                                     Hoje
@@ -418,7 +418,7 @@ export function UploadQueuePanel({ uploadQueue, markQueueStatus, removeQueueItem
 
                                         return (
                                             <div key={dateStr} className="space-y-2">
-                                                <div className="flex items-center gap-2 sticky top-0 bg-surface-900/95 backdrop-blur-sm py-2 z-10">
+                                                <div className="flex items-center gap-2 sticky top-0 bg-[var(--bg-secondary)] backdrop-blur-sm py-2 z-10">
                                                     <div className="w-2 h-2 rounded-full bg-purple-400"></div>
                                                     <h4 className="text-xs font-bold text-purple-400 uppercase tracking-wider capitalize">
                                                         {dayLabel}
@@ -434,7 +434,7 @@ export function UploadQueuePanel({ uploadQueue, markQueueStatus, removeQueueItem
                                     })}
 
                                     {todayVideos.length === 0 && upcoming.length === 0 && (
-                                        <div className="text-center py-12 text-slate-500 border-2 border-dashed border-surface-700/50 rounded-xl bg-surface-800/30">
+                                        <div className="text-center py-12 text-slate-500 border-2 border-dashed border-[var(--border-default)] rounded-xl bg-[var(--bg-card)]">
                                             <Calendar className="w-12 h-12 mx-auto mb-3 opacity-30" />
                                             <p className="text-sm font-medium">Nenhum vídeo agendado</p>
                                             <p className="text-xs mt-1 opacity-70">Agende uploads pelo calendário</p>
@@ -456,7 +456,7 @@ export function UploadQueuePanel({ uploadQueue, markQueueStatus, removeQueueItem
                                             {posted.map(q => renderVideoItem(q, false))}
                                         </div>
                                     ) : (
-                                        <div className="text-center py-12 text-slate-500 border-2 border-dashed border-surface-700/50 rounded-xl bg-surface-800/30">
+                                        <div className="text-center py-12 text-slate-500 border-2 border-dashed border-[var(--border-default)] rounded-xl bg-[var(--bg-card)]">
                                             <CheckCircle2 className="w-12 h-12 mx-auto mb-3 opacity-30" />
                                             <p className="text-sm font-medium">Nenhum vídeo postado ainda</p>
                                             <p className="text-xs mt-1 opacity-70">Seus vídeos publicados aparecerão aqui</p>

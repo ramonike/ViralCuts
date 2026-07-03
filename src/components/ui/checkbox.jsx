@@ -1,11 +1,15 @@
-export function Checkbox({ checked, onCheckedChange }) {
+export function Checkbox({ checked, onCheckedChange, label }) {
   return (
-    <input
-      type="checkbox"
-      checked={checked}
-      onChange={e => onCheckedChange?.(e.target.checked)}
-      className="w-5 h-5 accent-blue-600 rounded border border-slate-300 shadow-sm focus:ring-2 focus:ring-blue-200 transition"
-      style={{ cursor: 'pointer' }}
-    />
+    <label className="flex items-center gap-2 cursor-pointer group">
+      <input
+        type="checkbox"
+        checked={checked}
+        onChange={e => onCheckedChange?.(e.target.checked)}
+        className="w-4 h-4 rounded border-[var(--border-default)] bg-[var(--bg-tertiary)] text-[var(--accent-coral)] 
+                   focus:ring-2 focus:ring-[var(--accent-coral-3)] focus:ring-offset-0
+                   transition-colors cursor-pointer"
+      />
+      {label && <span className="text-sm text-[var(--text-secondary)] group-hover:text-[var(--text-primary)] transition-colors">{label}</span>}
+    </label>
   );
 }

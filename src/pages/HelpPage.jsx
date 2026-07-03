@@ -4,12 +4,8 @@ import {
     Search, HelpCircle, MessageSquare, MessageCircle, PlayCircle, 
     BookOpen, ChevronDown, ChevronUp, Send, CheckCircle
 } from 'lucide-react';
-import { useTheme } from '../contexts/ThemeContext';
 
 export default function HelpPage() {
-    const { theme } = useTheme();
-    const isDark = theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
-
     const [searchQuery, setSearchQuery] = useState('');
     const [openFaq, setOpenFaq] = useState(null);
     const [formSubmitted, setFormSubmitted] = useState(false);

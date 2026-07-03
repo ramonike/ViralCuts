@@ -45,8 +45,8 @@ export function TopVideosTable({ videos: propVideos, sortBy = 'views', limit = 5
     // If no videos available, show empty state
     if (videos.length === 0) {
         return (
-            <div className={`rounded-xl overflow-hidden ${isDark ? 'glass-panel' : 'bg-white border border-gray-200 shadow-sm'}`}>
-                <div className={`p-4 border-b ${isDark ? 'border-surface-700/50' : 'border-gray-200'}`}>
+            <div className={`rounded-xl overflow-hidden ${isDark ? 'vc-card' : 'bg-white border border-gray-200 shadow-sm'}`}>
+                <div className={`p-4 border-b ${isDark ? 'border-[var(--border-default)]' : 'border-gray-200'}`}>
                     <h3 className={`font-bold text-lg flex items-center gap-2 ${isDark ? 'text-white' : 'text-gray-900'}`}>
                         <Trophy className="w-5 h-5 text-yellow-400" />
                         Top {limit} Vídeos
@@ -78,8 +78,8 @@ export function TopVideosTable({ videos: propVideos, sortBy = 'views', limit = 5
 
     if (loading) {
         return (
-            <div className={`rounded-xl overflow-hidden ${isDark ? 'glass-panel' : 'bg-white border border-gray-200 shadow-sm'}`}>
-                <div className={`p-4 border-b ${isDark ? 'border-surface-700/50' : 'border-gray-200'}`}>
+            <div className={`rounded-xl overflow-hidden ${isDark ? 'vc-card' : 'bg-white border border-gray-200 shadow-sm'}`}>
+                <div className={`p-4 border-b ${isDark ? 'border-[var(--border-default)]' : 'border-gray-200'}`}>
                     <div className={`h-6 rounded animate-pulse w-48 ${isDark ? 'bg-slate-700' : 'bg-gray-200'}`}></div>
                 </div>
                 <div className="p-4">
@@ -98,8 +98,8 @@ export function TopVideosTable({ videos: propVideos, sortBy = 'views', limit = 5
     }
 
     return (
-        <div className={`rounded-xl overflow-hidden ${isDark ? 'glass-panel' : 'bg-white border border-gray-200 shadow-sm'}`}>
-            <div className={`p-4 border-b ${isDark ? 'border-surface-700/50' : 'border-gray-200'}`}>
+        <div className={`rounded-xl overflow-hidden ${isDark ? 'vc-card' : 'bg-white border border-gray-200 shadow-sm'}`}>
+            <div className={`p-4 border-b ${isDark ? 'border-[var(--border-default)]' : 'border-gray-200'}`}>
                 <div className="flex items-center justify-between">
                     <h3 className={`font-bold text-lg flex items-center gap-2 ${isDark ? 'text-white' : 'text-gray-900'}`}>
                         <Trophy className="w-5 h-5 text-yellow-400" />

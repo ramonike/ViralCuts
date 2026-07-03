@@ -92,8 +92,8 @@ export function ViewingHeatmap({ data: propData, loading = false }) {
 
     if (showLoading) {
         return (
-            <div className={`rounded-xl overflow-hidden ${isDark ? 'glass-panel' : 'bg-white border border-gray-200 shadow-sm'}`}>
-                <div className={`p-4 border-b ${isDark ? 'border-surface-700/50' : 'border-gray-200'}`}>
+            <div className={`rounded-xl overflow-hidden ${isDark ? 'vc-card' : 'bg-white border border-gray-200 shadow-sm'}`}>
+                <div className={`p-4 border-b ${isDark ? 'border-[var(--border-default)]' : 'border-gray-200'}`}>
                     <div className={`h-6 rounded animate-pulse w-48 ${isDark ? 'bg-slate-700' : 'bg-gray-200'}`}></div>
                 </div>
                 <div className="p-4 flex items-center justify-center" style={{ minHeight: 400 }}>
@@ -106,8 +106,8 @@ export function ViewingHeatmap({ data: propData, loading = false }) {
     // Show empty state if no data
     if (data.length === 0) {
         return (
-            <div className={`rounded-xl overflow-hidden ${isDark ? 'glass-panel' : 'bg-white border border-gray-200 shadow-sm'}`}>
-                <div className={`p-4 border-b ${isDark ? 'border-surface-700/50' : 'border-gray-200'}`}>
+            <div className={`rounded-xl overflow-hidden ${isDark ? 'vc-card' : 'bg-white border border-gray-200 shadow-sm'}`}>
+                <div className={`p-4 border-b ${isDark ? 'border-[var(--border-default)]' : 'border-gray-200'}`}>
                     <h3 className={`font-bold text-lg flex items-center gap-2 ${isDark ? 'text-white' : 'text-gray-900'}`}>
                         <Clock className="w-5 h-5 text-blue-400" />
                         Mapa de Calor de Visualizações
@@ -124,8 +124,8 @@ export function ViewingHeatmap({ data: propData, loading = false }) {
     }
 
     return (
-        <div className={`rounded-xl overflow-hidden ${isDark ? 'glass-panel' : 'bg-white border border-gray-200 shadow-sm'}`}>
-            <div className={`p-4 border-b ${isDark ? 'border-surface-700/50' : 'border-gray-200'}`}>
+        <div className={`rounded-xl overflow-hidden ${isDark ? 'vc-card' : 'bg-white border border-gray-200 shadow-sm'}`}>
+            <div className={`p-4 border-b ${isDark ? 'border-[var(--border-default)]' : 'border-gray-200'}`}>
                 <h3 className={`font-bold text-lg flex items-center gap-2 ${isDark ? 'text-white' : 'text-gray-900'}`}>
                     <Clock className="w-5 h-5 text-blue-400" />
                     Mapa de Calor de Visualizações

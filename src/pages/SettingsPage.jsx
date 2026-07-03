@@ -6,74 +6,62 @@ import { PageLayout } from "../components/layout/PageLayout";
 import { NotificationPreferences } from "../components/notifications/NotificationPreferences";
 import PlatformConnections from "../components/settings/PlatformConnections";
 import { API_URL } from "../config/api";
+import { Card } from "../components/ui/card";
+import { Button } from "../components/ui/button";
+import { Input } from "../components/ui/input";
+import { Select } from "../components/ui/select";
 
-// ─── Helpers ─────────────────────────────────────────────────────────────────
-function Section({ icon, color, title, subtitle, children, isDark }) {
+function Section({ icon, color, title, subtitle, children }) {
     return (
-        <div className={`rounded-xl overflow-hidden ${isDark ? "glass-panel border border-surface-700/50" : "bg-white border border-gray-200 shadow-sm"}`}>
-            <div className={`px-5 py-4 border-b flex items-center gap-3 ${isDark ? "border-surface-700/30" : "border-gray-200"}`}>
-                <div className={`w-9 h-9 rounded-lg ${color} flex items-center justify-center`}>
-                    {icon}
-                </div>
+        <Card className="overflow-hidden">
+            <div className="px-5 py-4 border-b border-[var(--border-subtle)] flex items-center gap-3">
+                <div className={`w-9 h-9 rounded-lg ${color} flex items-center justify-center`}>{icon}</div>
                 <div>
-                    <h3 className={`text-sm font-semibold ${isDark ? "text-white" : "text-gray-900"}`}>{title}</h3>
-                    <p className={`text-xs ${isDark ? "text-slate-500" : "text-gray-500"}`}>{subtitle}</p>
+                    <h3 className="text-sm font-semibold text-[var(--text-primary)]">{title}</h3>
+                    <p className="text-xs text-[var(--text-muted)]">{subtitle}</p>
                 </div>
             </div>
             <div className="p-5">{children}</div>
-        </div>
+        </Card>
     );
 }
 
 function Toast({ message }) {
     if (!message) return null;
-    const isError = message.type === "error";
     return (
-        <div className={`mb-6 p-4 rounded-xl flex items-center gap-3 text-sm animate-in fade-in slide-in-from-top-2 ${isError ? "bg-red-500/10 text-red-400 border border-red-500/20" : "bg-green-500/10 text-green-400 border border-green-500/20"}`}>
-            {isError ? <AlertCircle className="w-4 h-4 shrink-0" /> : <Check className="w-4 h-4 shrink-0" />}
-            {message.text}
+        <div className={`vc-toast mb-6 ${message.type === "error" ? "vc-toast-coral" : "vc-toast-teal"}`}>
+            {message.type === "error" ? <AlertCircle size={16} className="shrink-0" /> : <Check size={16} className="shrink-0" />}
+            <span>{message.text}</span>
         </div>
     );
 }
 
-// ─── Main ─────────────────────────────────────────────────────────────────────
 export default function SettingsPage() {
     const { theme, setTheme } = useTheme();
     const { user } = useAuth();
-    const isDark = theme === "dark" || (theme === "system" && window.matchMedia("(prefers-color-scheme: dark)").matches);
 
     const [message, setMessage] = useState(null);
     const [language, setLanguage] = useState("pt-BR");
     const [timezone, setTimezone] = useState("America/Sao_Paulo");
-
-    // Conta
     const [name, setName] = useState(user?.name || "");
     const [currentPassword, setCurrentPassword] = useState("");
     const [newPassword, setNewPassword] = useState("");
     const [savingAccount, setSavingAccount] = useState(false);
 
-    const showMsg = (type, text) => {
-        setMessage({ type, text });
-        setTimeout(() => setMessage(null), 3500);
-    };
+    const showMsg = (type, text) => { setMessage({ type, text }); setTimeout(() => setMessage(null), 3500); };
 
     const handleSaveAccount = async () => {
         if (!name.trim()) return showMsg("error", "O nome não pode estar vazio.");
         setSavingAccount(true);
         try {
             const res = await fetch(`${API_URL}/api/auth/update-profile`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                credentials: "include",
-                body: JSON.stringify({ name: name.trim() }),
+                method: "POST", headers: { "Content-Type": "application/json" },
+                credentials: "include", body: JSON.stringify({ name: name.trim() }),
             });
             if (!res.ok) throw new Error();
             showMsg("success", "Perfil atualizado com sucesso!");
-        } catch {
-            showMsg("error", "Erro ao salvar. Tente novamente.");
-        } finally {
-            setSavingAccount(false);
-        }
+        } catch { showMsg("error", "Erro ao salvar. Tente novamente."); }
+        finally { setSavingAccount(false); }
     };
 
     const handleChangePassword = async () => {
@@ -81,25 +69,19 @@ export default function SettingsPage() {
         if (newPassword.length < 8) return showMsg("error", "A nova senha precisa ter pelo menos 8 caracteres.");
         try {
             const res = await fetch(`${API_URL}/api/auth/change-password`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                credentials: "include",
-                body: JSON.stringify({ currentPassword, newPassword }),
+                method: "POST", headers: { "Content-Type": "application/json" },
+                credentials: "include", body: JSON.stringify({ currentPassword, newPassword }),
             });
             if (!res.ok) throw new Error();
             setCurrentPassword(""); setNewPassword("");
             showMsg("success", "Senha alterada com sucesso!");
-        } catch {
-            showMsg("error", "Senha atual incorreta ou erro ao alterar.");
-        }
+        } catch { showMsg("error", "Senha atual incorreta ou erro ao alterar."); }
     };
 
     const handleExportData = () => showMsg("success", "Seus dados serão enviados por email em breve.");
-
     const handleDeleteAccount = () => {
-        if (confirm("Tem certeza? Esta ação é irreversível e todos os seus dados serão removidos.")) {
+        if (confirm("Tem certeza? Esta ação é irreversível e todos os seus dados serão removidos."))
             showMsg("error", "Entre em contato pelo suporte para excluir sua conta.");
-        }
     };
 
     const themeOptions = [
@@ -108,10 +90,10 @@ export default function SettingsPage() {
         { value: "system", icon: Monitor, label: "Sistema" },
     ];
 
-    const inputCls = `w-full px-4 py-2.5 rounded-lg border text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all ${isDark ? "bg-surface-800 border-surface-700 text-white placeholder-slate-600" : "bg-white border-gray-200 text-gray-900"
-        }`;
-
-    const labelCls = `text-xs font-medium block mb-1.5 ${isDark ? "text-slate-400" : "text-gray-600"}`;
+    const activeThemeBtn = (val) =>
+        theme === val
+            ? "bg-[var(--accent-coral-3)] border-[rgba(232,65,42,0.3)] text-[var(--accent-coral-2)]"
+            : "bg-[var(--bg-tertiary)] border-[var(--border-default)] text-[var(--text-secondary)] hover:border-[var(--border-strong)] hover:text-[var(--text-primary)]";
 
     return (
         <PageLayout title="Configurações" subtitle="Gerencie sua conta e preferências do aplicativo.">
@@ -119,16 +101,11 @@ export default function SettingsPage() {
 
             <div className="space-y-6">
 
-                {/* ── Aparência ── */}
-                <Section icon={<Sun className="w-4 h-4 text-amber-400" />} color="bg-amber-500/10" title="Aparência" subtitle="Tema da interface" isDark={isDark}>
+                <Section icon={<Sun className="w-4 h-4 text-[var(--accent-amber)]" />} color="bg-[var(--accent-amber-3)]" title="Aparência" subtitle="Tema da interface">
                     <div className="grid grid-cols-3 gap-3">
                         {themeOptions.map(({ value, icon: Icon, label }) => (
-                            <button key={value} onClick={() => setTheme(value)} className={`flex flex-col items-center gap-2 p-4 rounded-xl border transition-all ${theme === value
-                                    ? "bg-primary/10 border-primary/30 text-primary"
-                                    : isDark
-                                        ? "bg-surface-800/50 border-surface-700/50 text-slate-400 hover:border-surface-600 hover:text-white"
-                                        : "bg-gray-50 border-gray-200 text-gray-500 hover:border-gray-300 hover:text-gray-900"
-                                }`}>
+                            <button key={value} onClick={() => setTheme(value)}
+                                className={`flex flex-col items-center gap-2 p-4 rounded-xl border transition-all ${activeThemeBtn(value)}`}>
                                 <Icon className="w-5 h-5" />
                                 <span className="text-xs font-medium">{label}</span>
                             </button>
@@ -136,95 +113,78 @@ export default function SettingsPage() {
                     </div>
                 </Section>
 
-                {/* ── Notificações ── */}
-                <Section icon={<Bell className="w-4 h-4 text-blue-400" />} color="bg-blue-500/10" title="Notificações" subtitle="Alertas de uploads, erros e atualizações" isDark={isDark}>
+                <Section icon={<Bell className="w-4 h-4 text-[var(--accent-coral-2)]" />} color="bg-[var(--accent-coral-3)]" title="Notificações" subtitle="Alertas de uploads, erros e atualizações">
                     <NotificationPreferences />
                 </Section>
 
-                {/* ── Plataformas Conectadas ── */}
-                <Section icon={<Share2 className="w-4 h-4 text-pink-400" />} color="bg-pink-500/10" title="Plataformas" subtitle="Conecte suas contas TikTok e YouTube" isDark={isDark}>
+                <Section icon={<Share2 className="w-4 h-4 text-[var(--accent-teal)]" />} color="bg-[var(--accent-teal-3)]" title="Plataformas" subtitle="Conecte suas contas TikTok e YouTube">
                     <PlatformConnections />
                 </Section>
 
-                {/* ── 2 colunas: Conta + Idioma ── */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-
-                    {/* Conta */}
-                    <Section icon={<User className="w-4 h-4 text-purple-400" />} color="bg-purple-500/10" title="Conta" subtitle="Nome e senha" isDark={isDark}>
+                    <Section icon={<User className="w-4 h-4 text-[var(--accent-coral-2)]" />} color="bg-[var(--accent-coral-3)]" title="Conta" subtitle="Nome e senha">
                         <div className="space-y-4">
-                            <div>
-                                <label className={labelCls}>Nome de exibição</label>
-                                <input value={name} onChange={e => setName(e.target.value)} placeholder="Seu nome" className={inputCls} />
-                            </div>
-                            <div>
-                                <label className={labelCls}>Email</label>
-                                <input value={user?.email || ""} disabled className={`${inputCls} opacity-50 cursor-not-allowed`} />
-                            </div>
-                            <button onClick={handleSaveAccount} disabled={savingAccount} className="w-full py-2.5 rounded-lg bg-primary text-white text-sm font-bold hover:bg-primary/90 transition-colors disabled:opacity-50">
+                            <Input label="Nome de exibição" value={name} onChange={e => setName(e.target.value)} placeholder="Seu nome" />
+                            <Input label="Email" value={user?.email || ""} disabled className="opacity-50 cursor-not-allowed" />
+                            <Button className="w-full" onClick={handleSaveAccount} loading={savingAccount}>
                                 {savingAccount ? "Salvando..." : "Salvar nome"}
-                            </button>
+                            </Button>
 
-                            <div className={`border-t pt-4 ${isDark ? "border-surface-700/30" : "border-gray-100"}`}>
-                                <p className={`text-xs font-semibold mb-3 ${isDark ? "text-slate-400" : "text-gray-500"}`}>Alterar senha</p>
+                            <div className="border-t border-[var(--border-subtle)] pt-4">
+                                <p className="text-xs font-semibold text-[var(--text-muted)] mb-3">Alterar senha</p>
                                 <div className="space-y-3">
-                                    <input type="password" value={currentPassword} onChange={e => setCurrentPassword(e.target.value)} placeholder="Senha atual" className={inputCls} />
-                                    <input type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)} placeholder="Nova senha (mín. 8 caracteres)" className={inputCls} />
-                                    <button onClick={handleChangePassword} className={`w-full py-2 rounded-lg border text-sm font-medium transition-colors ${isDark ? "border-surface-600 text-slate-300 hover:bg-surface-800" : "border-gray-200 text-gray-700 hover:bg-gray-50"}`}>
+                                    <Input type="password" value={currentPassword} onChange={e => setCurrentPassword(e.target.value)} placeholder="Senha atual" />
+                                    <Input type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)} placeholder="Nova senha (mín. 8 caracteres)" />
+                                    <Button variant="secondary" className="w-full" onClick={handleChangePassword}>
                                         Alterar senha
-                                    </button>
+                                    </Button>
                                 </div>
                             </div>
                         </div>
                     </Section>
 
-                    {/* Idioma e Região */}
-                    <Section icon={<Globe className="w-4 h-4 text-purple-400" />} color="bg-purple-500/10" title="Idioma e Região" subtitle="Localização e fuso horário" isDark={isDark}>
+                    <Section icon={<Globe className="w-4 h-4 text-[var(--accent-amber)]" />} color="bg-[var(--accent-amber-3)]" title="Idioma e Região" subtitle="Localização e fuso horário">
                         <div className="space-y-4">
-                            <div>
-                                <label className={labelCls}>Idioma</label>
-                                <select value={language} onChange={e => setLanguage(e.target.value)} className={inputCls}>
-                                    <option value="pt-BR">🇧🇷 Português (Brasil)</option>
-                                    <option value="en-US">🇺🇸 English (US)</option>
-                                    <option value="es">🇪🇸 Español</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label className={labelCls}>Fuso Horário</label>
-                                <select value={timezone} onChange={e => setTimezone(e.target.value)} className={inputCls}>
-                                    <option value="America/Sao_Paulo">São Paulo (GMT-3)</option>
-                                    <option value="America/Manaus">Manaus (GMT-4)</option>
-                                    <option value="America/Belem">Belém (GMT-3)</option>
-                                    <option value="America/New_York">New York (GMT-5)</option>
-                                    <option value="Europe/London">London (GMT+0)</option>
-                                </select>
-                            </div>
+                            <Select label="Idioma" value={language} onChange={e => setLanguage(e.target.value)}>
+                                <option value="pt-BR">🇧🇷 Português (Brasil)</option>
+                                <option value="en-US">🇺🇸 English (US)</option>
+                                <option value="es">🇪🇸 Español</option>
+                            </Select>
+                            <Select label="Fuso Horário" value={timezone} onChange={e => setTimezone(e.target.value)}>
+                                <option value="America/Sao_Paulo">São Paulo (GMT-3)</option>
+                                <option value="America/Manaus">Manaus (GMT-4)</option>
+                                <option value="America/Belem">Belém (GMT-3)</option>
+                                <option value="America/New_York">New York (GMT-5)</option>
+                                <option value="Europe/London">London (GMT+0)</option>
+                            </Select>
                         </div>
                     </Section>
                 </div>
 
-                {/* ── Dados e Privacidade ── */}
-                <Section icon={<Shield className="w-4 h-4 text-green-400" />} color="bg-green-500/10" title="Dados e Privacidade" subtitle="Exportação e exclusão de conta" isDark={isDark}>
+                <Section icon={<Shield className="w-4 h-4 text-[var(--accent-teal)]" />} color="bg-[var(--accent-teal-3)]" title="Dados e Privacidade" subtitle="Exportação e exclusão de conta">
                     <div className="space-y-3">
-                        <button onClick={handleExportData} className={`w-full flex items-center justify-between p-3 rounded-lg border transition-colors group ${isDark ? "bg-surface-800/50 border-surface-700/30 hover:border-surface-600" : "bg-gray-50 border-gray-200 hover:border-gray-300"}`}>
+                        <button onClick={handleExportData}
+                            className="w-full flex items-center justify-between p-3 rounded-lg border border-[var(--border-default)] bg-[var(--bg-card)] hover:border-[var(--border-strong)] transition-all group">
                             <div className="flex items-center gap-3">
-                                <Download className={`w-4 h-4 ${isDark ? "text-slate-400 group-hover:text-white" : "text-gray-500"} transition-colors`} />
+                                <Download className="w-4 h-4 text-[var(--text-muted)] group-hover:text-[var(--text-primary)] transition-colors" />
                                 <div className="text-left">
-                                    <p className={`text-sm font-medium ${isDark ? "text-white" : "text-gray-900"}`}>Exportar meus dados</p>
-                                    <p className={`text-xs ${isDark ? "text-slate-500" : "text-gray-500"}`}>Receba uma cópia por email</p>
+                                    <p className="text-sm font-medium text-[var(--text-primary)]">Exportar meus dados</p>
+                                    <p className="text-xs text-[var(--text-muted)]">Receba uma cópia por email</p>
                                 </div>
                             </div>
-                            <ChevronRight className={`w-4 h-4 ${isDark ? "text-slate-500 group-hover:text-white" : "text-gray-400"} transition-colors`} />
+                            <ChevronRight className="w-4 h-4 text-[var(--text-muted)] group-hover:text-[var(--text-primary)] transition-colors" />
                         </button>
 
-                        <button onClick={handleDeleteAccount} className="w-full flex items-center justify-between p-3 rounded-lg bg-red-500/5 border border-red-500/10 hover:border-red-500/30 transition-colors group">
+                        <button onClick={handleDeleteAccount}
+                            className="w-full flex items-center justify-between p-3 rounded-lg border border-[rgba(232,65,42,0.15)] bg-[var(--accent-coral-3)] hover:border-[rgba(232,65,42,0.35)] transition-all group">
                             <div className="flex items-center gap-3">
-                                <Trash2 className="w-4 h-4 text-red-400" />
+                                <Trash2 className="w-4 h-4 text-[var(--accent-coral-2)]" />
                                 <div className="text-left">
-                                    <p className="text-sm font-medium text-red-400">Excluir conta</p>
-                                    <p className={`text-xs ${isDark ? "text-slate-500" : "text-gray-500"}`}>Ação irreversível — todos os dados serão removidos</p>
+                                    <p className="text-sm font-medium text-[var(--accent-coral-2)]">Excluir conta</p>
+                                    <p className="text-xs text-[var(--text-muted)]">Ação irreversível — todos os dados serão removidos</p>
                                 </div>
                             </div>
-                            <ChevronRight className="w-4 h-4 text-red-400/50 group-hover:text-red-400 transition-colors" />
+                            <ChevronRight className="w-4 h-4 text-[var(--accent-coral)] opacity-50 group-hover:opacity-100 transition-opacity" />
                         </button>
                     </div>
                 </Section>

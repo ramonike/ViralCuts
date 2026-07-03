@@ -33,13 +33,13 @@ function AccountSwitcher({ accounts, activeId, onSwitch }) {
                     className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium transition-all shrink-0 ${
                         acc.id === activeId
                             ? 'bg-primary/15 text-primary border border-primary/30'
-                            : 'text-slate-400 border border-transparent hover:border-surface-600 hover:text-white'
+                            : 'text-slate-400 border border-transparent hover:border-[var(--border-strong)] hover:text-white'
                     }`}
                 >
                     {acc.avatar ? (
                         <img src={acc.avatar} className="w-4 h-4 rounded-full object-cover" alt="" />
                     ) : (
-                        <div className="w-4 h-4 rounded-full bg-surface-700 flex items-center justify-center text-[9px] font-bold shrink-0">
+                        <div className="w-4 h-4 rounded-full bg-[var(--bg-elevated)] flex items-center justify-center text-[9px] font-bold shrink-0">
                             {(acc.name || '?')[0].toUpperCase()}
                         </div>
                     )}
@@ -64,9 +64,9 @@ function ChannelHero({ channelStats, onRefresh, youtubeAccounts, activeId, onSwi
         : `https://youtube.com/channel/${channelStats?.id}`;
 
     return (
-        <div className="glass-panel rounded-2xl border border-surface-700/50">
+        <div className="vc-card rounded-2xl border border-[var(--border-default)]">
             {/* Banner */}
-            <div className="h-32 bg-gradient-to-br from-violet-900/40 via-surface-800 to-surface-900 relative overflow-hidden">
+            <div className="h-32 bg-gradient-to-br from-violet-900/40 via-[var(--bg-card)] to-[var(--bg-secondary)] relative overflow-hidden">
                 {channelStats?.brandingSettings?.image?.bannerExternalUrl && (
                     <img
                         src={channelStats.brandingSettings.image.bannerExternalUrl}
@@ -75,7 +75,7 @@ function ChannelHero({ channelStats, onRefresh, youtubeAccounts, activeId, onSwi
                         onError={(e) => { e.target.style.display = "none"; }}
                     />
                 )}
-                <div className="absolute inset-0 bg-gradient-to-t from-surface-900/80 via-transparent to-transparent" />
+                <div className="absolute inset-0 bg-gradient-to-t from-[var(--bg-secondary)] via-transparent to-transparent" />
 
                 <div className="absolute top-3 right-3 flex items-center gap-2">
                     <button
@@ -92,7 +92,7 @@ function ChannelHero({ channelStats, onRefresh, youtubeAccounts, activeId, onSwi
                             <MoreVertical className="w-4 h-4" />
                         </button>
                         {showMenu && (
-                            <div className="absolute right-0 top-full mt-1 bg-surface-800 border border-surface-700 rounded-xl shadow-xl z-10 min-w-[160px]">
+                            <div className="absolute right-0 top-full mt-1 bg-[var(--bg-card)] border border-[var(--border-default)] rounded-xl shadow-xl z-10 min-w-[160px]">
                                 <button
                                     onClick={() => {
                                         setShowMenu(false);
@@ -114,7 +114,7 @@ function ChannelHero({ channelStats, onRefresh, youtubeAccounts, activeId, onSwi
             {/* Conteúdo */}
             <div className="px-6 pb-6">
                 <div className="flex items-end gap-4 -mt-10 mb-5 relative z-10">
-                    <div className="w-20 h-20 rounded-2xl border-4 border-surface-900 overflow-hidden bg-surface-800 shrink-0 shadow-xl">
+                    <div className="w-20 h-20 rounded-2xl border-4 border-[var(--bg-secondary)] overflow-hidden bg-[var(--bg-card)] shrink-0 shadow-xl">
                         {avatarUrl ? (
                             <img src={avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
                         ) : (
@@ -161,7 +161,7 @@ function ChannelHero({ channelStats, onRefresh, youtubeAccounts, activeId, onSwi
                         { icon: <BarChart className="w-4 h-4 text-blue-400" />, label: "Views", value: formatNumber(channelStats?.statistics?.viewCount), hover: "hover:border-blue-500/30" },
                         { icon: <Youtube className="w-4 h-4 text-purple-400" />, label: "Vídeos", value: formatNumber(channelStats?.statistics?.videoCount), hover: "hover:border-purple-500/30" },
                     ].map((s, i) => (
-                        <div key={i} className={`bg-surface-800/50 rounded-xl p-4 border border-surface-700/30 ${s.hover} transition-colors`}>
+                        <div key={i} className={`bg-[var(--bg-card)] rounded-xl p-4 border border-[var(--border-weak)] ${s.hover} transition-colors`}>
                             <div className="flex items-center gap-2 mb-1">{s.icon}<span className="text-[11px] text-slate-500 uppercase tracking-wider font-medium">{s.label}</span></div>
                             <p className="text-2xl font-bold text-white">{s.value}</p>
                         </div>
@@ -180,18 +180,18 @@ function TikTokHero({ accounts, activeId, onSwitch, onRefresh, loading }) {
     const handle = account.username || account.name;
 
     return (
-        <div className="glass-panel rounded-2xl border border-surface-700/50 overflow-hidden">
-            <div className="h-32 bg-gradient-to-br from-pink-900/40 via-surface-800 to-surface-900 relative overflow-hidden">
-                <div className="absolute inset-0 bg-gradient-to-t from-surface-900/80 via-transparent to-transparent" />
+        <div className="vc-card rounded-2xl border border-[var(--border-default)] overflow-hidden">
+            <div className="h-32 bg-gradient-to-br from-pink-900/40 via-[var(--bg-card)] to-[var(--bg-secondary)] relative overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-t from-[var(--bg-secondary)] via-transparent to-transparent" />
             </div>
 
             <div className="px-6 pb-6">
                 <div className="flex items-end gap-4 -mt-10 mb-5 relative z-10">
                     {account.avatar ? (
                         <img src={account.avatar} alt={account.name}
-                            className="w-20 h-20 rounded-2xl border-4 border-surface-900 object-cover shrink-0 shadow-xl" />
+                            className="w-20 h-20 rounded-2xl border-4 border-[var(--bg-secondary)] object-cover shrink-0 shadow-xl" />
                     ) : (
-                        <div className="w-20 h-20 rounded-2xl border-4 border-surface-900 bg-zinc-800 flex items-center justify-center shrink-0 shadow-xl">
+                        <div className="w-20 h-20 rounded-2xl border-4 border-[var(--bg-secondary)] bg-zinc-800 flex items-center justify-center shrink-0 shadow-xl">
                             <span className="text-2xl font-bold text-white">
                                 {(account.name || 'T')[0].toUpperCase()}
                             </span>
@@ -207,7 +207,7 @@ function TikTokHero({ accounts, activeId, onSwitch, onRefresh, loading }) {
                         <div className="flex items-center gap-2">
                             {onRefresh && (
                                 <button onClick={onRefresh} disabled={loading}
-                                    className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium text-slate-400 bg-surface-800 hover:bg-surface-700 hover:text-white transition-colors disabled:opacity-50"
+                                    className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium text-slate-400 bg-[var(--bg-card)] hover:bg-[var(--bg-elevated)] hover:text-white transition-colors disabled:opacity-50"
                                     title="Atualizar dados do perfil">
                                     {loading ? "..." : <RefreshCw className="w-3 h-3" />}
                                 </button>
@@ -234,7 +234,7 @@ function TikTokHero({ accounts, activeId, onSwitch, onRefresh, loading }) {
                         { icon: <Heart className="w-4 h-4 text-red-400" />, label: "Curtidas", value: account.likesCount != null ? formatNumber(account.likesCount) : "—" },
                         { icon: <Video className="w-4 h-4 text-purple-400" />, label: "Vídeos", value: account.videoCount != null ? formatNumber(account.videoCount) : "—" },
                     ].map((s, i) => (
-                        <div key={i} className="bg-surface-800/50 rounded-xl p-4 border border-surface-700/30 hover:border-surface-600 transition-colors">
+                        <div key={i} className="bg-[var(--bg-card)] rounded-xl p-4 border border-[var(--border-weak)] hover:border-[var(--border-strong)] transition-colors">
                             <div className="flex items-center gap-2 mb-1">{s.icon}<span className="text-[11px] text-slate-500 uppercase tracking-wider font-medium">{s.label}</span></div>
                             <p className="text-2xl font-bold text-white">{s.value}</p>
                         </div>
@@ -257,10 +257,10 @@ function ConnectedChannels({ connectedAccounts, activeAccountId, activeTikTokId,
     };
 
     return (
-        <div className="glass-panel rounded-xl border border-surface-700/50 overflow-hidden">
-            <div className="px-5 py-4 border-b border-surface-700/30 flex items-center justify-between">
+        <div className="vc-card rounded-xl border border-[var(--border-default)] overflow-hidden">
+            <div className="px-5 py-4 border-b border-[var(--border-weak)] flex items-center justify-between">
                 <h3 className="text-sm font-semibold text-white">Canais e Contas conectados</h3>
-                <span className="text-xs text-slate-500 bg-surface-800 px-2 py-0.5 rounded-full">
+                <span className="text-xs text-slate-500 bg-[var(--bg-card)] px-2 py-0.5 rounded-full">
                     {connectedAccounts.length}
                 </span>
             </div>
@@ -271,7 +271,7 @@ function ConnectedChannels({ connectedAccounts, activeAccountId, activeTikTokId,
                         : account.id === activeAccountId;
                     const platform = getPlatformInfo(account);
                     return (
-                        <div key={account.id} className={`p-3 rounded-lg border transition-all ${isActive ? "bg-primary/10 border-primary/20" : "bg-surface-800/50 border-transparent hover:border-surface-600"}`}>
+                        <div key={account.id} className={`p-3 rounded-lg border transition-all ${isActive ? "bg-primary/10 border-primary/20" : "bg-[var(--bg-card)] border-transparent hover:border-[var(--border-strong)]"}`}>
                             <div className="flex items-center gap-3">
                                 {account.avatar ? (
                                     <img
@@ -300,13 +300,13 @@ function ConnectedChannels({ connectedAccounts, activeAccountId, activeTikTokId,
                                 ) : (
                                     <button
                                         onClick={() => account.platform === 'tiktok' ? onSwitchTikTok(account.id) : onSwitch(account.id)}
-                                        className="text-[10px] font-medium px-2 py-1 rounded text-slate-400 bg-surface-700 hover:bg-surface-600 hover:text-white transition-colors shrink-0"
+                                        className="text-[10px] font-medium px-2 py-1 rounded text-slate-400 bg-[var(--bg-elevated)] hover:bg-[var(--bg-card)] hover:text-white transition-colors shrink-0"
                                     >
                                         Usar este
                                     </button>
                                 )}
                             </div>
-                            <div className="mt-2 pt-2 border-t border-surface-700/30 flex justify-end">
+                            <div className="mt-2 pt-2 border-t border-[var(--border-weak)] flex justify-end">
                                 <button
                                     onClick={() => { if (confirm(`Desconectar "${account.name}"?`)) onDisconnect(account.id); }}
                                     className="flex items-center gap-1 text-xs text-slate-600 hover:text-red-400 transition-colors"
@@ -358,14 +358,14 @@ function QuickActions({ navigate }) {
         { icon: <BarChart className="w-4 h-4 text-green-400" />, label: "Ver analytics", desc: "Métricas detalhadas", onClick: () => navigate("/dashboard/analytics") },
     ];
     return (
-        <div className="glass-panel rounded-xl border border-surface-700/50 overflow-hidden">
-            <div className="px-5 py-4 border-b border-surface-700/30">
+        <div className="vc-card rounded-xl border border-[var(--border-default)] overflow-hidden">
+            <div className="px-5 py-4 border-b border-[var(--border-weak)]">
                 <h3 className="text-sm font-semibold text-white">Ações rápidas</h3>
             </div>
             <div className="p-3 space-y-1">
                 {actions.map((a, i) => (
-                    <button key={i} onClick={a.onClick} className="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-surface-800/60 transition-colors text-left group">
-                        <div className="w-9 h-9 rounded-lg bg-surface-800 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">{a.icon}</div>
+                    <button key={i} onClick={a.onClick} className="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-[var(--bg-card)] transition-colors text-left group">
+                        <div className="w-9 h-9 rounded-lg bg-[var(--bg-card)] flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">{a.icon}</div>
                         <div className="flex-1 min-w-0">
                             <p className="text-sm font-medium text-white">{a.label}</p>
                             <p className="text-xs text-slate-500">{a.desc}</p>
@@ -384,14 +384,14 @@ function Platforms({ connectedTikTokAccounts, connectedAccounts }) {
     const isYouTubeConnected = connectedAccounts.some(a => (a.platform || 'youtube') === 'youtube');
 
     return (
-        <div className="glass-panel rounded-xl border border-surface-700/50 overflow-hidden">
-            <div className="px-5 py-4 border-b border-surface-700/30">
+        <div className="vc-card rounded-xl border border-[var(--border-default)] overflow-hidden">
+            <div className="px-5 py-4 border-b border-[var(--border-weak)]">
                 <h3 className="text-sm font-semibold text-white">Plataformas</h3>
             </div>
             <div className="p-3 space-y-2">
 
                 {/* YouTube */}
-                <div className="flex items-center gap-3 p-3 rounded-lg bg-surface-800/50">
+                <div className="flex items-center gap-3 p-3 rounded-lg bg-[var(--bg-card)]">
                     <div className="w-10 h-10 rounded-lg bg-red-500/10 flex items-center justify-center shrink-0">
                         <Youtube className="w-5 h-5 text-red-500" />
                     </div>
@@ -402,12 +402,12 @@ function Platforms({ connectedTikTokAccounts, connectedAccounts }) {
                     {isYouTubeConnected ? (
                         <span className="text-[10px] font-bold px-2 py-1 rounded bg-green-500/10 text-green-400 border border-green-500/20">ATIVO</span>
                     ) : (
-                        <span className="text-[10px] font-medium px-2 py-1 rounded text-slate-500 bg-surface-700/50">NÃO CONECTADO</span>
+                        <span className="text-[10px] font-medium px-2 py-1 rounded text-slate-500 bg-[var(--bg-elevated)]">NÃO CONECTADO</span>
                     )}
                 </div>
 
                 {/* TikTok */}
-                <div className="flex items-center gap-3 p-3 rounded-lg bg-surface-800/50">
+                <div className="flex items-center gap-3 p-3 rounded-lg bg-[var(--bg-card)]">
                     <div className="w-10 h-10 rounded-lg bg-black/30 flex items-center justify-center shrink-0">
                         <PlatformIcon platform="tiktok" size={20} />
                     </div>
@@ -422,12 +422,12 @@ function Platforms({ connectedTikTokAccounts, connectedAccounts }) {
                     {isTikTokConnected ? (
                         <span className="text-[10px] font-bold px-2 py-1 rounded bg-green-500/10 text-green-400 border border-green-500/20">ATIVO</span>
                     ) : (
-                        <span className="text-[10px] font-medium px-2 py-1 rounded text-slate-500 bg-surface-700/50">NÃO CONECTADO</span>
+                        <span className="text-[10px] font-medium px-2 py-1 rounded text-slate-500 bg-[var(--bg-elevated)]">NÃO CONECTADO</span>
                     )}
                 </div>
 
                 {/* Mais plataformas */}
-                <div className="p-3 rounded-lg border border-dashed border-surface-700/50 text-center">
+                <div className="p-3 rounded-lg border border-dashed border-[var(--border-default)] text-center">
                     <p className="text-xs text-slate-500 mb-0.5">Mais plataformas em breve</p>
                     <p className="text-[11px] text-slate-600">Instagram · Facebook · Twitter/X</p>
                 </div>
@@ -439,8 +439,8 @@ function Platforms({ connectedTikTokAccounts, connectedAccounts }) {
 // ─── Estado vazio ─────────────────────────────────────────────────────────────
 function EmptyState({ onConnect }) {
     return (
-        <div className="glass-panel rounded-2xl border border-dashed border-surface-600 p-10 text-center">
-            <div className="w-16 h-16 rounded-2xl bg-surface-800 flex items-center justify-center mx-auto mb-4">
+        <div className="vc-card rounded-2xl border border-dashed border-[var(--border-strong)] p-10 text-center">
+            <div className="w-16 h-16 rounded-2xl bg-[var(--bg-card)] flex items-center justify-center mx-auto mb-4">
                 <Youtube className="w-8 h-8 text-slate-500" />
             </div>
             <h3 className="text-lg font-semibold text-white mb-2">Nenhum canal conectado</h3>

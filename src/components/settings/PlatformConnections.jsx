@@ -64,7 +64,7 @@ function PlatformCard({ platform, connection, onConnect, onDisconnect, onRefresh
   const isExpired = connection?.isExpired;
 
   return (
-    <div className={`glass-panel rounded-xl border ${isConnected ? config.borderColor : 'border-surface-700/50'} overflow-hidden transition-all hover:border-surface-600`}>
+    <div className={`vc-card rounded-xl border ${isConnected ? config.borderColor : 'border-[var(--border-default)]'} overflow-hidden transition-all hover:border-[var(--border-strong)]`}>
       <div className="p-5">
         {/* Header */}
         <div className="flex items-start justify-between mb-4">
@@ -102,7 +102,7 @@ function PlatformCard({ platform, connection, onConnect, onDisconnect, onRefresh
 
         {/* Connected Account Info */}
         {isConnected && connection.accountName && (
-          <div className="mb-4 p-3 rounded-lg bg-surface-800/50 border border-surface-700/30">
+          <div className="mb-4 p-3 rounded-lg bg-[var(--bg-card)] border border-[var(--border-weak)]">
             <div className="flex items-center gap-3">
               {connection.avatar ? (
                 <img 
@@ -130,7 +130,7 @@ function PlatformCard({ platform, connection, onConnect, onDisconnect, onRefresh
                   href={connection.profileUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="p-1.5 rounded-lg hover:bg-surface-700/50 transition-colors"
+                  className="p-1.5 rounded-lg hover:bg-[var(--bg-elevated)] transition-colors"
                 >
                   <ExternalLink className="w-4 h-4 text-slate-400" />
                 </a>

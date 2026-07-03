@@ -54,7 +54,7 @@ describe('Button Component', () => {
     expect(screen.getByRole('button').className).toContain('bg-primary');
 
     rerender(<Button variant="secondary">Secondary</Button>);
-    expect(screen.getByRole('button').className).toContain('bg-surface-700');
+    expect(screen.getByRole('button').className).toContain('vc-btn-secondary');
 
     rerender(<Button variant="ghost">Ghost</Button>);
     expect(screen.getByRole('button').className).toContain('bg-transparent');

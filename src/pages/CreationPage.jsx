@@ -7,8 +7,10 @@ import {
 import { PageLayout } from '../components/layout/PageLayout';
 import { useTheme } from '../contexts/ThemeContext';
 import { ScheduleVideoModal } from '../components/calendar/ScheduleVideoModal';
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../components/ui/card';
+import { Button } from '../components/ui/button';
+import { Badge } from '../components/ui/badge';
 
-// ─── Helpers ─────────────────────────────────────────────────────────────────
 const VITE_API_URL = import.meta.env.VITE_API_URL || '';
 
 async function callClaude(systemPrompt, userPrompt) {
@@ -34,146 +36,42 @@ function useCopy() {
     return { copied, copy };
 }
 
-// ─── UI Atoms ─────────────────────────────────────────────────────────────────
-function Card({ children, isDark, style = {} }) {
-    return (
-        <div style={{
-            background: isDark ? 'rgba(255,255,255,0.03)' : '#fff',
-            border: `1px solid ${isDark ? 'rgba(255,255,255,0.08)' : '#e5e7eb'}`,
-            borderRadius: 16,
-            padding: '20px 22px',
-            ...style,
-        }}>
-            {children}
-        </div>
-    );
-}
-
-function TabBtn({ active, onClick, icon, label, isDark }) {
-    return (
-        <button onClick={onClick} style={{
-            display: 'flex', alignItems: 'center', gap: 8,
-            padding: '9px 18px', borderRadius: 10,
-            background: active ? 'linear-gradient(135deg,#7c3aed,#2563eb)' : 'transparent',
-            border: active ? 'none' : `1px solid ${isDark ? 'rgba(255,255,255,0.1)' : '#e5e7eb'}`,
-            color: active ? '#fff' : (isDark ? '#9ca3af' : '#6b7280'),
-            cursor: 'pointer', fontFamily: 'inherit',
-            fontSize: 13, fontWeight: 600,
-            transition: 'all 0.15s',
-        }}>
-            {icon}
-            {label}
-        </button>
-    );
-}
-
-function Textarea({ value, onChange, placeholder, isDark, rows = 4 }) {
-    return (
-        <textarea
-            value={value}
-            onChange={e => onChange(e.target.value)}
-            placeholder={placeholder}
-            rows={rows}
-            style={{
-                width: '100%', padding: '12px 14px',
-                background: isDark ? 'rgba(0,0,0,0.3)' : '#f9fafb',
-                border: `1px solid ${isDark ? 'rgba(255,255,255,0.1)' : '#e5e7eb'}`,
-                borderRadius: 10, color: isDark ? '#f3f4f6' : '#111827',
-                fontSize: 13, lineHeight: 1.6, resize: 'vertical',
-                fontFamily: 'inherit', outline: 'none',
-                boxSizing: 'border-box',
-            }}
-        />
-    );
-}
-
-function PrimaryBtn({ onClick, disabled, loading, children, isDark }) {
-    return (
-        <button onClick={onClick} disabled={disabled || loading} style={{
-            display: 'flex', alignItems: 'center', gap: 8,
-            padding: '10px 20px',
-            background: disabled || loading ? (isDark ? 'rgba(255,255,255,0.05)' : '#f3f4f6') : 'linear-gradient(135deg,#7c3aed,#2563eb)',
-            border: 'none', borderRadius: 10,
-            color: disabled || loading ? (isDark ? '#4b5563' : '#9ca3af') : '#fff',
-            cursor: disabled || loading ? 'not-allowed' : 'pointer',
-            fontSize: 13, fontWeight: 700, fontFamily: 'inherit',
-            transition: 'all 0.15s',
-        }}>
-            {loading ? <RefreshCw size={14} style={{ animation: 'spin 1s linear infinite' }} /> : null}
-            {children}
-        </button>
-    );
-}
-
-function CopyBtn({ text, isDark }) {
+function CopyBtn({ text }) {
     const { copied, copy } = useCopy();
     return (
-        <button onClick={() => copy(text)} style={{
-            display: 'flex', alignItems: 'center', gap: 6,
-            padding: '6px 12px', borderRadius: 8,
-            background: copied ? (isDark ? 'rgba(52,211,153,0.15)' : '#f0fdf4') : (isDark ? 'rgba(255,255,255,0.05)' : '#f9fafb'),
-            border: `1px solid ${copied ? (isDark ? 'rgba(52,211,153,0.3)' : '#bbf7d0') : (isDark ? 'rgba(255,255,255,0.08)' : '#e5e7eb')}`,
-            color: copied ? '#34d399' : (isDark ? '#9ca3af' : '#6b7280'),
-            cursor: 'pointer', fontSize: 12, fontWeight: 600, fontFamily: 'inherit',
-        }}>
+        <Button variant="secondary" size="sm" onClick={() => copy(text)}>
             {copied ? <Check size={13} /> : <Copy size={13} />}
             {copied ? 'Copiado!' : 'Copiar'}
-        </button>
+        </Button>
     );
 }
 
-function ResultBox({ content, isDark }) {
+function ResultBox({ content }) {
     if (!content) return null;
     return (
-        <div style={{
-            marginTop: 16,
-            background: isDark ? 'rgba(0,0,0,0.2)' : '#f9fafb',
-            border: `1px solid ${isDark ? 'rgba(255,255,255,0.08)' : '#e5e7eb'}`,
-            borderRadius: 12, overflow: 'hidden',
-        }}>
-            <div style={{
-                display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                padding: '10px 14px',
-                borderBottom: `1px solid ${isDark ? 'rgba(255,255,255,0.06)' : '#e5e7eb'}`,
-                background: isDark ? 'rgba(124,58,237,0.08)' : '#f3f0ff',
-            }}>
-                <span style={{ fontSize: 11, fontWeight: 700, color: isDark ? '#a78bfa' : '#7c3aed', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                    Resultado gerado ✨
-                </span>
-                <CopyBtn text={content} isDark={isDark} />
+        <div className="vc-card" style={{ marginTop: 16, overflow: 'hidden' }}>
+            <div className="vc-card-header" style={{ background: 'var(--accent-coral-3)', borderBottom: '1px solid rgba(232,65,42,0.15)', padding: '10px 16px' }}>
+                <span className="text-label" style={{ color: 'var(--accent-coral-2)' }}>Resultado gerado</span>
+                <CopyBtn text={content} />
             </div>
-            <pre style={{
-                margin: 0, padding: '14px 16px',
-                fontSize: 13, lineHeight: 1.7,
-                color: isDark ? '#e5e7eb' : '#374151',
-                whiteSpace: 'pre-wrap', wordBreak: 'break-word',
-                fontFamily: 'inherit',
-                maxHeight: 400, overflowY: 'auto',
-            }}>
+            <pre className="vc-card-body" style={{ fontSize: 13, lineHeight: 1.7, margin: 0, whiteSpace: 'pre-wrap', wordBreak: 'break-word', maxHeight: 400, overflowY: 'auto' }}>
                 {content}
             </pre>
         </div>
     );
 }
 
-function ErrorBox({ error, isDark }) {
+function ErrorBox({ error }) {
     if (!error) return null;
     return (
-        <div style={{
-            marginTop: 12, padding: '12px 14px',
-            background: isDark ? 'rgba(239,68,68,0.1)' : '#fef2f2',
-            border: `1px solid ${isDark ? 'rgba(239,68,68,0.25)' : '#fecaca'}`,
-            borderRadius: 10,
-            display: 'flex', gap: 10, alignItems: 'flex-start',
-        }}>
-            <AlertCircle size={15} color="#f87171" style={{ flexShrink: 0, marginTop: 1 }} />
-            <p style={{ margin: 0, fontSize: 13, color: isDark ? '#fca5a5' : '#dc2626' }}>{error}</p>
+        <div className="vc-toast vc-toast-coral" style={{ marginTop: 12 }}>
+            <AlertCircle size={15} className="shrink-0" />
+            <span>{error}</span>
         </div>
     );
 }
 
-// ─── Ferramenta 1: Gerador de Roteiro ────────────────────────────────────────
-function ScriptGenerator({ isDark, onPipeline }) {
+function ScriptGenerator({ onPipeline }) {
     const [tema, setTema] = useState('');
     const [formato, setFormato] = useState('shorts');
     const [duracao, setDuracao] = useState('60');
@@ -188,10 +86,10 @@ function ScriptGenerator({ isDark, onPipeline }) {
         { value: 'reel', label: 'Instagram Reel' },
     ];
     const tons = [
-        { value: 'educativo', label: '📚 Educativo' },
-        { value: 'entretenimento', label: '🎭 Entretenimento' },
-        { value: 'motivacional', label: '🔥 Motivacional' },
-        { value: 'informativo', label: '📰 Informativo' },
+        { value: 'educativo', label: 'Educativo' },
+        { value: 'entretenimento', label: 'Entretenimento' },
+        { value: 'motivacional', label: 'Motivacional' },
+        { value: 'informativo', label: 'Informativo' },
     ];
 
     const generate = async () => {
@@ -213,112 +111,63 @@ O roteiro deve ter:
 Formate com emojis e deixe claro o tempo de cada parte. Escreva em português do Brasil, linguagem natural e direta.`
             );
             setResult(text);
-        } catch (e) {
-            setError(e.message);
-        } finally {
-            setLoading(false);
-        }
+        } catch (e) { setError(e.message); }
+        finally { setLoading(false); }
     };
 
     return (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+        <div className="space-y-4">
             <div>
-                <label style={{ fontSize: 12, fontWeight: 600, color: isDark ? '#9ca3af' : '#6b7280', display: 'block', marginBottom: 6 }}>
-                    Tema ou ideia do vídeo *
-                </label>
-                <Textarea
-                    value={tema}
-                    onChange={setTema}
-                    placeholder="Ex: 3 erros que iniciantes cometem ao investir em criptomoedas"
-                    isDark={isDark}
-                    rows={2}
-                />
+                <label className="vc-label">Tema ou ideia do vídeo *</label>
+                <textarea value={tema} onChange={e => setTema(e.target.value)} placeholder="Ex: 3 erros que iniciantes cometem ao investir em criptomoedas" rows={2}
+                    className="vc-input" style={{ resize: 'vertical' }} />
             </div>
-
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
+            <div className="vc-grid-3">
                 <div>
-                    <label style={{ fontSize: 12, fontWeight: 600, color: isDark ? '#9ca3af' : '#6b7280', display: 'block', marginBottom: 6 }}>
-                        Formato
-                    </label>
-                    <select value={formato} onChange={e => setFormato(e.target.value)} style={{
-                        width: '100%', padding: '9px 12px',
-                        background: isDark ? 'rgba(0,0,0,0.3)' : '#f9fafb',
-                        border: `1px solid ${isDark ? 'rgba(255,255,255,0.1)' : '#e5e7eb'}`,
-                        borderRadius: 10, color: isDark ? '#f3f4f6' : '#111827',
-                        fontSize: 13, fontFamily: 'inherit', cursor: 'pointer',
-                    }}>
+                    <label className="vc-label">Formato</label>
+                    <select value={formato} onChange={e => setFormato(e.target.value)} className="vc-input">
                         {formatos.map(f => <option key={f.value} value={f.value}>{f.label}</option>)}
                     </select>
                 </div>
-
                 <div>
-                    <label style={{ fontSize: 12, fontWeight: 600, color: isDark ? '#9ca3af' : '#6b7280', display: 'block', marginBottom: 6 }}>
-                        Duração (seg)
-                    </label>
-                    <select value={duracao} onChange={e => setDuracao(e.target.value)} style={{
-                        width: '100%', padding: '9px 12px',
-                        background: isDark ? 'rgba(0,0,0,0.3)' : '#f9fafb',
-                        border: `1px solid ${isDark ? 'rgba(255,255,255,0.1)' : '#e5e7eb'}`,
-                        borderRadius: 10, color: isDark ? '#f3f4f6' : '#111827',
-                        fontSize: 13, fontFamily: 'inherit', cursor: 'pointer',
-                    }}>
+                    <label className="vc-label">Duração (seg)</label>
+                    <select value={duracao} onChange={e => setDuracao(e.target.value)} className="vc-input">
                         {['30', '60', '90', '180', '300', '600'].map(d => (
                             <option key={d} value={d}>{d}s {d >= 60 ? `(${d / 60}min)` : ''}</option>
                         ))}
                     </select>
                 </div>
-
                 <div>
-                    <label style={{ fontSize: 12, fontWeight: 600, color: isDark ? '#9ca3af' : '#6b7280', display: 'block', marginBottom: 6 }}>
-                        Tom
-                    </label>
-                    <select value={tom} onChange={e => setTom(e.target.value)} style={{
-                        width: '100%', padding: '9px 12px',
-                        background: isDark ? 'rgba(0,0,0,0.3)' : '#f9fafb',
-                        border: `1px solid ${isDark ? 'rgba(255,255,255,0.1)' : '#e5e7eb'}`,
-                        borderRadius: 10, color: isDark ? '#f3f4f6' : '#111827',
-                        fontSize: 13, fontFamily: 'inherit', cursor: 'pointer',
-                    }}>
+                    <label className="vc-label">Tom</label>
+                    <select value={tom} onChange={e => setTom(e.target.value)} className="vc-input">
                         {tons.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
                     </select>
                 </div>
             </div>
-
-            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                <PrimaryBtn onClick={generate} disabled={!tema.trim()} loading={loading} isDark={isDark}>
+            <div className="flex justify-end">
+                <Button onClick={generate} disabled={!tema.trim()} loading={loading}>
                     <Wand2 size={14} />
                     {loading ? 'Gerando roteiro...' : 'Gerar Roteiro'}
-                </PrimaryBtn>
+                </Button>
             </div>
-
-            <ErrorBox error={error} isDark={isDark} />
-            <ResultBox content={result} isDark={isDark} />
+            <ErrorBox error={error} />
+            <ResultBox content={result} />
             {result && onPipeline && (
-                <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 8 }}>
-                    <button onClick={() => onPipeline({ script: result })} style={{
-                        display: 'flex', alignItems: 'center', gap: 6,
-                        padding: '8px 16px', borderRadius: 10,
-                        background: 'linear-gradient(135deg,#7c3aed,#2563eb)',
-                        border: 'none', color: '#fff', cursor: 'pointer',
-                        fontSize: 12, fontWeight: 700, fontFamily: 'inherit',
-                    }}>
-                        <Calendar size={13} />
-                        Agendar no Pipeline
-                    </button>
+                <div className="flex justify-end">
+                    <Button variant="secondary" onClick={() => onPipeline({ script: result })}>
+                        <Calendar size={13} /> Agendar no Pipeline
+                    </Button>
                 </div>
             )}
         </div>
     );
 }
 
-// ─── Ferramenta 2: Títulos e Descrições ──────────────────────────────────────
-function TitleGenerator({ isDark, onPipeline }) {
+function TitleGenerator({ onPipeline }) {
     const [assunto, setAssunto] = useState('');
     const [plataforma, setPlataforma] = useState('youtube');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
-
-    // Dados parseados do resultado
     const [titles, setTitles] = useState([]);
     const [selectedTitle, setSelectedTitle] = useState('');
     const [description, setDescription] = useState('');
@@ -330,31 +179,16 @@ function TitleGenerator({ isDark, onPipeline }) {
         let parsedDesc = '';
         let parsedTags = '';
         let section = null;
-
         for (const line of lines) {
             const trimmed = line.trim();
-            if (/##\s*5?.*?(?:OP[ÇC][ÕO]ES?\s*DE\s*)?T[ÍI]TULO/i.test(trimmed) || /##\s*OP[ÇC][ÕO]ES?\s*DE\s*T[ÍI]TULO/i.test(trimmed)) {
-                section = 'titles';
-                continue;
-            }
+            if (/##\s*5?.*?(?:OP[ÇC][ÕO]ES?\s*DE\s*)?T[ÍI]TULO/i.test(trimmed) || /##\s*OP[ÇC][ÕO]ES?\s*DE\s*T[ÍI]TULO/i.test(trimmed)) { section = 'titles'; continue; }
             if (/##\s*DESCRI[ÇC][ÃA]O/i.test(trimmed)) { section = 'desc'; continue; }
             if (/##\s*(?:20\s*)?HASHTAGS/i.test(trimmed)) { section = 'tags'; continue; }
             if (/##\s*TAGS/i.test(trimmed)) { section = 'tags'; continue; }
-
-            if (section === 'titles') {
-                const m = trimmed.match(/^\d+[\.\)]\s*(.+)/);
-                if (m) parsedTitles.push(m[1].replace(/\*\*/g, '').trim());
-            } else if (section === 'desc') {
-                if (parsedDesc) parsedDesc += '\n';
-                parsedDesc += trimmed;
-            } else if (section === 'tags') {
-                if (trimmed && !trimmed.startsWith('#')) {
-                    if (parsedTags) parsedTags += ', ';
-                    parsedTags += trimmed.replace(/^#/, '').trim();
-                }
-            }
+            if (section === 'titles') { const m = trimmed.match(/^\d+[\.\)]\s*(.+)/); if (m) parsedTitles.push(m[1].replace(/\*\*/g, '').trim()); }
+            else if (section === 'desc') { if (parsedDesc) parsedDesc += '\n'; parsedDesc += trimmed; }
+            else if (section === 'tags') { if (trimmed && !trimmed.startsWith('#')) { if (parsedTags) parsedTags += ', '; parsedTags += trimmed.replace(/^#/, '').trim(); } }
         }
-
         return { titles: parsedTitles, description: parsedDesc.trim(), tags: parsedTags };
     }
 
@@ -389,153 +223,92 @@ Tudo em português do Brasil.`
             setSelectedTitle(parsed.titles[0] || '');
             setDescription(parsed.description);
             setTags(parsed.tags);
-        } catch (e) {
-            setError(e.message);
-        } finally {
-            setLoading(false);
-        }
+        } catch (e) { setError(e.message); }
+        finally { setLoading(false); }
     };
 
-    const handlePipeline = () => {
-        if (!onPipeline) return;
-        onPipeline({ title: selectedTitle, description, tags });
-    };
+    const handlePipeline = () => { if (onPipeline) onPipeline({ title: selectedTitle, description, tags }); };
+
+    const platformBtn = (val, label) => (
+        <button key={val} onClick={() => setPlataforma(val)}
+            className={`px-3 py-1.5 rounded-[var(--radius-md)] text-xs font-semibold transition-all cursor-pointer font-inherit ${
+                plataforma === val
+                    ? 'bg-[var(--accent-coral-3)] border border-[rgba(232,65,42,0.3)] text-[var(--accent-coral-2)]'
+                    : 'bg-transparent border border-[var(--border-default)] text-[var(--text-secondary)] hover:border-[var(--border-strong)] hover:text-[var(--text-primary)]'
+            }`}>
+            {label}
+        </button>
+    );
 
     return (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+        <div className="space-y-4">
             <div>
-                <label style={{ fontSize: 12, fontWeight: 600, color: isDark ? '#9ca3af' : '#6b7280', display: 'block', marginBottom: 6 }}>
-                    Assunto ou resumo do vídeo *
-                </label>
-                <Textarea
-                    value={assunto}
-                    onChange={setAssunto}
-                    placeholder="Ex: Um vídeo mostrando como eu economizei R$500 por mês cortando gastos desnecessários com 5 hacks simples"
-                    isDark={isDark}
-                    rows={3}
-                />
+                <label className="vc-label">Assunto ou resumo do vídeo *</label>
+                <textarea value={assunto} onChange={e => setAssunto(e.target.value)} placeholder="Ex: Um vídeo mostrando como eu economizei R$500 por mês cortando gastos desnecessários" rows={3}
+                    className="vc-input" style={{ resize: 'vertical' }} />
             </div>
-
             <div>
-                <label style={{ fontSize: 12, fontWeight: 600, color: isDark ? '#9ca3af' : '#6b7280', display: 'block', marginBottom: 8 }}>
-                    Plataforma principal
-                </label>
-                <div style={{ display: 'flex', gap: 8 }}>
-                    {[
-                        { value: 'youtube', label: '▶ YouTube' },
-                        { value: 'tiktok', label: '♪ TikTok' },
-                        { value: 'instagram', label: '◈ Instagram' },
-                    ].map(p => (
-                        <button key={p.value} onClick={() => setPlataforma(p.value)} style={{
-                            padding: '7px 14px', borderRadius: 8, cursor: 'pointer', fontFamily: 'inherit',
-                            fontSize: 12, fontWeight: 600,
-                            background: plataforma === p.value ? (isDark ? 'rgba(124,58,237,0.25)' : '#f3f0ff') : 'transparent',
-                            border: `1px solid ${plataforma === p.value ? (isDark ? 'rgba(124,58,237,0.4)' : '#ddd6fe') : (isDark ? 'rgba(255,255,255,0.1)' : '#e5e7eb')}`,
-                            color: plataforma === p.value ? (isDark ? '#a78bfa' : '#7c3aed') : (isDark ? '#9ca3af' : '#6b7280'),
-                        }}>
-                            {p.label}
-                        </button>
-                    ))}
+                <label className="vc-label">Plataforma principal</label>
+                <div className="flex gap-2">
+                    {platformBtn('youtube', 'YouTube')}
+                    {platformBtn('tiktok', 'TikTok')}
+                    {platformBtn('instagram', 'Instagram')}
                 </div>
             </div>
-
-            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                <PrimaryBtn onClick={generate} disabled={!assunto.trim()} loading={loading} isDark={isDark}>
+            <div className="flex justify-end">
+                <Button onClick={generate} disabled={!assunto.trim()} loading={loading}>
                     <Type size={14} />
                     {loading ? 'Gerando títulos...' : 'Gerar Títulos e Descrição'}
-                </PrimaryBtn>
+                </Button>
             </div>
-
-            <ErrorBox error={error} isDark={isDark} />
-
-            {/* Títulos — selecionáveis */}
+            <ErrorBox error={error} />
             {titles.length > 0 && (
                 <div>
-                    <label style={{ fontSize: 12, fontWeight: 600, color: isDark ? '#9ca3af' : '#6b7280', display: 'block', marginBottom: 8 }}>
-                        Escolha 1 título
-                    </label>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                    <label className="vc-label">Escolha 1 título</label>
+                    <div className="space-y-1.5">
                         {titles.map((t, i) => (
-                            <div key={i} onClick={() => setSelectedTitle(t)} style={{
-                                display: 'flex', alignItems: 'center', gap: 10,
-                                padding: '10px 14px', borderRadius: 10, cursor: 'pointer',
-                                background: selectedTitle === t
-                                    ? (isDark ? 'rgba(124,58,237,0.2)' : '#f3f0ff')
-                                    : (isDark ? 'rgba(255,255,255,0.02)' : '#fafafa'),
-                                border: `1px solid ${selectedTitle === t
-                                    ? (isDark ? 'rgba(124,58,237,0.4)' : '#ddd6fe')
-                                    : (isDark ? 'rgba(255,255,255,0.06)' : '#e5e7eb')}`,
-                                transition: 'all 0.15s',
-                            }}>
-                                <div style={{
-                                    width: 20, height: 20, borderRadius: '50%', flexShrink: 0,
-                                    background: selectedTitle === t ? '#7c3aed' : (isDark ? 'rgba(255,255,255,0.05)' : '#f3f4f6'),
-                                    border: `2px solid ${selectedTitle === t ? '#7c3aed' : (isDark ? 'rgba(255,255,255,0.15)' : '#d1d5db')}`,
-                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                }}>
-                                    {selectedTitle === t && <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#fff' }} />}
+                            <div key={i} onClick={() => setSelectedTitle(t)}
+                                className={`flex items-center gap-2.5 p-2.5 rounded-[var(--radius-md)] cursor-pointer transition-all ${
+                                    selectedTitle === t
+                                        ? 'bg-[var(--accent-coral-3)] border border-[rgba(232,65,42,0.25)]'
+                                        : 'bg-[var(--bg-card)] border border-[var(--border-subtle)] hover:border-[var(--border-default)]'
+                                }`}>
+                                <div className={`w-5 h-5 rounded-full flex-shrink-0 flex items-center justify-center border-2 transition-all ${
+                                    selectedTitle === t
+                                        ? 'border-[var(--accent-coral)] bg-[var(--accent-coral)]'
+                                        : 'border-[var(--border-strong)] bg-transparent'
+                                }`}>
+                                    {selectedTitle === t && <div className="w-2 h-2 rounded-full bg-white" />}
                                 </div>
-                                <span style={{ fontSize: 13, color: isDark ? '#e5e7eb' : '#374151' }}>{t}</span>
+                                <span className="text-sm text-[var(--text-primary)]">{t}</span>
                             </div>
                         ))}
                     </div>
                 </div>
             )}
-
-            {/* Descrição — editável */}
             {description && (
                 <div>
-                    <label style={{ fontSize: 12, fontWeight: 600, color: isDark ? '#9ca3af' : '#6b7280', display: 'block', marginBottom: 6 }}>
-                        Descrição
-                    </label>
-                    <textarea value={description} onChange={e => setDescription(e.target.value)} rows={4} style={{
-                        width: '100%', padding: '12px 14px',
-                        background: isDark ? 'rgba(0,0,0,0.3)' : '#f9fafb',
-                        border: `1px solid ${isDark ? 'rgba(255,255,255,0.1)' : '#e5e7eb'}`,
-                        borderRadius: 10, color: isDark ? '#f3f4f6' : '#111827',
-                        fontSize: 13, lineHeight: 1.6, resize: 'vertical',
-                        fontFamily: 'inherit', outline: 'none',
-                        boxSizing: 'border-box',
-                    }} />
+                    <label className="vc-label">Descrição</label>
+                    <textarea value={description} onChange={e => setDescription(e.target.value)} rows={4} className="vc-input" style={{ resize: 'vertical' }} />
                 </div>
             )}
-
-            {/* Tags — editável */}
             {tags && (
                 <div>
-                    <label style={{ fontSize: 12, fontWeight: 600, color: isDark ? '#9ca3af' : '#6b7280', display: 'block', marginBottom: 6 }}>
-                        Tags (separadas por vírgula)
-                    </label>
-                    <input value={tags} onChange={e => setTags(e.target.value)} style={{
-                        width: '100%', padding: '10px 14px',
-                        background: isDark ? 'rgba(0,0,0,0.3)' : '#f9fafb',
-                        border: `1px solid ${isDark ? 'rgba(255,255,255,0.1)' : '#e5e7eb'}`,
-                        borderRadius: 10, color: isDark ? '#f3f4f6' : '#111827',
-                        fontSize: 13, fontFamily: 'inherit', outline: 'none',
-                        boxSizing: 'border-box',
-                    }} />
+                    <label className="vc-label">Tags (separadas por vírgula)</label>
+                    <input value={tags} onChange={e => setTags(e.target.value)} className="vc-input" />
                 </div>
             )}
-
             {selectedTitle && onPipeline && (
-                <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 8 }}>
-                    <button onClick={handlePipeline} style={{
-                        display: 'flex', alignItems: 'center', gap: 6,
-                        padding: '8px 16px', borderRadius: 10,
-                        background: 'linear-gradient(135deg,#7c3aed,#2563eb)',
-                        border: 'none', color: '#fff', cursor: 'pointer',
-                        fontSize: 12, fontWeight: 700, fontFamily: 'inherit',
-                    }}>
-                        <Calendar size={13} />
-                        Agendar no Pipeline
-                    </button>
+                <div className="flex justify-end">
+                    <Button variant="secondary" onClick={handlePipeline}>
+                        <Calendar size={13} /> Agendar no Pipeline
+                    </Button>
                 </div>
             )}
         </div>
     );
 }
 
-// ─── Ferramenta 3: Checklist de Publicação ───────────────────────────────────
 const CHECKLIST_ITEMS = [
     { id: 'thumb', category: 'Visual', icon: '🖼️', text: 'Thumbnail criada (1280×720px, rosto visível, texto grande)' },
     { id: 'titulo', category: 'SEO', icon: '📝', text: 'Título com palavra-chave principal nos primeiros 60 caracteres' },
@@ -551,111 +324,69 @@ const CHECKLIST_ITEMS = [
     { id: 'primeiro_comentario', category: 'Engajamento', icon: '💬', text: 'Primeiro comentário fixado com CTA ou pergunta' },
 ];
 
-function PublicationChecklist({ isDark }) {
+function PublicationChecklist() {
     const [checked, setChecked] = useState({});
     const [videoTitle, setVideoTitle] = useState('');
-
     const toggle = (id) => setChecked(prev => ({ ...prev, [id]: !prev[id] }));
     const total = CHECKLIST_ITEMS.length;
     const done = Object.values(checked).filter(Boolean).length;
     const pct = Math.round((done / total) * 100);
-
     const categories = [...new Set(CHECKLIST_ITEMS.map(i => i.category))];
-
-    const scoreColor = pct === 100 ? '#34d399' : pct >= 70 ? '#a78bfa' : pct >= 40 ? '#fbbf24' : '#f87171';
+    const scoreColor = pct === 100 ? 'var(--accent-teal)' : pct >= 70 ? 'var(--accent-amber)' : pct >= 40 ? 'var(--accent-amber)' : 'var(--accent-coral)';
 
     return (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-            {/* Score */}
-            <div style={{
-                display: 'flex', alignItems: 'center', gap: 16,
-                padding: '16px 20px',
-                background: isDark ? 'rgba(0,0,0,0.2)' : '#f9fafb',
-                borderRadius: 12,
-                border: `1px solid ${isDark ? 'rgba(255,255,255,0.06)' : '#e5e7eb'}`,
-            }}>
+        <div className="space-y-4">
+            <div className="vc-card" style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '16px 20px' }}>
                 <div style={{
-                    width: 56, height: 56, borderRadius: '50%',
-                    background: `conic-gradient(${scoreColor} ${pct * 3.6}deg, ${isDark ? 'rgba(255,255,255,0.05)' : '#f3f4f6'} 0deg)`,
-                    display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+                    width: 56, height: 56, borderRadius: '50%', flexShrink: 0, position: 'relative',
+                    background: `conic-gradient(${scoreColor} ${pct * 3.6}deg, var(--bg-elevated) 0deg)`,
                 }}>
                     <div style={{
-                        width: 42, height: 42, borderRadius: '50%',
-                        background: isDark ? '#09090b' : '#fff',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        position: 'absolute', inset: 7, borderRadius: '50%',
+                        background: 'var(--bg-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center',
                         fontSize: 13, fontWeight: 800, color: scoreColor,
                     }}>
                         {pct}%
                     </div>
                 </div>
                 <div style={{ flex: 1 }}>
-                    <input
-                        value={videoTitle}
-                        onChange={e => setVideoTitle(e.target.value)}
+                    <input value={videoTitle} onChange={e => setVideoTitle(e.target.value)}
                         placeholder="Nome do vídeo (opcional)"
-                        style={{
-                            width: '100%', background: 'transparent', border: 'none', outline: 'none',
-                            fontSize: 15, fontWeight: 700, color: isDark ? '#f3f4f6' : '#111827',
-                            fontFamily: 'inherit', marginBottom: 4,
-                        }}
-                    />
-                    <p style={{ margin: 0, fontSize: 12, color: isDark ? '#6b7280' : '#9ca3af' }}>
+                        className="vc-input" style={{ border: 'none', background: 'transparent', padding: '0 0 4px', fontSize: 15, fontWeight: 700 }} />
+                    <p className="text-xs text-[var(--text-muted)]" style={{ margin: 0 }}>
                         {done} de {total} itens concluídos
-                        {pct === 100 && ' — Pronto para publicar! 🚀'}
+                        {pct === 100 && ' — Pronto para publicar!'}
                         {pct >= 70 && pct < 100 && ' — Quase lá!'}
                         {pct < 70 && done > 0 && ' — Continue revisando'}
                         {done === 0 && ' — Marque os itens conforme prepara o vídeo'}
                     </p>
                 </div>
                 {done > 0 && (
-                    <button onClick={() => setChecked({})} style={{
-                        fontSize: 11, color: isDark ? '#6b7280' : '#9ca3af',
-                        background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit',
-                    }}>
+                    <button onClick={() => setChecked({})} className="text-xs text-[var(--text-muted)] hover:text-[var(--text-primary)] bg-transparent border-none cursor-pointer font-inherit">
                         Limpar
                     </button>
                 )}
             </div>
-
-            {/* Items by category */}
             {categories.map(cat => (
                 <div key={cat}>
-                    <p style={{ margin: '0 0 8px', fontSize: 11, fontWeight: 700, color: isDark ? '#6b7280' : '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.07em' }}>
-                        {cat}
-                    </p>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                    <p className="text-label text-[var(--text-muted)] mb-2">{cat}</p>
+                    <div className="space-y-1.5">
                         {CHECKLIST_ITEMS.filter(i => i.category === cat).map(item => (
-                            <div
-                                key={item.id}
-                                onClick={() => toggle(item.id)}
-                                style={{
-                                    display: 'flex', alignItems: 'center', gap: 12,
-                                    padding: '10px 14px', borderRadius: 10, cursor: 'pointer',
-                                    background: checked[item.id]
-                                        ? (isDark ? 'rgba(52,211,153,0.08)' : '#f0fdf4')
-                                        : (isDark ? 'rgba(255,255,255,0.02)' : '#fafafa'),
-                                    border: `1px solid ${checked[item.id]
-                                        ? (isDark ? 'rgba(52,211,153,0.2)' : '#bbf7d0')
-                                        : (isDark ? 'rgba(255,255,255,0.06)' : '#e5e7eb')}`,
-                                    transition: 'all 0.15s',
-                                }}
-                            >
-                                <div style={{
-                                    width: 20, height: 20, borderRadius: 6, flexShrink: 0,
-                                    background: checked[item.id]
-                                        ? '#34d399'
-                                        : (isDark ? 'rgba(255,255,255,0.05)' : '#f3f4f6'),
-                                    border: `2px solid ${checked[item.id] ? '#34d399' : (isDark ? 'rgba(255,255,255,0.15)' : '#d1d5db')}`,
-                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                }}>
+                            <div key={item.id} onClick={() => toggle(item.id)}
+                                className={`flex items-center gap-3 p-2.5 rounded-[var(--radius-md)] cursor-pointer transition-all ${
+                                    checked[item.id]
+                                        ? 'bg-[rgba(0,201,167,0.08)] border border-[rgba(0,201,167,0.2)]'
+                                        : 'bg-[var(--bg-card)] border border-[var(--border-subtle)] hover:border-[var(--border-default)]'
+                                }`}>
+                                <div className={`w-5 h-5 rounded-[6px] flex-shrink-0 flex items-center justify-center border-2 transition-all ${
+                                    checked[item.id]
+                                        ? 'bg-[var(--accent-teal)] border-[var(--accent-teal)]'
+                                        : 'bg-transparent border-[var(--border-strong)]'
+                                }`}>
                                     {checked[item.id] && <Check size={11} color="#fff" strokeWidth={3} />}
                                 </div>
                                 <span style={{ fontSize: 14 }}>{item.icon}</span>
-                                <span style={{
-                                    fontSize: 13, flex: 1,
-                                    color: checked[item.id] ? (isDark ? '#6b7280' : '#9ca3af') : (isDark ? '#e5e7eb' : '#374151'),
-                                    textDecoration: checked[item.id] ? 'line-through' : 'none',
-                                }}>
+                                <span className={`text-sm flex-1 transition-all ${checked[item.id] ? 'text-[var(--text-muted)] line-through' : 'text-[var(--text-primary)]'}`}>
                                     {item.text}
                                 </span>
                             </div>
@@ -667,8 +398,7 @@ function PublicationChecklist({ isDark }) {
     );
 }
 
-// ─── Ferramenta 4: Gerador de Thumbnail ──────────────────────────────────────
-function ThumbnailGenerator({ isDark, onPipeline }) {
+function ThumbnailGenerator({ onPipeline }) {
     const [prompt, setPrompt] = useState('');
     const [aspectRatio, setAspectRatio] = useState('16:9');
     const [loading, setLoading] = useState(false);
@@ -676,67 +406,40 @@ function ThumbnailGenerator({ isDark, onPipeline }) {
     const [status, setStatus] = useState(null);
     const [output, setOutput] = useState(null);
     const [error, setError] = useState('');
-
     const [imgError, setImgError] = useState(false);
 
     const pollStatus = useCallback(async (id) => {
         try {
-            const res = await fetch(`${VITE_API_URL}/api/ai/thumbnail-status/${id}`, {
-                credentials: 'include',
-            });
+            const res = await fetch(`${VITE_API_URL}/api/ai/thumbnail-status/${id}`, { credentials: 'include' });
             const data = await res.json();
             if (!res.ok) throw new Error(data.error);
             setStatus(data.status);
             if (data.status === 'succeeded') {
                 const url = Array.isArray(data.output) ? data.output[0] : data.output?.url?.() || data.output?.url || data.output;
-                if (!url || typeof url !== 'string') {
-                    console.error("[Thumbnail] Invalid output:", data.output);
-                    throw new Error('Resposta inválida do gerador de imagem');
-                }
-                setOutput(url);
-                setLoading(false);
-                return;
+                if (!url || typeof url !== 'string') { console.error("[Thumbnail] Invalid output:", data.output); throw new Error('Resposta inválida do gerador de imagem'); }
+                setOutput(url); setLoading(false); return;
             }
-            if (data.status === 'failed') {
-                throw new Error(data.error || 'Falha ao gerar thumbnail');
-            }
-            if (data.status === 'processing' || data.status === 'starting') {
-                setTimeout(() => pollStatus(id), 2000);
-            }
-        } catch (e) {
-            setError(e.message);
-            setLoading(false);
-        }
+            if (data.status === 'failed') throw new Error(data.error || 'Falha ao gerar thumbnail');
+            if (data.status === 'processing' || data.status === 'starting') setTimeout(() => pollStatus(id), 2000);
+        } catch (e) { setError(e.message); setLoading(false); }
     }, []);
 
-    useEffect(() => {
-        return () => setPredictionId(null);
-    }, []);
+    useEffect(() => { return () => setPredictionId(null); }, []);
 
     const generate = async () => {
         if (!prompt.trim()) return;
         setLoading(true); setError(''); setOutput(null); setImgError(false); setStatus('starting');
         try {
             const res = await fetch(`${VITE_API_URL}/api/ai/generate-thumbnail`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                credentials: 'include',
-                body: JSON.stringify({ prompt: prompt.trim(), aspectRatio }),
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                credentials: 'include', body: JSON.stringify({ prompt: prompt.trim(), aspectRatio }),
             });
             const data = await res.json();
             if (!res.ok) throw new Error(data.error);
-            setPredictionId(data.id);
-            setStatus(data.status);
-            if (data.status === 'succeeded' && data.urls?.get) {
-                setOutput(data.urls.get);
-                setLoading(false);
-            } else {
-                pollStatus(data.id);
-            }
-        } catch (e) {
-            setError(e.message);
-            setLoading(false);
-        }
+            setPredictionId(data.id); setStatus(data.status);
+            if (data.status === 'succeeded' && data.urls?.get) { setOutput(data.urls.get); setLoading(false); }
+            else pollStatus(data.id);
+        } catch (e) { setError(e.message); setLoading(false); }
     };
 
     const ratios = [
@@ -746,122 +449,70 @@ function ThumbnailGenerator({ isDark, onPipeline }) {
         { value: '4:3', label: 'Padrão (4:3)' },
     ];
 
-    return (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-            <div>
-                <label style={{ fontSize: 12, fontWeight: 600, color: isDark ? '#9ca3af' : '#6b7280', display: 'block', marginBottom: 6 }}>
-                    Descrição da thumbnail *
-                </label>
-                <Textarea
-                    value={prompt}
-                    onChange={setPrompt}
-                    placeholder="Ex: Close em rosto surpreso, fundo vermelho, texto 'VOCÊ NÃO VAI ACREDITAR', setas apontando, estilo youtuber"
-                    isDark={isDark}
-                    rows={3}
-                />
-            </div>
+    const ratioBtn = (r) => (
+        <button key={r.value} onClick={() => setAspectRatio(r.value)}
+            className={`px-3 py-1.5 rounded-[var(--radius-md)] text-xs font-semibold transition-all cursor-pointer font-inherit ${
+                aspectRatio === r.value
+                    ? 'bg-[var(--accent-coral-3)] border border-[rgba(232,65,42,0.3)] text-[var(--accent-coral-2)]'
+                    : 'bg-transparent border border-[var(--border-default)] text-[var(--text-secondary)] hover:border-[var(--border-strong)] hover:text-[var(--text-primary)]'
+            }`}>
+            {r.label}
+        </button>
+    );
 
+    return (
+        <div className="space-y-4">
             <div>
-                <label style={{ fontSize: 12, fontWeight: 600, color: isDark ? '#9ca3af' : '#6b7280', display: 'block', marginBottom: 6 }}>
-                    Proporção
-                </label>
-                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                    {ratios.map(r => (
-                        <button key={r.value} onClick={() => setAspectRatio(r.value)} style={{
-                            padding: '7px 14px', borderRadius: 8, cursor: 'pointer', fontFamily: 'inherit',
-                            fontSize: 12, fontWeight: 600,
-                            background: aspectRatio === r.value ? (isDark ? 'rgba(124,58,237,0.25)' : '#f3f0ff') : 'transparent',
-                            border: `1px solid ${aspectRatio === r.value ? (isDark ? 'rgba(124,58,237,0.4)' : '#ddd6fe') : (isDark ? 'rgba(255,255,255,0.1)' : '#e5e7eb')}`,
-                            color: aspectRatio === r.value ? (isDark ? '#a78bfa' : '#7c3aed') : (isDark ? '#9ca3af' : '#6b7280'),
-                        }}>
-                            {r.label}
-                        </button>
-                    ))}
+                <label className="vc-label">Descrição da thumbnail *</label>
+                <textarea value={prompt} onChange={e => setPrompt(e.target.value)}
+                    placeholder="Ex: Close em rosto surpreso, fundo vermelho, texto 'VOCÊ NÃO VAI ACREDITAR', setas apontando, estilo youtuber"
+                    rows={3} className="vc-input" style={{ resize: 'vertical' }} />
+            </div>
+            <div>
+                <label className="vc-label">Proporção</label>
+                <div className="flex gap-2 flex-wrap">
+                    {ratios.map(r => ratioBtn(r))}
                 </div>
             </div>
-
-            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                <PrimaryBtn onClick={generate} disabled={!prompt.trim()} loading={loading} isDark={isDark}>
+            <div className="flex justify-end">
+                <Button onClick={generate} disabled={!prompt.trim()} loading={loading}>
                     <Image size={14} />
                     {loading ? 'Gerando thumbnail...' : 'Gerar Thumbnail'}
-                </PrimaryBtn>
+                </Button>
             </div>
-
-            <ErrorBox error={error} isDark={isDark} />
-
+            <ErrorBox error={error} />
             {status && !output && !error && (
-                <div style={{
-                    marginTop: 16, padding: 16,
-                    background: isDark ? 'rgba(0,0,0,0.2)' : '#f9fafb',
-                    border: `1px solid ${isDark ? 'rgba(255,255,255,0.08)' : '#e5e7eb'}`,
-                    borderRadius: 12, textAlign: 'center',
-                }}>
-                    <RefreshCw size={24} style={{ animation: 'spin 1s linear infinite', margin: '0 auto 8px', display: 'block', color: '#a78bfa' }} />
-                    <p style={{ margin: 0, fontSize: 13, color: isDark ? '#9ca3af' : '#6b7280' }}>
-                        {status === 'starting' ? 'Iniciando geração...' : 'Gerando imagem...'}
-                    </p>
+                <div className="vc-card" style={{ textAlign: 'center', padding: 24 }}>
+                    <RefreshCw size={24} className="animate-spin" style={{ margin: '0 auto 8px', display: 'block', color: 'var(--accent-coral)' }} />
+                    <p className="text-sm text-[var(--text-secondary)]">{status === 'starting' ? 'Iniciando geração...' : 'Gerando imagem...'}</p>
                 </div>
             )}
-
             {output && !imgError && (
-                <div style={{
-                    marginTop: 16,
-                    background: isDark ? 'rgba(0,0,0,0.2)' : '#f9fafb',
-                    border: `1px solid ${isDark ? 'rgba(255,255,255,0.08)' : '#e5e7eb'}`,
-                    borderRadius: 12, overflow: 'hidden',
-                }}>
-                    <div style={{
-                        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                        padding: '10px 14px',
-                        borderBottom: `1px solid ${isDark ? 'rgba(255,255,255,0.06)' : '#e5e7eb'}`,
-                        background: isDark ? 'rgba(124,58,237,0.08)' : '#f3f0ff',
-                    }}>
-                        <span style={{ fontSize: 11, fontWeight: 700, color: isDark ? '#a78bfa' : '#7c3aed', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                            Thumbnail gerada ✨
-                        </span>
-                        <a href={output} target="_blank" rel="noopener noreferrer" style={{
-                            display: 'flex', alignItems: 'center', gap: 6,
-                            padding: '6px 12px', borderRadius: 8, cursor: 'pointer',
-                            background: isDark ? 'rgba(255,255,255,0.05)' : '#f9fafb',
-                            border: `1px solid ${isDark ? 'rgba(255,255,255,0.08)' : '#e5e7eb'}`,
-                            color: isDark ? '#9ca3af' : '#6b7280',
-                            fontSize: 12, fontWeight: 600, fontFamily: 'inherit',
-                            textDecoration: 'none',
-                        }}>
-                            <ExternalLink size={13} />
-                            Abrir original
+                <div className="vc-card" style={{ overflow: 'hidden' }}>
+                    <div className="vc-card-header" style={{ background: 'var(--accent-coral-3)', borderBottom: '1px solid rgba(232,65,42,0.15)', padding: '10px 16px' }}>
+                        <span className="text-label" style={{ color: 'var(--accent-coral-2)' }}>Thumbnail gerada</span>
+                        <a href={output} target="_blank" rel="noopener noreferrer" className="text-sm">
+                            <ExternalLink size={13} /> Abrir original
                         </a>
                     </div>
-                    <div style={{ padding: 14, display: 'flex', justifyContent: 'center' }}>
-                        <img src={output} alt="Thumbnail" onError={() => setImgError(true)} style={{
-                            maxWidth: '100%', maxHeight: 400, borderRadius: 8,
-                            boxShadow: '0 2px 12px rgba(0,0,0,0.15)',
-                        }} />
+                    <div className="vc-card-body" style={{ display: 'flex', justifyContent: 'center', padding: 14 }}>
+                        <img src={output} alt="Thumbnail" onError={() => setImgError(true)}
+                            style={{ maxWidth: '100%', maxHeight: 400, borderRadius: 'var(--radius-md)', boxShadow: 'var(--shadow-elevated)' }} />
                     </div>
                     {onPipeline && (
                         <div style={{ padding: '0 14px 14px', display: 'flex', justifyContent: 'flex-end' }}>
-                            <button onClick={() => onPipeline({ thumbnailUrl: output })} style={{
-                                display: 'flex', alignItems: 'center', gap: 6,
-                                padding: '8px 16px', borderRadius: 10,
-                                background: 'linear-gradient(135deg,#7c3aed,#2563eb)',
-                                border: 'none', color: '#fff', cursor: 'pointer',
-                                fontSize: 12, fontWeight: 700, fontFamily: 'inherit',
-                            }}>
-                                <Calendar size={13} />
-                                Agendar no Pipeline
-                            </button>
+                            <Button variant="secondary" onClick={() => onPipeline({ thumbnailUrl: output })}>
+                                <Calendar size={13} /> Agendar no Pipeline
+                            </Button>
                         </div>
                     )}
                 </div>
             )}
-            {imgError && (
-                <ErrorBox error={`Falha ao carregar imagem. URL retornada: ${output}`} isDark={isDark} />
-            )}
+            {imgError && <ErrorBox error={`Falha ao carregar imagem. URL retornada: ${output}`} />}
         </div>
     );
 }
 
-// ─── Main Page ────────────────────────────────────────────────────────────────
 const TABS = [
     { id: 'script', label: 'Roteiro', icon: <FileText size={14} /> },
     { id: 'titles', label: 'Títulos e Descrição', icon: <Type size={14} /> },
@@ -879,118 +530,98 @@ export default function CreationPage() {
     const handlePipeline = (data) => {
         setPipelineData(prev => {
             const merged = { ...prev };
-            // Script: só o texto do roteiro
             if (data.script) merged.script = data.script;
-            // Titles: estrutura separada
             if (data.title !== undefined) merged.title = data.title;
             if (data.description !== undefined) merged.description = data.description;
             if (data.tags !== undefined) merged.tags = data.tags;
-            // Thumbnail
             if (data.thumbnailUrl) merged.thumbnailUrl = data.thumbnailUrl;
             return merged;
         });
         setPipelineModalOpen(true);
     };
 
-    const handleClosePipeline = () => {
-        setPipelineModalOpen(false);
-    };
-
     return (
         <PageLayout maxWidth="4xl" spacing="standard">
-            {/* Header */}
             <div style={{ marginBottom: 28 }}>
-                <h1 style={{ margin: '0 0 6px', fontSize: 28, fontWeight: 900, color: isDark ? '#f9fafb' : '#111827', display: 'flex', alignItems: 'center', gap: 10 }}>
-                    <Sparkles size={24} color="#a78bfa" />
+                <h1 className="text-display" style={{ fontSize: 28, display: 'flex', alignItems: 'center', gap: 10, margin: '0 0 6px' }}>
+                    <Sparkles size={24} style={{ color: 'var(--accent-coral)' }} />
                     Estúdio de Criação
                 </h1>
-                <p style={{ margin: 0, fontSize: 14, color: isDark ? '#6b7280' : '#9ca3af' }}>
+                <p className="text-sm text-[var(--text-secondary)]" style={{ margin: 0 }}>
                     IA para criar roteiros, títulos e garantir que seu vídeo está pronto para publicar.
                 </p>
             </div>
 
-            {/* Tabs */}
-            <div style={{ display: 'flex', gap: 8, marginBottom: 24, flexWrap: 'wrap' }}>
+            <div className="flex gap-2 mb-6 flex-wrap">
                 {TABS.map(tab => (
-                    <TabBtn
-                        key={tab.id}
-                        active={activeTab === tab.id}
-                        onClick={() => setActiveTab(tab.id)}
-                        icon={tab.icon}
-                        label={tab.label}
-                        isDark={isDark}
-                    />
+                    <button key={tab.id} onClick={() => setActiveTab(tab.id)}
+                        className={`px-4 py-2 text-sm font-medium rounded-[var(--radius-md)] transition-all cursor-pointer font-inherit ${
+                            activeTab === tab.id
+                                ? 'bg-[var(--accent-coral-3)] text-[var(--accent-coral-2)] border border-[rgba(232,65,42,0.2)]'
+                                : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)] border border-transparent'
+                        }`}>
+                        <span className="inline-flex mr-1.5">{tab.icon}</span>
+                        {tab.label}
+                    </button>
                 ))}
             </div>
 
-            {/* Content */}
-            <Card isDark={isDark}>
+            <Card>
                 {activeTab === 'script' && (
                     <>
-                        <div style={{ marginBottom: 18 }}>
-                            <h2 style={{ margin: '0 0 4px', fontSize: 16, fontWeight: 700, color: isDark ? '#f3f4f6' : '#111827' }}>
-                                Gerador de Roteiro
-                            </h2>
-                            <p style={{ margin: 0, fontSize: 13, color: isDark ? '#6b7280' : '#9ca3af' }}>
-                                Descreva o tema e a IA cria um roteiro completo com gancho, desenvolvimento e CTA.
-                            </p>
-                        </div>
-                        <ScriptGenerator isDark={isDark} onPipeline={handlePipeline} />
+                        <CardHeader>
+                            <div>
+                                <CardTitle>Gerador de Roteiro</CardTitle>
+                                <CardDescription>Descreva o tema e a IA cria um roteiro completo com gancho, desenvolvimento e CTA.</CardDescription>
+                            </div>
+                        </CardHeader>
+                        <CardContent><ScriptGenerator onPipeline={handlePipeline} /></CardContent>
                     </>
                 )}
                 {activeTab === 'titles' && (
                     <>
-                        <div style={{ marginBottom: 18 }}>
-                            <h2 style={{ margin: '0 0 4px', fontSize: 16, fontWeight: 700, color: isDark ? '#f3f4f6' : '#111827' }}>
-                                Títulos, Descrição e Hashtags
-                            </h2>
-                            <p style={{ margin: 0, fontSize: 13, color: isDark ? '#6b7280' : '#9ca3af' }}>
-                                Gere 5 variações de título + descrição completa otimizada para SEO + hashtags para qualquer plataforma.
-                            </p>
-                        </div>
-                        <TitleGenerator isDark={isDark} onPipeline={handlePipeline} />
+                        <CardHeader>
+                            <div>
+                                <CardTitle>Títulos, Descrição e Hashtags</CardTitle>
+                                <CardDescription>Gere 5 variações de título + descrição completa otimizada para SEO + hashtags para qualquer plataforma.</CardDescription>
+                            </div>
+                        </CardHeader>
+                        <CardContent><TitleGenerator onPipeline={handlePipeline} /></CardContent>
                     </>
                 )}
                 {activeTab === 'thumbnail' && (
                     <>
-                        <div style={{ marginBottom: 18 }}>
-                            <h2 style={{ margin: '0 0 4px', fontSize: 16, fontWeight: 700, color: isDark ? '#f3f4f6' : '#111827' }}>
-                                Gerador de Thumbnail
-                            </h2>
-                            <p style={{ margin: 0, fontSize: 13, color: isDark ? '#6b7280' : '#9ca3af' }}>
-                                IA cria thumbnails profissionais com google/imagen-4. Descreva a cena e estilo.
-                            </p>
-                        </div>
-                        <ThumbnailGenerator isDark={isDark} onPipeline={handlePipeline} />
+                        <CardHeader>
+                            <div>
+                                <CardTitle>Gerador de Thumbnail</CardTitle>
+                                <CardDescription>IA cria thumbnails profissionais. Descreva a cena e estilo.</CardDescription>
+                            </div>
+                        </CardHeader>
+                        <CardContent><ThumbnailGenerator onPipeline={handlePipeline} /></CardContent>
                     </>
                 )}
                 {activeTab === 'checklist' && (
                     <>
-                        <div style={{ marginBottom: 18 }}>
-                            <h2 style={{ margin: '0 0 4px', fontSize: 16, fontWeight: 700, color: isDark ? '#f3f4f6' : '#111827' }}>
-                                Checklist de Publicação
-                            </h2>
-                            <p style={{ margin: 0, fontSize: 13, color: isDark ? '#6b7280' : '#9ca3af' }}>
-                                Revise cada detalhe antes de publicar. Canais consistentes crescem mais rápido.
-                            </p>
-                        </div>
-                        <PublicationChecklist isDark={isDark} />
+                        <CardHeader>
+                            <div>
+                                <CardTitle>Checklist de Publicação</CardTitle>
+                                <CardDescription>Revise cada detalhe antes de publicar. Canais consistentes crescem mais rápido.</CardDescription>
+                            </div>
+                        </CardHeader>
+                        <CardContent><PublicationChecklist /></CardContent>
                     </>
                 )}
             </Card>
 
-            {/* Pipeline Modal */}
             <ScheduleVideoModal
                 isOpen={pipelineModalOpen}
-                onClose={handleClosePipeline}
+                onClose={() => setPipelineModalOpen(false)}
                 initialData={pipelineData ? {
                     title: pipelineData.title || '',
                     description: pipelineData.description || '',
                     tags: pipelineData.tags || '',
                 } : null}
             />
-
-            <style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
         </PageLayout>
     );
 }

@@ -1,22 +1,15 @@
 import React, { useState, useRef, useEffect, createContext, useContext } from 'react';
-import { cn } from "../../lib/utils"; // Assuming utils exists, otherwise I'll use a simple join
+import { cn } from "../../lib/utils";
 
-// Simple context to manage dropdown state
-const DropdownMenuContext = createContext({
-    open: false,
-    setOpen: () => { },
-});
+const DropdownMenuContext = createContext({ open: false, setOpen: () => {} });
 
 export const DropdownMenu = ({ children }) => {
     const [open, setOpen] = useState(false);
-    const dropdownRef = useRef(null);
+    const ref = useRef(null);
 
-    // Close on click outside
     useEffect(() => {
-        function handleClickOutside(event) {
-            if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-                setOpen(false);
-            }
+        function handleClickOutside(e) {
+            if (ref.current && !ref.current.contains(e.target)) setOpen(false);
         }
         document.addEventListener("mousedown", handleClickOutside);
         return () => document.removeEventListener("mousedown", handleClickOutside);
@@ -24,42 +17,29 @@ export const DropdownMenu = ({ children }) => {
 
     return (
         <DropdownMenuContext.Provider value={{ open, setOpen }}>
-            <div className="relative inline-block text-left" ref={dropdownRef}>
-                {children}
-            </div>
+            <div className="relative inline-block text-left" ref={ref}>{children}</div>
         </DropdownMenuContext.Provider>
     );
 };
 
 export const DropdownMenuTrigger = ({ children, asChild }) => {
     const { open, setOpen } = useContext(DropdownMenuContext);
-
-    const handleClick = () => {
-        setOpen(!open);
-    };
+    const handleClick = () => setOpen(!open);
 
     if (asChild && React.isValidElement(children)) {
-        return React.cloneElement(children, {
-            onClick: handleClick,
-            "data-state": open ? "open" : "closed"
-        });
+        return React.cloneElement(children, { onClick: handleClick, "data-state": open ? "open" : "closed" });
     }
 
-    return (
-        <button onClick={handleClick} data-state={open ? "open" : "closed"}>
-            {children}
-        </button>
-    );
+    return <button onClick={handleClick} data-state={open ? "open" : "closed"}>{children}</button>;
 };
 
 export const DropdownMenuContent = ({ children, className }) => {
     const { open } = useContext(DropdownMenuContext);
-
     if (!open) return null;
 
     return (
         <div className={cn(
-            "absolute right-0 z-50 mt-2 w-56 origin-top-right rounded-md border border-slate-700 bg-slate-800 p-1 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none animate-in fade-in zoom-in-95 duration-100",
+            "absolute right-0 z-50 mt-2 w-56 origin-top-right rounded-[var(--radius-md)] border border-[var(--border-default)] bg-[var(--bg-card)] p-1 shadow-[var(--shadow-elevated)] vc-animate-in",
             className
         )}>
             {children}
@@ -69,17 +49,13 @@ export const DropdownMenuContent = ({ children, className }) => {
 
 export const DropdownMenuItem = ({ children, onClick, className }) => {
     const { setOpen } = useContext(DropdownMenuContext);
-
-    const handleClick = (e) => {
-        if (onClick) onClick(e);
-        setOpen(false);
-    };
+    const handleClick = (e) => { onClick?.(e); setOpen(false); };
 
     return (
         <div
             onClick={handleClick}
             className={cn(
-                "relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors hover:bg-slate-700 hover:text-slate-100 focus:bg-slate-700 focus:text-slate-100 data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
+                "relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors hover:bg-[var(--bg-tertiary)] hover:text-[var(--text-primary)]",
                 className
             )}
         >
@@ -88,16 +64,10 @@ export const DropdownMenuItem = ({ children, onClick, className }) => {
     );
 };
 
-export const DropdownMenuLabel = ({ children, className }) => {
-    return (
-        <div className={cn("px-2 py-1.5 text-sm font-semibold text-slate-300", className)}>
-            {children}
-        </div>
-    );
-};
+export const DropdownMenuLabel = ({ children, className }) => (
+    <div className={cn("px-2 py-1.5 text-sm font-semibold text-[var(--text-secondary)]", className)}>{children}</div>
+);
 
-export const DropdownMenuSeparator = ({ className }) => {
-    return (
-        <div className={cn("-mx-1 my-1 h-px bg-slate-700", className)} />
-    );
-};
+export const DropdownMenuSeparator = ({ className }) => (
+    <div className={cn("-mx-1 my-1 h-px bg-[var(--border-subtle)]", className)} />
+);

@@ -1,0 +1,979 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ViralCuts — Dashboard Redesign</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    :root {
+      --coral: #e8412a; --coral-l: #ff5a42; --coral-g: rgba(232,65,42,0.3);
+      --amber: #f0a500; --amber-l: #ffc12b; --amber-g: rgba(240,165,0,0.3);
+      --teal: #00c9a7; --teal-l: #1de5c0; --teal-g: rgba(0,201,167,0.3);
+      --bg-d: #08080a; --bg-p: #0c0c0e; --bg-s: #121215;
+      --bg-card: #18181d; --bg-elev: #1f1f26; --bg-glass: rgba(255,255,255,0.03);
+      --txt-p: #f2f2f0; --txt-s: #a8a8a4; --txt-m: #5a5a58;
+      --b: rgba(255,255,255,0.06); --b-s: rgba(255,255,255,0.12);
+      --space: 'Space Grotesk', sans-serif; --inter: 'Inter', sans-serif;
+      --r-sm: 6px; --r-md: 10px; --r-lg: 16px; --r-xl: 24px;
+    }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: var(--inter); background: var(--bg-d); color: var(--txt-p);
+      -webkit-font-smoothing: antialiased;
+    }
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 3px; }
+
+    /* ─── Nav ─── */
+    nav {
+      position: sticky; top: 0; z-index: 100;
+      background: rgba(8,8,10,0.88); backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--b); height: 60px;
+      display: flex; align-items: center;
+    }
+    nav .in {
+      max-width: 1360px; width: 100%; margin: 0 auto; padding: 0 28px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .logo {
+      display: flex; align-items: center; gap: 10px;
+      font-family: var(--space); font-weight: 700; font-size: 1.15rem;
+      letter-spacing: -0.03em; color: var(--txt-p); text-decoration: none;
+    }
+    .logo-m {
+      width: 32px; height: 32px; background: var(--coral); border-radius: 7px;
+      clip-path: polygon(0 0,100% 0,100% 68%,84% 100%,0 100%);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.75rem; color: #fff;
+    }
+    .nav-user {
+      display: flex; align-items: center; gap: 12px;
+    }
+    .nav-user .av {
+      width: 32px; height: 32px; border-radius: 50%;
+      background: linear-gradient(135deg,var(--coral),var(--amber));
+      display: flex; align-items: center; justify-content: center;
+      font-family: var(--space); font-weight: 700; font-size: 0.75rem; color: #fff;
+    }
+    .nav-user .name { font-size: 0.8125rem; font-weight: 600; }
+    .nav-user .plan {
+      font-size: 0.625rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.06em; padding: 2px 8px; border-radius: 100px;
+      background: rgba(232,65,42,0.12); color: var(--coral-l);
+      border: 1px solid rgba(232,65,42,0.15);
+    }
+    .tab-bar {
+      display: flex; gap: 2px; padding: 3px;
+      background: var(--bg-card); border-radius: var(--r-md);
+      border: 1px solid var(--b);
+    }
+    .tab-bar a {
+      padding: 7px 16px; border-radius: var(--r-sm);
+      font-size: 0.8125rem; font-weight: 500; color: var(--txt-m);
+      text-decoration: none; transition: all 0.15s;
+    }
+    .tab-bar a:hover { color: var(--txt-s); }
+    .tab-bar a.active {
+      background: var(--bg-elev); color: var(--txt-p);
+      border: 1px solid var(--b-s);
+    }
+
+    /* ─── Layout ─── */
+    .layout {
+      max-width: 1360px; margin: 0 auto; padding: 28px;
+      display: grid; grid-template-columns: 220px 1fr; gap: 24px;
+    }
+    .sidebar {
+      position: sticky; top: 84px; height: fit-content;
+    }
+    .sidebar .section-label {
+      font-size: 0.625rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.1em; color: var(--txt-m); margin-bottom: 10px;
+    }
+    .sidebar .item {
+      display: flex; align-items: center; gap: 10px;
+      padding: 9px 12px; border-radius: var(--r-md);
+      font-size: 0.8125rem; font-weight: 500; color: var(--txt-m);
+      cursor: pointer; transition: all 0.15s; margin-bottom: 2px;
+    }
+    .sidebar .item:hover { color: var(--txt-s); background: var(--bg-glass); }
+    .sidebar .item.active {
+      color: var(--txt-p); background: rgba(232,65,42,0.08);
+      border: 1px solid rgba(232,65,42,0.12);
+    }
+    .sidebar .item .ico { width: 18px; text-align: center; font-size: 0.875rem; opacity: 0.6; }
+    .sidebar .item.active .ico { opacity: 1; }
+    .sidebar .divider { height: 1px; background: var(--b); margin: 12px 0; }
+
+    /* ─── Page Header ─── */
+    .page-h {
+      display: flex; justify-content: space-between; align-items: flex-start;
+      margin-bottom: 24px; flex-wrap: wrap; gap: 12px;
+    }
+    .page-h .greet { font-size: 0.8125rem; color: var(--txt-m); margin-bottom: 2px; }
+    .page-h h1 {
+      font-family: var(--space); font-size: 1.75rem; font-weight: 700;
+      letter-spacing: -0.03em; line-height: 1.1;
+    }
+    .page-h .sub {
+      font-size: 0.875rem; color: var(--txt-s); margin-top: 4px;
+      display: flex; align-items: center; gap: 6px;
+    }
+    .page-h .sub .dot {
+      width: 6px; height: 6px; border-radius: 50%; background: var(--teal);
+    }
+    .page-h .actions { display: flex; gap: 8px; }
+
+    .btn {
+      padding: 8px 18px; border-radius: var(--r-md); font-family: var(--inter);
+      font-size: 0.8125rem; font-weight: 600; cursor: pointer;
+      transition: all 0.2s; border: none; text-decoration: none;
+      display: inline-flex; align-items: center; gap: 6px;
+    }
+    .btn-out {
+      background: transparent; border: 1px solid var(--b-s); color: var(--txt-p);
+    }
+    .btn-out:hover { border-color: rgba(255,255,255,0.2); background: var(--bg-glass); }
+    .btn-pri {
+      background: linear-gradient(135deg,var(--coral),#d0301a);
+      color: #fff; box-shadow: 0 3px 14px var(--coral-g);
+    }
+    .btn-pri:hover { transform: translateY(-1px); }
+
+    /* ─── Stats ─── */
+    .stats {
+      display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; margin-bottom: 20px;
+    }
+    .stat {
+      background: var(--bg-card); border: 1px solid var(--b);
+      border-radius: var(--r-md); padding: 16px 18px;
+      position: relative; overflow: hidden;
+    }
+    .stat::before {
+      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+    }
+    .stat.coral::before { background: var(--coral); }
+    .stat.amber::before { background: var(--amber); }
+    .stat.teal::before { background: var(--teal); }
+    .stat .lbl { font-size: 0.6875rem; color: var(--txt-m); font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; }
+    .stat .val { font-family: var(--space); font-size: 1.5rem; font-weight: 700; margin-top: 6px; letter-spacing: -0.03em; }
+    .stat .chg { font-size: 0.75rem; margin-top: 4px; font-weight: 600; }
+    .stat .chg.up { color: var(--teal); }
+    .stat .chg.down { color: var(--coral); }
+    .stat .mini-chart {
+      position: absolute; right: 12px; bottom: 12px; opacity: 0.15;
+      display: flex; align-items: flex-end; gap: 2px;
+    }
+    .stat .mini-chart .b { width: 3px; border-radius: 2px; background: currentColor; }
+
+    /* ─── Banner ─── */
+    .banner {
+      display: flex; align-items: center; gap: 14px;
+      padding: 14px 18px;
+      background: linear-gradient(90deg,rgba(240,165,0,0.08),rgba(240,165,0,0.02));
+      border: 1px solid rgba(240,165,0,0.2);
+      border-radius: var(--r-lg); margin-bottom: 16px; cursor: pointer;
+      transition: all 0.2s;
+    }
+    .banner:hover { border-color: rgba(240,165,0,0.35); }
+    .banner .ico {
+      width: 36px; height: 36px; border-radius: var(--r-md);
+      background: rgba(240,165,0,0.15);
+      display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+      font-size: 1rem;
+    }
+    .banner .c p:first-child {
+      font-family: var(--space); font-weight: 700; font-size: 0.875rem;
+      color: var(--txt-p); letter-spacing: -0.02em;
+    }
+    .banner .c p:last-child { font-size: 0.75rem; color: var(--txt-s); margin-top: 2px; }
+
+    /* ─── Timeline ─── */
+    .tl {
+      background: var(--bg-card); border: 1px solid var(--b);
+      border-radius: var(--r-lg); padding: 16px 20px 18px; margin-bottom: 16px;
+    }
+    .tl-h {
+      display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px;
+    }
+    .tl-h .lbl { font-size: 0.75rem; font-weight: 600; color: var(--txt-s); }
+    .tl-h .badge {
+      font-size: 0.625rem; font-weight: 700; padding: 3px 10px; border-radius: 100px;
+      background: rgba(232,65,42,0.1); color: var(--coral-l);
+      border: 1px solid rgba(232,65,42,0.15);
+    }
+    .tl-bar {
+      position: relative; padding-bottom: 22px;
+    }
+    .tl-track {
+      height: 4px; background: var(--bg-elev); border-radius: 2px; position: relative;
+    }
+    .tl-progress {
+      position: absolute; left: 0; top: 0; bottom: 0;
+      background: linear-gradient(90deg,var(--coral),var(--amber));
+      border-radius: 2px; width: 42%;
+    }
+    .tl-dot {
+      position: absolute; top: 50%; transform: translate(-50%,-50%);
+      width: 12px; height: 12px; border-radius: 50%;
+      background: var(--coral); border: 3px solid var(--bg-card);
+      box-shadow: 0 0 0 3px rgba(232,65,42,0.2); z-index: 2;
+    }
+    .tl-marker {
+      position: absolute; top: 50%; transform: translate(-50%,-50%);
+      width: 8px; height: 8px; border-radius: 2px;
+      background: var(--amber); border: 2px solid var(--bg-card); z-index: 1;
+    }
+    .tl-labels {
+      display: flex; justify-content: space-between; margin-top: 8px;
+    }
+    .tl-labels span {
+      font-size: 0.625rem; color: var(--txt-m);
+      font-family: var(--space); font-weight: 500;
+    }
+
+    /* ─── Content Grid ─── */
+    .cg { display: grid; grid-template-columns: 1fr 300px; gap: 16px; }
+    .cg-single { display: grid; grid-template-columns: 1fr; gap: 16px; }
+
+    .card {
+      background: var(--bg-card); border: 1px solid var(--b);
+      border-radius: var(--r-lg); overflow: hidden;
+    }
+    .card-h {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 14px 18px; border-bottom: 1px solid var(--b);
+    }
+    .card-h .lbl { font-size: 0.75rem; font-weight: 600; color: var(--txt-s); }
+    .card-h .act {
+      font-size: 0.75rem; font-weight: 600; color: var(--coral-l);
+      background: none; border: none; cursor: pointer; font-family: inherit;
+    }
+    .card-h .act:hover { opacity: 0.8; }
+    .card-b { padding: 14px 18px 18px; }
+
+    /* ─── Queue Item ─── */
+    .qi {
+      display: flex; align-items: center; gap: 12px;
+      padding: 10px 12px; border-radius: var(--r-md);
+      margin-bottom: 6px; cursor: pointer; transition: all 0.15s;
+    }
+    .qi:hover { background: var(--bg-glass); }
+    .qi .thumb {
+      width: 48px; height: 28px; border-radius: 4px;
+      background: var(--bg-elev); flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .qi .info { flex: 1; min-width: 0; }
+    .qi .info .t {
+      font-size: 0.8125rem; font-weight: 600; color: var(--txt-p);
+      font-family: var(--space); letter-spacing: -0.01em;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .qi .info .m {
+      display: flex; align-items: center; gap: 6px; margin-top: 3px;
+      font-size: 0.6875rem; color: var(--txt-m);
+    }
+    .qi .info .m .p-dot {
+      width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0;
+    }
+    .qi .info .m .p-dot.yt { background: #ff0000; }
+    .qi .info .m .p-dot.tt { background: #ff2d55; }
+    .qi .info .m .p-dot.ig { background: #e1306c; }
+    .qi .st {
+      font-size: 0.625rem; font-weight: 700; padding: 3px 10px; border-radius: 100px;
+    }
+    .qi .st.agendado { background: rgba(232,65,42,0.1); color: var(--coral-l); border: 1px solid rgba(232,65,42,0.15); }
+    .qi .st.publicando { background: rgba(240,165,0,0.1); color: var(--amber-l); border: 1px solid rgba(240,165,0,0.15); }
+    .qi .st.publicado { background: rgba(0,201,167,0.1); color: var(--teal-l); border: 1px solid rgba(0,201,167,0.15); }
+    .qi .st.erro { background: rgba(232,65,42,0.1); color: var(--coral-l); border: 1px solid rgba(232,65,42,0.15); }
+
+    /* ─── Recent Video Row ─── */
+    .rvr {
+      display: flex; align-items: center; gap: 11px;
+      padding: 10px 0; border-bottom: 1px solid var(--b);
+    }
+    .rvr:last-child { border-bottom: none; }
+    .rvr .thumb {
+      width: 44px; height: 25px; border-radius: 4px;
+      background: var(--bg-elev); flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .rvr .info { flex: 1; min-width: 0; }
+    .rvr .info .t {
+      font-size: 0.8125rem; font-weight: 500; color: var(--txt-p);
+      font-family: var(--space); letter-spacing: -0.01em;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .rvr .info .d { font-size: 0.6875rem; color: var(--txt-m); margin-top: 1px; }
+    .rvr .views {
+      text-align: right; flex-shrink: 0;
+    }
+    .rvr .views .v {
+      font-family: var(--space); font-size: 0.875rem;
+      font-weight: 700; color: var(--txt-p); letter-spacing: -0.02em;
+    }
+    .rvr .views .lbl {
+      font-size: 0.5625rem; color: var(--txt-m); text-transform: uppercase; letter-spacing: 0.05em;
+    }
+
+    /* ─── Next Upload ─── */
+    .next {
+      background: var(--bg-card); border: 1px solid rgba(232,65,42,0.2);
+      border-radius: var(--r-lg); padding: 18px 20px;
+      position: relative; overflow: hidden;
+    }
+    .next::before {
+      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+      background: var(--coral);
+    }
+    .next .lbl { font-size: 0.75rem; font-weight: 600; color: var(--txt-s); }
+    .next .t {
+      font-family: var(--space); font-size: 0.9375rem; font-weight: 600;
+      color: var(--txt-p); margin: 8px 0 4px; letter-spacing: -0.02em;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .next .m {
+      display: flex; align-items: center; gap: 6px; margin-bottom: 14px;
+      font-size: 0.75rem; color: var(--txt-m);
+    }
+
+    /* ─── Insight ─── */
+    .ins {
+      display: flex; gap: 10px; padding: 10px 13px;
+      background: rgba(232,65,42,0.04);
+      border: 1px solid rgba(232,65,42,0.1);
+      border-radius: var(--r-md); margin-bottom: 8px;
+    }
+    .ins .ico { color: var(--coral-l); flex-shrink: 0; margin-top: 1px; font-size: 0.875rem; }
+    .ins p {
+      font-size: 0.8125rem; color: var(--txt-s); line-height: 1.55;
+    }
+    .ins:last-child { margin-bottom: 0; }
+
+    /* ─── Analytics CTA ─── */
+    .analytics-cta {
+      display: flex; align-items: center; justify-content: space-between;
+      width: 100%; padding: 13px 16px;
+      background: var(--bg-card); border: 1px solid var(--b);
+      border-radius: var(--r-lg); cursor: pointer; font-family: inherit;
+      transition: all 0.2s;
+    }
+    .analytics-cta:hover { border-color: var(--b-s); background: var(--bg-elev); }
+    .analytics-cta .l {
+      display: flex; align-items: center; gap: 10px;
+      font-size: 0.875rem; font-weight: 600; font-family: var(--space);
+      color: var(--txt-p); letter-spacing: -0.01em;
+    }
+
+    /* ─── Channel Strip ─── */
+    .ch-strip {
+      display: grid; grid-template-columns: repeat(3,1fr); gap: 12px; margin-bottom: 20px;
+    }
+    .ch-stat {
+      background: var(--bg-card); border: 1px solid var(--b);
+      border-radius: var(--r-md); padding: 14px 16px;
+    }
+    .ch-stat .lbl { font-size: 0.6875rem; color: var(--txt-m); font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; }
+    .ch-stat .val { font-family: var(--space); font-size: 1.5rem; font-weight: 700; margin-top: 6px; letter-spacing: -0.03em; }
+
+    /* ─── Filters ─── */
+    .filters {
+      display: flex; align-items: center; gap: 10px;
+      margin-bottom: 16px; flex-wrap: wrap;
+    }
+    .search-wrap {
+      position: relative; flex: 1 1 200px; max-width: 320px;
+    }
+    .search-wrap input {
+      width: 100%; padding: 8px 12px 8px 32px;
+      border-radius: var(--r-md); border: 1px solid var(--b);
+      background: var(--bg-card); color: var(--txt-p);
+      font-size: 0.8125rem; font-family: inherit; outline: none;
+    }
+    .search-wrap input::placeholder { color: var(--txt-m); }
+    .search-wrap input:focus { border-color: var(--b-s); }
+    .search-wrap .ico {
+      position: absolute; left: 10px; top: 50%; transform: translateY(-50%);
+      color: var(--txt-m); font-size: 0.75rem;
+    }
+    .filter-group { display: flex; gap: 6px; }
+    .filter-btn {
+      padding: 6px 14px; border-radius: var(--r-md); font-size: 0.75rem;
+      font-weight: 600; cursor: pointer; transition: all 0.15s;
+      font-family: inherit; background: transparent;
+      border: 1px solid var(--b); color: var(--txt-m);
+    }
+    .filter-btn:hover { border-color: var(--b-s); color: var(--txt-s); }
+    .filter-btn.active {
+      background: linear-gradient(135deg,var(--coral),#d0301a);
+      border-color: transparent; color: #fff;
+    }
+    .filter-count {
+      margin-left: auto; font-size: 0.75rem; color: var(--txt-m);
+      font-family: var(--space); font-weight: 500;
+    }
+
+    /* ─── Video Grid ─── */
+    .vg {
+      display: grid; grid-template-columns: repeat(auto-fill,minmax(260px,1fr)); gap: 14px;
+    }
+    .vc {
+      background: var(--bg-card); border: 1px solid var(--b);
+      border-radius: var(--r-lg); overflow: hidden;
+      transition: all 0.25s;
+    }
+    .vc:hover { border-color: var(--b-s); transform: translateY(-2px); }
+    .vc .th {
+      position: relative; aspect-ratio: 16/9;
+      background: var(--bg-elev); overflow: hidden;
+    }
+    .vc .th img { width: 100%; height: 100%; object-fit: cover; }
+    .vc .th .overlay {
+      position: absolute; inset: 0;
+      display: flex; align-items: center; justify-content: center;
+      background: rgba(0,0,0,0); transition: background 0.2s;
+    }
+    .vc:hover .th .overlay { background: rgba(0,0,0,0.35); }
+    .vc .th .play-btn {
+      width: 36px; height: 36px; border-radius: 50%;
+      background: rgba(255,255,255,0.92);
+      display: flex; align-items: center; justify-content: center;
+      opacity: 0; transition: opacity 0.2s;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+    }
+    .vc:hover .th .play-btn { opacity: 1; }
+    .vc .info { padding: 12px 14px; }
+    .vc .info .t {
+      font-family: var(--space); font-weight: 600; font-size: 0.875rem;
+      color: var(--txt-p); letter-spacing: -0.01em; line-height: 1.4;
+      display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+      overflow: hidden; margin-bottom: 8px;
+    }
+    .vc .info .meta {
+      display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+    }
+    .vc .info .meta span {
+      display: flex; align-items: center; gap: 4px;
+      font-size: 0.75rem; color: var(--txt-m);
+    }
+    .vc .info .meta .date { margin-left: auto; }
+
+    /* ─── Empty State ─── */
+    .empty {
+      border: 2px dashed var(--b); border-radius: var(--r-lg);
+      padding: 56px 24px; text-align: center;
+    }
+    .empty .ico {
+      width: 52px; height: 52px; border-radius: var(--r-md);
+      background: var(--bg-elev); display: flex; align-items: center;
+      justify-content: center; margin: 0 auto 14px; font-size: 1.5rem;
+    }
+    .empty p { font-size: 0.875rem; color: var(--txt-m); }
+
+    /* ─── Page Section Divider ─── */
+    .sec-divider {
+      height: 1px; background: linear-gradient(90deg,transparent,var(--b),transparent);
+      margin: 0;
+    }
+
+    /* ─── Page Label ─── */
+    .page-label {
+      display: flex; align-items: center; gap: 8px; padding: 10px 28px;
+      font-size: 0.6875rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.1em; color: var(--txt-m); border-bottom: 1px solid var(--b);
+      background: var(--bg-d);
+    }
+    .page-label .num {
+      background: var(--bg-card); padding: 1px 8px; border-radius: 100px;
+      font-family: var(--space);
+    }
+    .page-label .bar {
+      flex: 1; height: 1px; background: var(--b);
+    }
+
+    /* ─── Responsive ─── */
+    @media (max-width:900px) {
+      .layout { grid-template-columns: 1fr; }
+      .sidebar { display: none; }
+      .stats { grid-template-columns: repeat(2,1fr); }
+      .cg { grid-template-columns: 1fr; }
+      .ch-strip { grid-template-columns: repeat(2,1fr); }
+    }
+    @media (max-width:480px) {
+      .layout { padding: 16px; }
+      .stats { grid-template-columns: 1fr; }
+      .ch-strip { grid-template-columns: 1fr; }
+      .vg { grid-template-columns: 1fr; }
+      .page-h h1 { font-size: 1.375rem; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ════════════════════════════════════════════════════════════ -->
+  <!-- NAV -->
+  <!-- ════════════════════════════════════════════════════════════ -->
+  <nav>
+    <div class="in">
+      <a href="#" class="logo"><div class="logo-m">VC</div> ViralCuts</a>
+      <div class="tab-bar">
+        <a href="#" class="active">Dashboard</a>
+        <a href="#">Vídeos</a>
+        <a href="#">Agenda</a>
+        <a href="#">Analytics</a>
+        <a href="#">IA Studio</a>
+      </div>
+      <div class="nav-user">
+        <span class="name">Ramon</span>
+        <span class="plan">Pro</span>
+        <div class="av">R</div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- ════════════════════════════════════════════════════════════ -->
+  <!-- PAGE 1: DASHBOARD HOME -->
+  <!-- ════════════════════════════════════════════════════════════ -->
+  <div class="page-label">
+    <span class="num">01</span>
+    <span>Dashboard Home — Visão Geral</span>
+    <span class="bar"></span>
+    <span style="font-weight:400;text-transform:none;color:var(--txt-s)">estado conectado</span>
+  </div>
+
+  <div class="layout">
+
+    <!-- Sidebar -->
+    <div class="sidebar">
+      <div class="section-label">Menu</div>
+      <div class="item active"><span class="ico">◉</span> Visão Geral</div>
+      <div class="item"><span class="ico">▤</span> Vídeos</div>
+      <div class="item"><span class="ico">◐</span> Calendário</div>
+      <div class="item"><span class="ico">◈</span> Analytics</div>
+      <div class="item"><span class="ico">✦</span> IA Studio</div>
+      <div class="item"><span class="ico">⊞</span> Command Center</div>
+      <div class="divider"></div>
+      <div class="section-label">Workspace</div>
+      <div class="item"><span class="ico">♪</span> Creator Journey</div>
+      <div class="item"><span class="ico">⚙</span> Configurações</div>
+      <div class="item"><span class="ico">?</span> Ajuda</div>
+    </div>
+
+    <!-- Main -->
+    <div>
+
+      <!-- Page Header -->
+      <div class="page-h">
+        <div>
+          <div class="greet">Bom dia, Ramon</div>
+          <h1>Dashboard</h1>
+          <div class="sub">
+            <span class="dot"></span>
+            Meu Canal · Creative Mindset
+          </div>
+        </div>
+        <div class="actions">
+          <button class="btn btn-out">✦ Otimizar com IA</button>
+          <button class="btn btn-pri">+ Novo Upload</button>
+        </div>
+      </div>
+
+      <!-- Stats -->
+      <div class="stats">
+        <div class="stat coral">
+          <div class="lbl">Visualizações</div>
+          <div class="val">284.5K</div>
+          <div class="chg up">↑ 12.3% essa semana</div>
+        </div>
+        <div class="stat amber">
+          <div class="lbl">Inscritos</div>
+          <div class="val">10.2K</div>
+          <div class="chg up">↑ 2.1%</div>
+        </div>
+        <div class="stat teal">
+          <div class="lbl">Na fila</div>
+          <div class="val">14</div>
+          <div class="chg up">↑ 5 agendados</div>
+        </div>
+        <div class="stat" style="--c:#666">
+          <div class="lbl">Publicados</div>
+          <div class="val">47</div>
+          <div class="chg" style="color:var(--txt-m)">via ViralCuts</div>
+        </div>
+      </div>
+
+      <!-- Pipeline Banner -->
+      <div class="banner">
+        <div class="ico">📋</div>
+        <div class="c">
+          <p>9 vídeos prontos para agendar</p>
+          <p>Abra o Pipeline e defina os horários de publicação multicanal →</p>
+        </div>
+      </div>
+
+      <!-- Timeline -->
+      <div class="tl">
+        <div class="tl-h">
+          <span class="lbl">Timeline de hoje</span>
+          <span class="badge">3 agendados</span>
+        </div>
+        <div class="tl-bar">
+          <div class="tl-track">
+            <div class="tl-progress" style="width:42%"></div>
+            <div class="tl-dot" style="left:42%"></div>
+            <div class="tl-marker" style="left:25%"></div>
+            <div class="tl-marker" style="left:58%"></div>
+            <div class="tl-marker" style="left:79%"></div>
+          </div>
+          <div class="tl-labels">
+            <span>6h</span><span>9h</span><span>12h</span><span>15h</span><span>18h</span><span>21h</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Content Grid -->
+      <div class="cg">
+        <div style="display:flex;flex-direction:column;gap:16px">
+          <!-- Upload Queue -->
+          <div class="card">
+            <div class="card-h">
+              <span class="lbl">Fila de uploads</span>
+              <button class="act">Ver todos →</button>
+            </div>
+            <div class="card-b">
+              <div class="qi">
+                <div class="thumb">🎬</div>
+                <div class="info">
+                  <div class="t">Review Game GTA VI — Gameplay 4K</div>
+                  <div class="m">
+                    <span class="p-dot yt"></span>
+                    YouTube · 14 jul, 18:00
+                  </div>
+                </div>
+                <span class="st agendado">Agendado</span>
+              </div>
+              <div class="qi">
+                <div class="thumb">🎬</div>
+                <div class="info">
+                  <div class="t">Tutorial React 2026 — Hooks Avançados</div>
+                  <div class="m">
+                    <span class="p-dot yt"></span>
+                    YouTube · 15 jul, 12:00
+                  </div>
+                </div>
+                <span class="st agendado">Agendado</span>
+              </div>
+              <div class="qi">
+                <div class="thumb">🎬</div>
+                <div class="info">
+                  <div class="t">Unboxing iPhone 18 — Primeiras Impressões</div>
+                  <div class="m">
+                    <span class="p-dot tt"></span>
+                    TikTok · 16 jul, 20:30
+                  </div>
+                </div>
+                <span class="st publicando">Publicando</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Recent Videos -->
+          <div class="card">
+            <div class="card-h">
+              <span class="lbl">Publicados recentemente</span>
+              <button class="act">Ver analytics →</button>
+            </div>
+            <div class="card-b">
+              <div class="rvr">
+                <div class="thumb">▶</div>
+                <div class="info"><div class="t">Vlog #48 — São Paulo</div><div class="d">12 jul 2026</div></div>
+                <div class="views"><div class="v">12.4K</div><div class="lbl">views</div></div>
+              </div>
+              <div class="rvr">
+                <div class="thumb">▶</div>
+                <div class="info"><div class="t">Setup de Streaming 2026</div><div class="d">10 jul 2026</div></div>
+                <div class="views"><div class="v">8.2K</div><div class="lbl">views</div></div>
+              </div>
+              <div class="rvr">
+                <div class="thumb">▶</div>
+                <div class="info"><div class="t">Como Editar Vídeos com IA</div><div class="d">8 jul 2026</div></div>
+                <div class="views"><div class="v">23.7K</div><div class="lbl">views</div></div>
+              </div>
+              <div class="rvr">
+                <div class="thumb">▶</div>
+                <div class="info"><div class="t">Review MacBook Pro M6</div><div class="d">5 jul 2026</div></div>
+                <div class="views"><div class="v">5.1K</div><div class="lbl">views</div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right Column -->
+        <div style="display:flex;flex-direction:column;gap:16px">
+          <!-- Next Upload -->
+          <div class="next">
+            <div class="lbl">Próximo upload</div>
+            <div class="t">Review Game GTA VI</div>
+            <div class="m">
+              <span style="width:6px;height:6px;border-radius:50%;background:#ff0000;flex-shrink:0"></span>
+              YouTube · 14 jul, 18:00
+            </div>
+            <button class="btn btn-out" style="width:100%;justify-content:center;font-size:0.75rem">
+              Gerenciar uploads
+            </button>
+          </div>
+
+          <!-- Insights -->
+          <div class="card">
+            <div class="card-h"><span class="lbl">Insights do canal</span></div>
+            <div class="card-b">
+              <div class="ins">
+                <span class="ico">📅</span>
+                <p>Nenhum vídeo agendado. Consistência é o motor de crescimento.</p>
+              </div>
+              <div class="ins">
+                <span class="ico">🚀</span>
+                <p>14 vídeo(s) na fila aguardando otimização de metadados.</p>
+              </div>
+              <div class="ins">
+                <span class="ico">✨</span>
+                <p>Canal com bom ritmo! Continue consistente para crescer.</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Analytics CTA -->
+          <button class="analytics-cta">
+            <span class="l">
+              <span style="color:var(--amber);font-size:1rem">📊</span>
+              Analytics completos
+            </span>
+            <span style="color:var(--txt-m)">→</span>
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════════════ -->
+  <!-- DIVIDER -->
+  <!-- ════════════════════════════════════════════════════════════ -->
+  <div class="sec-divider"></div>
+
+  <!-- ════════════════════════════════════════════════════════════ -->
+  <!-- PAGE 2: VIDEOS (CHANNEL PAGE) -->
+  <!-- ════════════════════════════════════════════════════════════ -->
+  <div class="page-label">
+    <span class="num">02</span>
+    <span>Vídeos — Biblioteca do Canal</span>
+    <span class="bar"></span>
+    <span style="font-weight:400;text-transform:none;color:var(--txt-s)">YouTube conectado</span>
+  </div>
+
+  <div class="layout">
+
+    <!-- Sidebar -->
+    <div class="sidebar">
+      <div class="section-label">Menu</div>
+      <div class="item"><span class="ico">◉</span> Visão Geral</div>
+      <div class="item active"><span class="ico">▤</span> Vídeos</div>
+      <div class="item"><span class="ico">◐</span> Calendário</div>
+      <div class="item"><span class="ico">◈</span> Analytics</div>
+      <div class="item"><span class="ico">✦</span> IA Studio</div>
+      <div class="item"><span class="ico">⊞</span> Command Center</div>
+      <div class="divider"></div>
+      <div class="section-label">Workspace</div>
+      <div class="item"><span class="ico">♪</span> Creator Journey</div>
+      <div class="item"><span class="ico">⚙</span> Configurações</div>
+      <div class="item"><span class="ico">?</span> Ajuda</div>
+    </div>
+
+    <!-- Main -->
+    <div>
+
+      <!-- Page Header -->
+      <div class="page-h">
+        <div>
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+            <span style="color:var(--coral);font-size:1.25rem">▶</span>
+            <h1 style="font-size:1.75rem">Vídeos</h1>
+          </div>
+          <div class="sub">
+            @CreativeMindset · biblioteca de vídeos publicados
+          </div>
+        </div>
+        <button class="btn btn-out">↻ Sincronizar</button>
+      </div>
+
+      <!-- Channel Stats Strip -->
+      <div class="ch-strip">
+        <div class="ch-stat">
+          <div class="lbl">Inscritos</div>
+          <div class="val">10.2K</div>
+        </div>
+        <div class="ch-stat">
+          <div class="lbl">Visualizações</div>
+          <div class="val">1.2M</div>
+        </div>
+        <div class="ch-stat">
+          <div class="lbl">Vídeos</div>
+          <div class="val">47</div>
+        </div>
+      </div>
+
+      <!-- Channel Switcher -->
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px">
+        <button style="padding:5px 12px;border-radius:100px;font-size:0.6875rem;font-weight:600;
+          background:linear-gradient(135deg,var(--coral),#d0301a);color:#fff;border:none;cursor:pointer;
+          display:flex;align-items:center;gap:5px;font-family:inherit">
+          <span style="width:14px;height:14px;border-radius:50%;background:rgba(255,255,255,0.2);
+            display:flex;align-items:center;justify-content:center;font-size:0.5rem">C</span>
+          Creative Mindset
+        </button>
+        <button style="padding:5px 12px;border-radius:100px;font-size:0.6875rem;font-weight:600;
+          background:transparent;border:1px solid var(--b);color:var(--txt-m);cursor:pointer;
+          display:flex;align-items:center;gap:5px;font-family:inherit">
+          <span style="width:14px;height:14px;border-radius:50%;background:var(--bg-elev);
+            display:flex;align-items:center;justify-content:center;font-size:0.5rem">G</span>
+          GameOver
+        </button>
+        <button style="padding:5px 12px;border-radius:100px;font-size:0.6875rem;font-weight:600;
+          background:transparent;border:1px dashed var(--b);color:var(--txt-m);cursor:pointer;
+          font-family:inherit">+ Adicionar canal</button>
+      </div>
+
+      <!-- Filters -->
+      <div class="filters">
+        <div class="search-wrap">
+          <span class="ico">🔍</span>
+          <input type="text" placeholder="Buscar vídeo..." />
+        </div>
+        <div class="filter-group">
+          <button class="filter-btn active">📅 Recentes</button>
+          <button class="filter-btn">👁 Mais vistos</button>
+          <button class="filter-btn">👍 Mais curtidos</button>
+        </div>
+        <span class="filter-count">24 vídeos</span>
+      </div>
+
+      <!-- Video Grid -->
+      <div class="vg">
+        <div class="vc">
+          <div class="th">
+            <div style="width:100%;height:100%;background:linear-gradient(135deg,#1a1a2e,#16213e);display:flex;align-items:center;justify-content:center;font-size:2rem">🎮</div>
+            <div class="overlay">
+              <div class="play-btn">▶</div>
+            </div>
+          </div>
+          <div class="info">
+            <div class="t">Review Game GTA VI — Vale a Pena?</div>
+            <div class="meta">
+              <span>👁 23.4K</span>
+              <span>👍 1.2K</span>
+              <span class="date">📅 14 jul</span>
+            </div>
+          </div>
+        </div>
+        <div class="vc">
+          <div class="th">
+            <div style="width:100%;height:100%;background:linear-gradient(135deg,#0f0c29,#302b63);display:flex;align-items:center;justify-content:center;font-size:2rem">⚛</div>
+            <div class="overlay">
+              <div class="play-btn">▶</div>
+            </div>
+          </div>
+          <div class="info">
+            <div class="t">Tutorial React 2026 — O que Mudou?</div>
+            <div class="meta">
+              <span>👁 18.7K</span>
+              <span>👍 892</span>
+              <span class="date">📅 12 jul</span>
+            </div>
+          </div>
+        </div>
+        <div class="vc">
+          <div class="th">
+            <div style="width:100%;height:100%;background:linear-gradient(135deg,#1a1a1a,#3d3d3d);display:flex;align-items:center;justify-content:center;font-size:2rem">📱</div>
+            <div class="overlay">
+              <div class="play-btn">▶</div>
+            </div>
+          </div>
+          <div class="info">
+            <div class="t">Unboxing iPhone 18 — Primeiras Impressões</div>
+            <div class="meta">
+              <span>👁 42.1K</span>
+              <span>👍 2.3K</span>
+              <span class="date">📅 10 jul</span>
+            </div>
+          </div>
+        </div>
+        <div class="vc">
+          <div class="th">
+            <div style="width:100%;height:100%;background:linear-gradient(135deg,#2d1b00,#4a3500);display:flex;align-items:center;justify-content:center;font-size:2rem">☕</div>
+            <div class="overlay">
+              <div class="play-btn">▶</div>
+            </div>
+          </div>
+          <div class="info">
+            <div class="t">Vlog #48 — São Paulo | Liberdade, Paulista</div>
+            <div class="meta">
+              <span>👁 12.4K</span>
+              <span>👍 654</span>
+              <span class="date">📅 8 jul</span>
+            </div>
+          </div>
+        </div>
+        <div class="vc">
+          <div class="th">
+            <div style="width:100%;height:100%;background:linear-gradient(135deg,#0a1628,#1a3a5c);display:flex;align-items:center;justify-content:center;font-size:2rem">💻</div>
+            <div class="overlay">
+              <div class="play-btn">▶</div>
+            </div>
+          </div>
+          <div class="info">
+            <div class="t">Setup de Streaming 2026 — O Guia Completo</div>
+            <div class="meta">
+              <span>👁 8.2K</span>
+              <span>👍 431</span>
+              <span class="date">📅 6 jul</span>
+            </div>
+          </div>
+        </div>
+        <div class="vc">
+          <div class="th">
+            <div style="width:100%;height:100%;background:linear-gradient(135deg,#1a0a00,#3d1a00);display:flex;align-items:center;justify-content:center;font-size:2rem">🎬</div>
+            <div class="overlay">
+              <div class="play-btn">▶</div>
+            </div>
+          </div>
+          <div class="info">
+            <div class="t">Como Editar Vídeos com IA em 2026</div>
+            <div class="meta">
+              <span>👁 23.7K</span>
+              <span>👍 1.1K</span>
+              <span class="date">📅 4 jul</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════════════ -->
+  <!-- FOOTER NOTE -->
+  <!-- ════════════════════════════════════════════════════════════ -->
+  <div style="padding:20px 28px;text-align:center;border-top:1px solid var(--b);margin-top:40px">
+    <p style="font-size:0.75rem;color:var(--txt-m)">
+      ViralCuts — Redesign Concept · Dashboard + Vídeos · Julho 2026
+    </p>
+  </div>
+
+</body>
+</html>

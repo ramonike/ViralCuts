@@ -100,7 +100,7 @@ export function SystemSwitcherPanel({ onSwitch, onClose }) {
   }, [activeSystem, migrationService, onSwitch]);
 
   return (
-    <div className="bg-surface-800 rounded-xl border border-surface-700 p-4 max-w-md">
+    <div className="bg-[var(--bg-card)] rounded-xl border border-[var(--border-default)] p-4 max-w-md">
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-heading-sm text-white">Escolher Interface</h3>
         {onClose && (
@@ -131,7 +131,7 @@ export function SystemSwitcherPanel({ onSwitch, onClose }) {
           <div className="flex gap-2">
             <button
               onClick={() => setShowConfirmation(false)}
-              className="flex-1 px-4 py-2 text-sm font-medium text-slate-300 bg-surface-700 rounded-lg hover:bg-surface-600 transition-colors"
+              className="flex-1 px-4 py-2 text-sm font-medium text-slate-300 bg-[var(--bg-elevated)] rounded-lg hover:bg-[var(--bg-elevated)] transition-colors"
             >
               Cancelar
             </button>
@@ -153,14 +153,14 @@ export function SystemSwitcherPanel({ onSwitch, onClose }) {
               w-full p-4 rounded-lg border-2 transition-all text-left
               ${activeSystem === 'command-center'
                 ? 'border-purple-500 bg-purple-500/10'
-                : 'border-surface-600 bg-surface-700/50 hover:border-surface-500'
+                : 'border-[var(--border-strong)] bg-[var(--bg-elevated)] hover:border-[var(--border-strong)]'
               }
             `}
           >
             <div className="flex items-start gap-3">
               <div className={`
                 w-10 h-10 rounded-lg flex items-center justify-center
-                ${activeSystem === 'command-center' ? 'bg-purple-500' : 'bg-surface-600'}
+                ${activeSystem === 'command-center' ? 'bg-purple-500' : 'bg-[var(--bg-elevated)]'}
               `}>
                 <Sparkles className="w-5 h-5 text-white" />
               </div>
@@ -188,14 +188,14 @@ export function SystemSwitcherPanel({ onSwitch, onClose }) {
               w-full p-4 rounded-lg border-2 transition-all text-left
               ${activeSystem === 'journey'
                 ? 'border-blue-500 bg-blue-500/10'
-                : 'border-surface-600 bg-surface-700/50 hover:border-surface-500'
+                : 'border-[var(--border-strong)] bg-[var(--bg-elevated)] hover:border-[var(--border-strong)]'
               }
             `}
           >
             <div className="flex items-start gap-3">
               <div className={`
                 w-10 h-10 rounded-lg flex items-center justify-center
-                ${activeSystem === 'journey' ? 'bg-blue-500' : 'bg-surface-600'}
+                ${activeSystem === 'journey' ? 'bg-blue-500' : 'bg-[var(--bg-elevated)]'}
               `}>
                 <Map className="w-5 h-5 text-white" />
               </div>

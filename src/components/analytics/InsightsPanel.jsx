@@ -245,7 +245,7 @@ export function InsightsPanel({
   
   if (loading) {
     return (
-      <div className="glass-panel p-6 rounded-xl border border-slate-800">
+      <div className="vc-card p-6 rounded-xl border border-slate-800">
         <div className="flex items-center gap-3 mb-6">
           <Lightbulb className="w-6 h-6 text-yellow-400" />
           <h2 className="text-xl font-bold text-white">Insights Automáticos</h2>
@@ -265,7 +265,7 @@ export function InsightsPanel({
   
   if (insights.length === 0) {
     return (
-      <div className="glass-panel p-6 rounded-xl border border-slate-800">
+      <div className="vc-card p-6 rounded-xl border border-slate-800">
         <div className="flex items-center gap-3 mb-4">
           <Lightbulb className="w-6 h-6 text-yellow-400" />
           <h2 className="text-xl font-bold text-white">Insights Automáticos</h2>
@@ -282,7 +282,7 @@ export function InsightsPanel({
   }
   
   return (
-    <div className="glass-panel p-6 rounded-xl border border-slate-800">
+    <div className="vc-card p-6 rounded-xl border border-slate-800">
       <div className="flex items-center gap-3 mb-6">
         <Lightbulb className="w-6 h-6 text-yellow-400" />
         <h2 className="text-xl font-bold text-white">Insights Automáticos</h2>

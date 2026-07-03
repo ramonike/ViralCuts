@@ -104,8 +104,8 @@ export function ChecklistSection({ state, actions }) {
     }
 
     return (
-        <div id="checklist-section" className="glass-panel rounded-xl overflow-hidden animate-in slide-in-from-bottom-4 duration-700 h-fit">
-            <div className="p-3 border-b border-surface-700/50 flex items-center justify-between">
+        <div id="checklist-section" className="vc-card rounded-xl overflow-hidden animate-in slide-in-from-bottom-4 duration-700 h-fit">
+            <div className="p-3 border-b border-[var(--border-default)] flex items-center justify-between">
                 <h3 className="font-bold text-white text-sm flex items-center gap-2">
                     <CheckSquare className="w-4 h-4 text-viral-neon" /> Checklists
                 </h3>

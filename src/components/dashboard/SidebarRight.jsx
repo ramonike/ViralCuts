@@ -66,8 +66,8 @@ export function SidebarRight({ state, actions, isLoading }) {
             />
 
             {/* Analytics */}
-            <div className="glass-panel rounded-xl overflow-hidden">
-                <div className="p-4 border-b border-surface-700/50 flex items-center justify-between">
+            <div className="vc-card rounded-xl overflow-hidden">
+                <div className="p-4 border-b border-[var(--border-default)] flex items-center justify-between">
                     <h3 className="font-bold text-white text-lg flex items-center gap-2">
                         <TrendingUp className="w-5 h-5 text-success" /> Performance
                     </h3>

@@ -1,29 +1,20 @@
-import React, { useState } from "react";
-export function Select({ children, onValueChange }) {
-  const [value, setValue] = useState("");
-  return (
+import React from "react";
+
+export const Select = React.forwardRef(({ className = "", label, error, children, ...props }, ref) => (
+  <div className="vc-input-wrap">
+    {label && <label className="vc-label">{label}</label>}
     <select
-      className="border border-slate-300 rounded-lg px-3 py-2 bg-white text-slate-800 shadow-sm focus:border-blue-400 focus:ring-2 focus:ring-blue-200 transition w-full"
-      value={value}
-      onChange={e => {
-        setValue(e.target.value);
-        onValueChange?.(e.target.value);
-      }}
-      style={{ cursor: 'pointer' }}
+      ref={ref}
+      className={`vc-input ${error ? "error" : ""} ${className}`}
+      {...props}
     >
       {children}
     </select>
-  );
-}
-export function SelectTrigger({ children, className = "" }) {
-  return <>{children}</>;
-}
-export function SelectValue({ placeholder }) {
-  return <option value="">{placeholder}</option>;
-}
-export function SelectContent({ children }) {
-  return <>{children}</>;
-}
+    {error && <span className="text-xs text-[var(--accent-coral)] mt-1 block">{error}</span>}
+  </div>
+));
+Select.displayName = "Select";
+
 export function SelectItem({ value, children }) {
   return <option value={value}>{children}</option>;
 }

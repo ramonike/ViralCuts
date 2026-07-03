@@ -1,312 +1,177 @@
-# ViralCuts Dashboard - Roadmap de Implementação
+# ViralCuts Dashboard — Roadmap de Implementação
 
-> Documento gerado em: 28/12/2024  
-> Status: Planejamento
+> Atualizado: 02/07/2026
+> Status: Em Desenvolvimento Ativo
 
 ---
 
 ## 📋 Visão Geral
 
-Este documento organiza todas as melhorias sugeridas em tasks e subtasks priorizadas para o desenvolvimento do ViralCuts Dashboard.
+Roadmap atualizado refletindo o estado real do código. Tasks já implementadas foram marcadas como concluídas. Novas tasks adicionadas com base no que falta.
 
 ---
 
-## 🔴 Alta Prioridade
+## 🔴 Alta Prioridade — MVP
 
-### Task 1: Persistência de Dados no Backend
+### Task 1: Redesign UI com 21st Magic
 
-**Objetivo:** Migrar dados do localStorage para PostgreSQL via Prisma
+**Objetivo:** Modernizar todas as 16 páginas usando componentes do 21st.dev
 
-#### Subtasks:
+- [ ] **1.1** Configurar design tokens (cores coral/amber/teal, fontes Inter + Space Grotesk)
+- [ ] **1.2** Landing Page — hero, features grid, VAI method, pricing, testimonials
+- [ ] **1.3** Auth pages — Login, Register, Forgot Password, Reset, Verify Email
+- [ ] **1.4** Dashboard Home — stats, pipeline timeline, upload queue, insights
+- [ ] **1.5** Videos page — channel strip, filters, video grid, channel switcher
+- [ ] **1.6** Calendar page — visual calendar, scheduling, heatmap
+- [ ] **1.7** Analytics page — tabs, charts, filters, export
+- [ ] **1.8** Creation (IA Studio) — script, titles, thumbnail, checklist tabs
+- [ ] **1.9** Settings + Profile — account, notifications, billing, theme
+- [ ] **1.10** Admin — user management, config panels
+- [ ] **1.11** Help + Legal (Privacy, Terms)
 
-- [ ] **1.1** Criar models no Prisma
-  - [ ] Model `Video` (id, title, description, youtubeId, thumbnail, status, userId)
-  - [ ] Model `Upload` (id, videoId, platform, status, scheduledAt, publishedAt, userId)
-  - [ ] Model `UserProgress` (id, currentStage, completedMilestones, experienceLevel, userId)
-  - [ ] Model `Achievement` (id, achievementId, unlockedAt, userId)
-  - [ ] Model `UserSettings` (id, theme, notifications, defaultPrivacy, userId)
+### Task 2: Segurança e Tokens
 
-- [ ] **1.2** Criar endpoints no Hono
-  - [ ] `GET/POST /api/progress` - Buscar/salvar progresso da jornada
-  - [ ] `GET/POST/DELETE /api/uploads` - CRUD da fila de uploads
-  - [ ] `GET/POST /api/achievements` - Buscar/desbloquear conquistas
-  - [ ] `GET/PUT /api/settings` - Configurações do usuário
-  - [ ] `GET /api/videos` - Listar vídeos do usuário
+**Objetivo:** Proteger dados sensíveis e preparar para produção
 
-- [ ] **1.3** Atualizar hooks do frontend
-  - [ ] Modificar `useJourneyContext` para usar API
-  - [ ] Modificar `useUploadQueue` para persistir no backend
-  - [ ] Modificar `useSettings` para sincronizar com servidor
-  - [ ] Implementar estratégia de fallback (offline-first)
+- [ ] **2.1** Criptografar accessToken e refreshToken no banco (encryption at rest)
+- [ ] **2.2** Implementar CSRF protection explícita
+- [ ] **2.3** Rate limiting em todas as rotas (já parcial)
+- [ ] **2.4** Audit de dependências (npm audit) e atualização
+- [ ] **2.5** Implementar refresh token rotation no YouTube OAuth
 
-- [ ] **1.4** Migração de dados existentes
-  - [ ] Criar script de migração localStorage → PostgreSQL
-  - [ ] Implementar detecção de dados locais no primeiro login
+### Task 3: Observabilidade
 
----
+**Objetivo:** Monitoramento e debugging em produção
 
-### Task 2: Upload Real para YouTube
+- [ ] **3.1** Integrar Sentry para error tracking (frontend + backend)
+- [ ] **3.2** Logging estruturado no backend (pino ou winston)
+- [ ] **3.3** Métricas de performance (Web Vitals)
+- [ ] **3.4** Dashboard de uso de quota YouTube API
+- [ ] **3.5** Health check endpoints aprimorados
 
-**Objetivo:** Implementar upload funcional de vídeos para YouTube
+### Task 4: Testes
 
-#### Subtasks:
+**Objetivo:** Cobertura mínima de 60%
 
-- [ ] **2.1** Configurar OAuth 2.0 completo
-  - [ ] Implementar fluxo de refresh token
-  - [ ] Armazenar tokens de forma segura no backend
-  - [ ] Criar endpoint `/api/auth/youtube/refresh`
-
-- [ ] **2.2** Implementar upload resumível
-  - [ ] Usar YouTube Resumable Upload API
-  - [ ] Implementar progress tracking
-  - [ ] Tratar erros e retentativas automáticas
-
-- [ ] **2.3** Suporte a metadados completos
-  - [ ] Upload de thumbnail customizada
-  - [ ] Tags e categorias
-  - [ ] Legendas/closed captions
-  - [ ] Playlists
-
-- [ ] **2.4** Agendamento de publicação
-  - [ ] Validar horários permitidos pela API
-  - [ ] Implementar fila de processamento (background jobs)
-  - [ ] Notificar usuário quando publicado
-
----
-
-### Task 3: Testes Automatizados
-
-**Objetivo:** Aumentar cobertura de testes para >70%
-
-#### Subtasks:
-
-- [ ] **3.1** Testes unitários de hooks
-  - [ ] `useYouTubeAuth.test.js`
-  - [ ] `useDashboardState.test.js`
-  - [ ] `usePipeline.test.js`
-  - [ ] `useUploadQueue.test.js`
-  - [ ] `useErrorHandler.test.js`
-
-- [ ] **3.2** Testes de componentes
-  - [ ] Componentes de autenticação (LoginPage, RegisterPage)
-  - [ ] Componentes de journey (CreatorJourney, OnboardingWizard)
-  - [ ] Componentes de upload (UploadQueuePanel, UploadProgress)
-
-- [ ] **3.3** Testes de integração
-  - [ ] Fluxo completo de login → dashboard
-  - [ ] Fluxo de conexão YouTube
-  - [ ] Fluxo de upload de vídeo
-
-- [ ] **3.4** Testes E2E
-  - [ ] Configurar Playwright ou Cypress
-  - [ ] Cenários críticos de usuário
-  - [ ] CI/CD integration (GitHub Actions)
+- [ ] **4.1** Testes unitários hooks existentes (useYouTubeAuth, useDashboardState, usePipeline, useUploadQueue, useErrorHandler)
+- [ ] **4.2** Testes de componentes críticos (auth, journey, upload)
+- [ ] **4.3** Testes de integração (login→dashboard, YouTube connection, upload flow)
+- [ ] **4.4** Configurar CI/CD com GitHub Actions + Playwright/Cypress para E2E
 
 ---
 
 ## 🟡 Média Prioridade
 
-### Task 4: Analytics Real
+### Task 5: Instagram Reels
 
-**Objetivo:** Integrar YouTube Analytics API com dados reais
+**Objetivo:** Completar suporte multi-plataforma
 
-#### Subtasks:
+- [ ] **5.1** Configurar Meta for Developers + OAuth Instagram Business
+- [ ] **5.2** Implementar upload via Graph API (Reels)
+- [ ] **5.3** Adaptar PlatformSelector e PlatformStatus para Instagram
+- [ ] **5.4** Cross-posting e status tracking por plataforma
 
-- [ ] **4.1** Integração com YouTube Analytics API
-  - [ ] Configurar escopo `yt-analytics.readonly`
-  - [ ] Implementar `fetchRealAnalytics()` em `youtube.js`
-  - [ ] Cachear dados para reduzir chamadas API
+### Task 6: Analytics Real (YouTube Analytics API)
 
-- [ ] **4.2** Novas métricas
-  - [ ] CTR (Click-Through Rate) por vídeo
-  - [ ] Retenção média de audiência
-  - [ ] Melhores horários de publicação
-  - [ ] Crescimento de inscritos
+**Objetivo:** Substituir dados mock por dados reais
 
-- [ ] **4.3** Visualizações avançadas
-  - [ ] Gráfico comparativo semanal/mensal
-  - [ ] Heatmap de horários de visualização
-  - [ ] Top 5 vídeos por performance
-  - [ ] Exportar relatórios (PDF/CSV)
+- [ ] **6.1** Configurar escopo yt-analytics.readonly
+- [ ] **6.2** Implementar fetchRealAnalytics() em youtube.js
+- [ ] **6.3** Cache com TTL para reduzir chamadas API
+- [ ] **6.4** Novas visualizações: heatmap de horários, comparativo semanal/mensal
+- [ ] **6.5** Exportar relatórios (PDF/CSV)
 
-- [ ] **4.4** Atualizar AnalyticsPage
-  - [ ] Substituir dados mock por dados reais
-  - [ ] Adicionar filtros de período
-  - [ ] Implementar loading states
+### Task 7: Code Splitting e Performance
 
----
+**Objetivo:** Melhorar performance de carregamento
 
-### Task 5: Sistema de Notificações
+- [ ] **7.1** Lazy loading de rotas (React.lazy + Suspense)
+- [ ] **7.2** Code splitting por página
+- [ ] **7.3** Virtual scrolling em listas longas (react-window)
+- [ ] **7.4** Caching de API responses (SWR ou React Query)
 
-**Objetivo:** Implementar notificações in-app e push
+### Task 8: Push Notifications
 
-#### Subtasks:
+**Objetivo:** Expandir sistema de notificações
 
-- [ ] **5.1** Notificações in-app
-  - [ ] Expandir `NotificationContext` existente
-  - [ ] Criar componente `NotificationCenter`
-  - [ ] Histórico de notificações
-  - [ ] Marcar como lida/não lida
-
-- [ ] **5.2** Tipos de notificações
-  - [ ] Upload concluído com sucesso/erro
-  - [ ] Vídeo agendado foi publicado
-  - [ ] Nova conquista desbloqueada
-  - [ ] Lembrete de consistência (streak)
-  - [ ] Quota YouTube próxima do limite
-
-- [ ] **5.3** Push notifications (opcional)
-  - [ ] Configurar Service Worker
-  - [ ] Integrar Web Push API
-  - [ ] Permitir opt-in/opt-out por tipo
+- [ ] **8.1** Configurar Service Worker
+- [ ] **8.2** Web Push API
+- [ ] **8.3** Opt-in/opt-out por tipo de notificação
+- [ ] **8.4** Notificação push para upload concluído, agendamento, quota
 
 ---
 
-### Task 6: Suporte Multi-plataforma
+## 🟢 Baixa Prioridade — Futuro
 
-**Objetivo:** Adicionar TikTok e Instagram Reels
-
-#### Subtasks:
-
-- [ ] **6.1** Integração TikTok
-  - [ ] Configurar TikTok for Developers
-  - [ ] Implementar OAuth TikTok
-  - [ ] API de upload TikTok
-  - [ ] Adaptar UI para seleção de plataforma
-
-- [ ] **6.2** Integração Instagram Reels
-  - [ ] Configurar Meta for Developers
-  - [ ] Implementar OAuth Instagram Business
-  - [ ] API de upload via Graph API
-  - [ ] Suporte a cross-posting
-
-- [ ] **6.3** Fila unificada
-  - [ ] Modificar model `Upload` para multi-plataforma
-  - [ ] UI de seleção múltipla de destinos
-  - [ ] Status individual por plataforma
-
----
-
-## 🟢 Baixa Prioridade
-
-### Task 7: PWA / Mobile
+### Task 9: PWA / Mobile
 
 **Objetivo:** Transformar em Progressive Web App
 
-#### Subtasks:
+- [ ] **9.1** Criar manifest.json + Service Worker
+- [ ] **9.2** Cache strategies (offline dashboard)
+- [ ] **9.3** Funcionalidades offline (fila de uploads offline)
+- [ ] **9.4** Responsividade avançada com gestos touch
 
-- [ ] **7.1** Configuração PWA
-  - [ ] Criar `manifest.json`
-  - [ ] Implementar Service Worker
-  - [ ] Configurar cache strategies
-  - [ ] Ícones para diferentes dispositivos
-
-- [ ] **7.2** Otimização mobile
-  - [ ] Revisar responsividade de todos os componentes
-  - [ ] Implementar gestos touch (swipe, pull-to-refresh)
-  - [ ] Otimizar performance em conexões lentas
-
-- [ ] **7.3** Funcionalidades offline
-  - [ ] Visualizar dashboard offline
-  - [ ] Queue de uploads offline
-  - [ ] Sincronização quando reconectar
-
----
-
-### Task 8: Sistema de Colaboração
+### Task 10: Colaboração / Teams
 
 **Objetivo:** Permitir equipes e workspaces
 
-#### Subtasks:
+- [ ] **10.1** Models Team, TeamMember, Invitation
+- [ ] **10.2** Roles e permissões granulares
+- [ ] **10.3** UI de gerenciamento de equipe + workspace switcher
 
-- [ ] **8.1** Models de colaboração
-  - [ ] Model `Team` (id, name, ownerId)
-  - [ ] Model `TeamMember` (teamId, userId, role)
-  - [ ] Model `Invitation` (teamId, email, status)
+### Task 11: IA Avançada
 
-- [ ] **8.2** Permissões
-  - [ ] Roles: Owner, Admin, Editor, Viewer
-  - [ ] Permissões granulares por funcionalidade
-  - [ ] Audit log de ações
+**Objetivo:** Funcionalidades de IA mais profundas
 
-- [ ] **8.3** UI de equipes
-  - [ ] Página de gerenciamento de equipe
-  - [ ] Convites por email
-  - [ ] Switcher de workspace
+- [ ] **11.1** Análise de tendências (trending topics no nicho)
+- [ ] **11.2** Previsão de performance de títulos
+- [ ] **11.3** Análise de thumbnail (cores, texto, faces)
+- [ ] **11.4** Score de "viralidade" estimado
 
----
+### Task 12: Acessibilidade
 
-### Task 9: IA Integrada
+**Objetivo:** Tornar o app acessível
 
-**Objetivo:** Adicionar funcionalidades de IA nativas
-
-#### Subtasks:
-
-- [ ] **9.1** Geração de conteúdo
-  - [ ] Integrar OpenAI API ou similar
-  - [ ] Gerar títulos otimizados para SEO
-  - [ ] Gerar descrições automáticas
-  - [ ] Sugerir tags baseadas no conteúdo
-
-- [ ] **9.2** Análise de tendências
-  - [ ] Identificar trending topics no nicho
-  - [ ] Sugerir ideias de vídeos
-  - [ ] Prever performance de títulos
-
-- [ ] **9.3** Otimização automática
-  - [ ] Análise de thumbnail (cores, texto, faces)
-  - [ ] Score de "viralidade" estimado
-  - [ ] Recomendações de melhoria
+- [ ] **12.1** Auditoria com axe-core
+- [ ] **12.2** Navegação por teclado completa
+- [ ] **12.3** Suporte a screen readers (ARIA labels)
+- [ ] **12.4** Contraste e tamanhos de fonte
 
 ---
 
-## 🔧 Melhorias Técnicas
+## ✅ Concluído (do roadmap anterior)
 
-### Task 10: Segurança e Performance
-
-#### Subtasks:
-
-- [ ] **10.1** Segurança
-  - [ ] Criptografar tokens armazenados
-  - [ ] Implementar rate limiting nos endpoints
-  - [ ] Adicionar CSRF protection
-  - [ ] Audit de dependências (npm audit)
-
-- [ ] **10.2** Performance
-  - [ ] Implementar lazy loading de rotas
-  - [ ] Otimizar bundle size (code splitting)
-  - [ ] Adicionar caching de API responses
-  - [ ] Implementar virtual scrolling em listas longas
-
-- [ ] **10.3** Observabilidade
-  - [ ] Integrar Sentry para error tracking
-  - [ ] Adicionar logging estruturado
-  - [ ] Métricas de performance (Web Vitals)
-  - [ ] Dashboard de uso de quota YouTube
-
-- [ ] **10.4** Acessibilidade
-  - [ ] Auditoria com axe-core
-  - [ ] Navegação por teclado completa
-  - [ ] Suporte a screen readers
-  - [ ] Contraste e tamanhos de fonte
+| Task | Status | Observação |
+|---|---|---|
+| **1. Persistência DB** | ✅ Completo | Prisma + 17 models + endpoints REST |
+| **2. Upload YouTube** | ✅ Completo | OAuth, resumable upload, retry, multi-conta, agendamento |
+| **3. IA Integrada** | ✅ Completo | Gemini + Groq + Replicate (texto, thumbnail, vídeo, tasks) |
+| **4. Sistema de Notificações** | ✅ In-app completo | Context + triggers + DB; Push ainda não |
+| **5. Multi-plataforma** | ✅ YouTube + TikTok | Instagram pendente (Task 6) |
+| **Analytics** | ⚠️ Parcial | Schema pronto, dados mock no frontend |
+| **Subscriptions** | ✅ Completo | Stripe end-to-end com webhooks |
+| **Command Center** | ✅ Completo | State, tasks, metrics, activity, widgets |
+| **Rate Limiting** | ✅ Implementado | Nas principais rotas |
 
 ---
 
-## 📅 Sugestão de Cronograma
+## 📅 Cronograma Sugerido
 
 | Fase | Tasks | Estimativa |
-|------|-------|------------|
-| **Fase 1** | Tasks 1, 2, 3 | 4-6 semanas |
-| **Fase 2** | Tasks 4, 5 | 2-3 semanas |
-| **Fase 3** | Task 6 | 3-4 semanas |
-| **Fase 4** | Tasks 7, 8, 9 | 4-6 semanas |
-| **Contínuo** | Task 10 | Ongoing |
+|---|---|---|
+| **Fase 1 — Imediata** | Task 1 (Redesign UI) + Task 2 (Segurança) | 3-4 semanas |
+| **Fase 2 — Curto Prazo** | Tasks 3, 4 (Observabilidade + Testes) | 2-3 semanas |
+| **Fase 3 — Médio Prazo** | Tasks 5, 6, 7 (Instagram + Analytics + Performance) | 4-5 semanas |
+| **Fase 4 — Longo Prazo** | Tasks 8, 9, 10, 11, 12 | 6-8 semanas |
+| **Contínuo** | Manutenção, dependências, refatoração | Ongoing |
 
 ---
 
 ## 📝 Notas
 
-- Prioridades podem ser ajustadas conforme feedback dos usuários
-- Tasks de alta prioridade são bloqueantes para produção
-- Considerar feature flags para rollout gradual
-- Documentar APIs conforme implementação
+- **Roadmap antigo estava desatualizado**: Tasks 1, 2, 9 do roadmap original já estavam implementadas no código
+- **Prioridade #1 agora é o Redesign UI** com 21st Magic components — ver `REDESIGN-ALL.html`
+- Tokens OAuth estão em plaintext no DB — prioridade alta criptografar
+- Instagram é o único gap no suporte multi-plataforma
+- Considerar migrar de Vite para Next.js no futuro se necessidade SSR

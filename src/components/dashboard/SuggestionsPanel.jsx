@@ -14,9 +14,9 @@ export function SuggestionsPanel({ suggestions, refreshChannelStats, isLoading }
     };
 
     return (
-        <div className="glass-panel rounded-xl overflow-hidden transition-all duration-500">
+        <div className="vc-card rounded-xl overflow-hidden transition-all duration-500">
             <div
-                className="p-4 border-b border-surface-700/50 flex items-center justify-between bg-gradient-to-r from-purple-900/20 to-transparent cursor-pointer hover:bg-surface-800/50 transition-colors"
+                className="p-4 border-b border-[var(--border-default)] flex items-center justify-between bg-gradient-to-r from-purple-900/20 to-transparent cursor-pointer hover:bg-[var(--bg-card)] transition-colors"
                 onClick={() => setIsSuggestionsOpen(!isSuggestionsOpen)}
             >
                 <h3 className="text-slate-100 font-bold flex items-center gap-2">
@@ -46,12 +46,12 @@ export function SuggestionsPanel({ suggestions, refreshChannelStats, isLoading }
                                     }
                                 }}
                                 placeholder="Buscar tema..."
-                                className="w-full bg-surface-800 text-xs text-slate-200 rounded-lg pl-7 pr-2 py-1.5 border border-surface-700 focus:border-purple-500 outline-none transition-all"
+                                className="w-full bg-[var(--bg-card)] text-xs text-slate-200 rounded-lg pl-7 pr-2 py-1.5 border border-[var(--border-default)] focus:border-purple-500 outline-none transition-all"
                             />
                         </div>
                         <button
                             onClick={() => refreshChannelStats(true)}
-                            className="text-xs text-slate-400 hover:text-purple-400 transition-colors p-1.5 rounded hover:bg-surface-800 border border-transparent hover:border-surface-700"
+                            className="text-xs text-slate-400 hover:text-purple-400 transition-colors p-1.5 rounded hover:bg-[var(--bg-card)] border border-transparent hover:border-[var(--border-default)]"
                             title="Atualizar sugestões"
                         >
                             <RefreshCw className="w-3.5 h-3.5" />
@@ -68,7 +68,7 @@ export function SuggestionsPanel({ suggestions, refreshChannelStats, isLoading }
                         suggestions.map((sug, idx) => (
                             <div
                                 key={idx}
-                                className="group bg-surface-800/50 hover:bg-surface-800 border border-surface-700/50 hover:border-purple-500/30 rounded-lg p-3 transition-all cursor-pointer"
+                                className="group bg-[var(--bg-card)] hover:bg-[var(--bg-card)] border border-[var(--border-default)] hover:border-purple-500/30 rounded-lg p-3 transition-all cursor-pointer"
                             >
                                 <div className="flex items-start justify-between gap-2">
                                     <div className="flex-1 min-w-0">
@@ -98,7 +98,7 @@ export function SuggestionsPanel({ suggestions, refreshChannelStats, isLoading }
                                         href={`https://youtube.com/watch?v=${typeof sug.id === 'object' ? sug.id.videoId : (sug.videoId || sug.id)}`}
                                         target="_blank"
                                         rel="noopener noreferrer"
-                                        className="text-slate-500 hover:text-purple-400 transition-colors p-1 hover:bg-surface-700 rounded"
+                                        className="text-slate-500 hover:text-purple-400 transition-colors p-1 hover:bg-[var(--bg-elevated)] rounded"
                                         onClick={(e) => e.stopPropagation()}
                                         title="Abrir no YouTube"
                                         draggable="true"

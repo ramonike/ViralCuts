@@ -44,7 +44,7 @@ const ScheduleModal = ({ isOpen, onClose, date, onSchedule }) => {
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-in fade-in duration-200" onClick={onClose}>
-            <div className="bg-surface-900 border border-surface-700 rounded-xl p-6 w-full max-w-md shadow-2xl animate-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+            <div className="bg-[var(--bg-secondary)] border border-[var(--border-default)] rounded-xl p-6 w-full max-w-md shadow-2xl animate-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
                 <div className="flex justify-between items-center mb-4">
                     <h3 className="text-lg font-bold text-white flex items-center gap-2">
                         <Clock className="w-5 h-5 text-primary" /> Agendar Upload
@@ -57,7 +57,7 @@ const ScheduleModal = ({ isOpen, onClose, date, onSchedule }) => {
                 <div className="space-y-4">
                     <div>
                         <label className="text-xs text-slate-400 font-bold uppercase block mb-1">Data</label>
-                        <div className="p-2 bg-surface-800 rounded border border-surface-700 text-slate-300 text-sm">
+                        <div className="p-2 bg-[var(--bg-card)] rounded border border-[var(--border-default)] text-slate-300 text-sm">
                             {new Date(date + "T12:00:00").toLocaleDateString('pt-BR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
                         </div>
                     </div>
@@ -65,7 +65,7 @@ const ScheduleModal = ({ isOpen, onClose, date, onSchedule }) => {
                     <div>
                         <label className="text-xs text-slate-400 font-bold uppercase block mb-1">Vídeo</label>
                         <div className="flex items-center gap-2">
-                            <label className="flex-1 cursor-pointer bg-surface-800 hover:bg-surface-700 border border-surface-700 rounded-md p-2 flex items-center justify-center gap-2 text-sm text-slate-300 transition-colors">
+                            <label className="flex-1 cursor-pointer bg-[var(--bg-card)] hover:bg-[var(--bg-elevated)] border border-[var(--border-default)] rounded-md p-2 flex items-center justify-center gap-2 text-sm text-slate-300 transition-colors">
                                 <UploadCloud className="w-4 h-4" />
                                 {file ? file.name : "Selecionar arquivo..."}
                                 <input
@@ -93,7 +93,7 @@ const ScheduleModal = ({ isOpen, onClose, date, onSchedule }) => {
                             type="time"
                             value={time}
                             onChange={(e) => setTime(e.target.value)}
-                            className="w-full bg-surface-800 border border-surface-700 rounded-md px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-primary [color-scheme:dark]"
+                            className="w-full bg-[var(--bg-card)] border border-[var(--border-default)] rounded-md px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-primary [color-scheme:dark]"
                             style={{ colorScheme: 'dark' }}
                         />
                     </div>
@@ -104,7 +104,7 @@ const ScheduleModal = ({ isOpen, onClose, date, onSchedule }) => {
                             value={title}
                             onChange={(e) => setTitle(e.target.value)}
                             placeholder="Ex: Curiosidades sobre Gatos..."
-                            className="bg-surface-800 border-surface-700 text-white placeholder:text-slate-500"
+                            className="bg-[var(--bg-card)] border-[var(--border-default)] text-white placeholder:text-slate-500"
                         />
                     </div>
 
@@ -113,7 +113,7 @@ const ScheduleModal = ({ isOpen, onClose, date, onSchedule }) => {
                         <select
                             value={platform}
                             onChange={(e) => setPlatform(e.target.value)}
-                            className="w-full bg-surface-800 border border-surface-700 rounded-md p-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-primary"
+                            className="w-full bg-[var(--bg-card)] border border-[var(--border-default)] rounded-md p-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-primary"
                         >
                             <option value="YouTube Shorts">YouTube Shorts</option>
                             <option value="TikTok">TikTok</option>
@@ -127,7 +127,7 @@ const ScheduleModal = ({ isOpen, onClose, date, onSchedule }) => {
                                 <select
                                     value={privacyStatus}
                                     onChange={(e) => setPrivacyStatus(e.target.value)}
-                                    className="w-full bg-surface-800 border border-surface-700 rounded-md p-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-primary"
+                                    className="w-full bg-[var(--bg-card)] border border-[var(--border-default)] rounded-md p-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-primary"
                                 >
                                     <option value="public">Público</option>
                                     <option value="private">Privado</option>
@@ -135,13 +135,13 @@ const ScheduleModal = ({ isOpen, onClose, date, onSchedule }) => {
                                 </select>
                             </div>
 
-                            <div className="bg-surface-800/50 border border-surface-700 rounded-lg p-3">
+                            <div className="bg-[var(--bg-card)] border border-[var(--border-default)] rounded-lg p-3">
                                 <label className="flex items-start gap-2 cursor-pointer">
                                     <input
                                         type="checkbox"
                                         checked={useYouTubeScheduling}
                                         onChange={(e) => setUseYouTubeScheduling(e.target.checked)}
-                                        className="mt-0.5 w-4 h-4 rounded border-surface-600 bg-surface-700 text-primary focus:ring-primary focus:ring-offset-0"
+                                        className="mt-0.5 w-4 h-4 rounded border-[var(--border-strong)] bg-[var(--bg-elevated)] text-primary focus:ring-primary focus:ring-offset-0"
                                     />
                                     <div>
                                         <span className="text-sm font-semibold text-white">Usar agendamento nativo do YouTube</span>
@@ -261,8 +261,8 @@ export function CalendarWidget({ history, uploadQueue, addToUploadQueue, resched
                 onSchedule={handleSchedule}
             />
 
-            <div className="glass-panel rounded-xl overflow-hidden">
-                <div className="p-4 border-b border-surface-700/50">
+            <div className="vc-card rounded-xl overflow-hidden">
+                <div className="p-4 border-b border-[var(--border-default)]">
                     <h3 className="font-bold text-white text-lg flex items-center gap-2">
                         <CalendarIcon className="w-5 h-5 text-primary" /> Calendário
                     </h3>
@@ -270,11 +270,11 @@ export function CalendarWidget({ history, uploadQueue, addToUploadQueue, resched
                 <div className="p-4">
                     <div className="text-xs text-slate-400 mb-4 flex justify-between items-center font-medium uppercase tracking-wider">
                         <div className="flex items-center gap-2">
-                            <button onClick={handlePrevMonth} className="hover:text-white transition-colors p-1 hover:bg-surface-700 rounded">
+                            <button onClick={handlePrevMonth} className="hover:text-white transition-colors p-1 hover:bg-[var(--bg-elevated)] rounded">
                                 <ChevronLeft className="w-4 h-4" />
                             </button>
                             <span>{currentDate.toLocaleString('default', { month: 'long' })} {currentYear}</span>
-                            <button onClick={handleNextMonth} className="hover:text-white transition-colors p-1 hover:bg-surface-700 rounded">
+                            <button onClick={handleNextMonth} className="hover:text-white transition-colors p-1 hover:bg-[var(--bg-elevated)] rounded">
                                 <ChevronRight className="w-4 h-4" />
                             </button>
                         </div>
@@ -304,7 +304,7 @@ export function CalendarWidget({ history, uploadQueue, addToUploadQueue, resched
                             const hasActivity = dayData && dayData.completedItems && dayData.completedItems.length > 0;
                             const hasScheduled = scheduledForDay.length > 0;
 
-                            let bgClass = "bg-surface-800/50 text-slate-500 hover:bg-surface-700";
+                            let bgClass = "bg-[var(--bg-card)] text-slate-500 hover:bg-[var(--bg-elevated)]";
                             let borderClass = "border-transparent";
 
                             if (isToday) {
@@ -321,7 +321,7 @@ export function CalendarWidget({ history, uploadQueue, addToUploadQueue, resched
                             }
 
                             if (isSelected) {
-                                borderClass = "ring-2 ring-white ring-offset-2 ring-offset-surface-900";
+                                borderClass = "ring-2 ring-white ring-offset-2 ring-offset-[var(--bg-secondary)]";
                             }
 
                             return (
@@ -337,8 +337,8 @@ export function CalendarWidget({ history, uploadQueue, addToUploadQueue, resched
                     </div>
 
                     {/* Day Details */}
-                    <div className="bg-surface-800/50 rounded-xl p-4 border border-surface-700/50">
-                        <p className="text-xs text-slate-400 font-bold mb-3 uppercase tracking-wider flex justify-between border-b border-surface-700/50 pb-2">
+                    <div className="bg-[var(--bg-card)] rounded-xl p-4 border border-[var(--border-default)]">
+                        <p className="text-xs text-slate-400 font-bold mb-3 uppercase tracking-wider flex justify-between border-b border-[var(--border-default)] pb-2">
                             <span>{selectedDateObj.toLocaleDateString('pt-BR')}</span>
                         </p>
 
@@ -355,7 +355,7 @@ export function CalendarWidget({ history, uploadQueue, addToUploadQueue, resched
                                             <div className="flex-1 h-px bg-gradient-to-r from-purple-400/50 to-transparent"></div>
                                         </div>
                                         {scheduledVideos.map((video, idx) => (
-                                            <div key={video.id} className="flex items-center gap-2 text-xs py-2 px-3 bg-surface-800 rounded-lg border border-purple-500/30">
+                                            <div key={video.id} className="flex items-center gap-2 text-xs py-2 px-3 bg-[var(--bg-card)] rounded-lg border border-purple-500/30">
                                                 <span className="text-purple-400 font-bold">{idx + 1}.</span>
                                                 <div className="flex-1 min-w-0">
                                                     <span className="text-slate-300 truncate block" title={video.title}>
@@ -387,7 +387,7 @@ export function CalendarWidget({ history, uploadQueue, addToUploadQueue, resched
                                                 <div
                                                     key={video.id}
                                                     onClick={() => handleVideoClick(video)}
-                                                    className="flex items-center justify-between text-xs py-2 px-3 hover:bg-surface-800 rounded-lg transition-all group cursor-pointer border border-transparent hover:border-surface-600"
+                                                    className="flex items-center justify-between text-xs py-2 px-3 hover:bg-[var(--bg-card)] rounded-lg transition-all group cursor-pointer border border-transparent hover:border-[var(--border-strong)]"
                                                 >
                                                     <div className="flex items-center gap-2 flex-1 min-w-0">
                                                         {video.thumbnail && (
@@ -424,7 +424,7 @@ export function CalendarWidget({ history, uploadQueue, addToUploadQueue, resched
                                 )}
 
                                 {/* Add More Button */}
-                                <div className="pt-2 border-t border-surface-700/50">
+                                <div className="pt-2 border-t border-[var(--border-default)]">
                                     <Button
                                         size="sm"
                                         variant="outline"

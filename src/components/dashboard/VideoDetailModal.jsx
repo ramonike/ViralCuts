@@ -41,17 +41,17 @@ export function VideoDetailModal({ video, isOpen, onClose, onReschedule, onDelet
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm" onClick={onClose}>
             <div
-                className="bg-surface-900 border border-surface-700 rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+                className="bg-[var(--bg-secondary)] border border-[var(--border-default)] rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
                 onClick={(e) => e.stopPropagation()}
             >
                 {/* Header */}
-                <div className="sticky top-0 bg-surface-900 border-b border-surface-700 p-6 flex items-start justify-between z-10">
+                <div className="sticky top-0 bg-[var(--bg-secondary)] border-b border-[var(--border-default)] p-6 flex items-start justify-between z-10">
                     <div className="flex-1 pr-4">
                         {isEditing ? (
                             <Input
                                 value={editedTitle}
                                 onChange={(e) => setEditedTitle(e.target.value)}
-                                className="bg-surface-800 border-surface-600 text-white text-lg font-bold"
+                                className="bg-[var(--bg-card)] border-[var(--border-strong)] text-white text-lg font-bold"
                             />
                         ) : (
                             <h2 className="text-xl font-bold text-white">{video.title}</h2>
@@ -67,7 +67,7 @@ export function VideoDetailModal({ video, isOpen, onClose, onReschedule, onDelet
                     </div>
                     <button
                         onClick={onClose}
-                        className="text-slate-400 hover:text-white transition-colors p-2 hover:bg-surface-800 rounded-lg"
+                        className="text-slate-400 hover:text-white transition-colors p-2 hover:bg-[var(--bg-card)] rounded-lg"
                     >
                         <X className="w-5 h-5" />
                     </button>
@@ -77,7 +77,7 @@ export function VideoDetailModal({ video, isOpen, onClose, onReschedule, onDelet
                 <div className="p-6 space-y-6">
                     {/* Thumbnail */}
                     {video.thumbnail && (
-                        <div className="relative rounded-xl overflow-hidden bg-surface-800 aspect-video">
+                        <div className="relative rounded-xl overflow-hidden bg-[var(--bg-card)] aspect-video">
                             <img
                                 src={video.thumbnail}
                                 alt={video.title}
@@ -90,7 +90,7 @@ export function VideoDetailModal({ video, isOpen, onClose, onReschedule, onDelet
                     {(video.viewCount !== undefined || video.likes !== undefined) && (
                         <div className="grid grid-cols-2 gap-4">
                             {video.viewCount !== undefined && (
-                                <div className="bg-surface-800/50 rounded-lg p-4 border border-surface-700">
+                                <div className="bg-[var(--bg-card)] rounded-lg p-4 border border-[var(--border-default)]">
                                     <div className="flex items-center gap-2 text-slate-400 text-xs mb-1">
                                         <Eye className="w-4 h-4" />
                                         <span>Visualizações</span>
@@ -99,7 +99,7 @@ export function VideoDetailModal({ video, isOpen, onClose, onReschedule, onDelet
                                 </div>
                             )}
                             {video.likes !== undefined && (
-                                <div className="bg-surface-800/50 rounded-lg p-4 border border-surface-700">
+                                <div className="bg-[var(--bg-card)] rounded-lg p-4 border border-[var(--border-default)]">
                                     <div className="flex items-center gap-2 text-slate-400 text-xs mb-1">
                                         <ThumbsUp className="w-4 h-4" />
                                         <span>Curtidas</span>
@@ -120,7 +120,7 @@ export function VideoDetailModal({ video, isOpen, onClose, onReschedule, onDelet
                                 value={editedDescription}
                                 onChange={(e) => setEditedDescription(e.target.value)}
                                 rows={4}
-                                className="w-full bg-surface-800 border border-surface-600 text-white rounded-lg p-3 text-sm resize-none focus:border-primary focus:ring-1 focus:ring-primary outline-none"
+                                className="w-full bg-[var(--bg-card)] border border-[var(--border-strong)] text-white rounded-lg p-3 text-sm resize-none focus:border-primary focus:ring-1 focus:ring-primary outline-none"
                             />
                         ) : (
                             <p className="text-slate-300 text-sm whitespace-pre-wrap">
@@ -155,7 +155,7 @@ export function VideoDetailModal({ video, isOpen, onClose, onReschedule, onDelet
                 </div>
 
                 {/* Actions */}
-                <div className="sticky bottom-0 bg-surface-900 border-t border-surface-700 p-6 flex gap-3">
+                <div className="sticky bottom-0 bg-[var(--bg-secondary)] border-t border-[var(--border-default)] p-6 flex gap-3">
                     {isEditing ? (
                         <>
                             <Button onClick={handleSave} className="flex-1">

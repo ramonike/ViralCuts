@@ -1,0 +1,936 @@
+﻿<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ViralCuts — Redesign 16 Pages</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--coral:#e8412a;--coral-2:#d93a25;--coral-3:#ff6b4a;--amber:#f0a500;--amber-2:#d99400;--amber-3:#ffc04d;--teal:#00c9a7;--teal-2:#00b894;--teal-3:#33dfc0;--purple:#7c3aed;--blue:#3b82f6;--pink:#ec4899;--gray-50:#f8f9fb;--gray-100:#eef0f4;--gray-200:#dde1e7;--gray-300:#b8bcc8;--gray-400:#8a8f9e;--gray-500:#6b7080;--gray-600:#4b5060;--gray-700:#323748;--gray-800:#1e2233;--gray-900:#12141f;--bg:#0b0d17;--bg-card:#151829;--bg-card2:#1c1f35;--border:#272b44;--text:#ffffff;--text2:#a8abbd;--text3:#6e7291;--shadow:0 4px 24px rgba(0,0,0,.3);--glow-coral:0 0 40px rgba(232,65,42,.15);--glow-amber:0 0 40px rgba(240,165,0,.1);--glow-teal:0 0 40px rgba(0,201,167,.1);--radius:12px;--radius-lg:20px;--font:'Inter',sans-serif}
+html{scroll-behavior:smooth}
+body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100vh}
+a{color:var(--coral);text-decoration:none}
+.page-nav{position:fixed;top:0;left:0;right:0;z-index:9999;background:rgba(11,13,23,.95);-webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px);border-bottom:1px solid var(--border);padding:0 16px;display:flex;align-items:center;height:48px;overflow-x:auto;gap:2px}
+.page-nav::-webkit-scrollbar{height:2px}
+.page-nav::-webkit-scrollbar-thumb{background:var(--coral);border-radius:4px}
+.page-nav a{flex-shrink:0;padding:6px 14px;font-size:12px;font-weight:500;color:var(--text2);border-radius:6px;transition:all .2s;white-space:nowrap}
+.page-nav a:hover,.page-nav a.active{color:var(--text);background:rgba(232,65,42,.15)}
+.page-nav a.active{color:var(--coral)}
+.page-nav .logo{font-weight:800;font-size:14px;color:var(--coral);margin-right:12px;flex-shrink:0}
+.page-section{padding-top:64px;min-height:100vh}
+.container{max-width:1200px;margin:0 auto;padding:0 24px}
+.badge{display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:999px;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.5px}
+.badge-coral{background:rgba(232,65,42,.15);color:var(--coral)}
+.badge-amber{background:rgba(240,165,0,.15);color:var(--amber)}
+.badge-teal{background:rgba(0,201,167,.15);color:var(--teal)}
+.badge-purple{background:rgba(124,58,237,.15);color:var(--purple)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:10px 24px;border-radius:8px;font-weight:600;font-size:14px;border:none;cursor:pointer;transition:all .25s;font-family:var(--font)}
+.btn-primary{background:var(--coral);color:#fff}
+.btn-primary:hover{background:var(--coral-2);transform:translateY(-1px);box-shadow:var(--glow-coral)}
+.btn-secondary{background:transparent;border:1px solid var(--border);color:var(--text)}
+.btn-secondary:hover{border-color:var(--coral);color:var(--coral)}
+.btn-ghost{background:transparent;color:var(--text2);padding:8px 12px}
+.btn-ghost:hover{color:var(--text);background:rgba(255,255,255,.05)}
+.btn-sm{padding:6px 14px;font-size:12px}
+.btn-lg{padding:14px 32px;font-size:16px}
+.btn-gradient{background:linear-gradient(135deg,var(--purple),var(--blue));color:#fff}
+.btn-gradient:hover{transform:translateY(-1px);box-shadow:0 4px 20px rgba(124,58,237,.3)}
+.card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:24px;transition:all .25s}
+.card-hover:hover{border-color:rgba(232,65,42,.3);transform:translateY(-2px);box-shadow:var(--shadow)}
+.card-glass{background:rgba(21,24,41,.8);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);border:1px solid var(--border);border-radius:var(--radius);padding:24px}
+.card-top-coral{border-top:3px solid var(--coral)}
+.card-top-amber{border-top:3px solid var(--amber)}
+.card-top-teal{border-top:3px solid var(--teal)}
+.input{background:var(--bg-card2);border:1px solid var(--border);border-radius:8px;padding:10px 14px;color:var(--text);font-size:14px;width:100%;font-family:var(--font);transition:border .2s}
+.input:focus{outline:none;border-color:var(--coral)}
+.input::placeholder{color:var(--text3)}
+textarea.input{resize:vertical;min-height:80px}
+select.input{cursor:pointer}
+.form-label{display:block;font-size:13px;font-weight:500;color:var(--text2);margin-bottom:6px}
+.form-group{margin-bottom:16px}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:24px}
+.grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:24px}
+.grid-4{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:20px}
+.grid-6{display:grid;grid-template-columns:repeat(6,1fr);gap:16px}
+@media(max-width:900px){
+  .grid-2,.grid-3,.grid-4{grid-template-columns:1fr}
+  .grid-6{grid-template-columns:repeat(2,1fr)}
+}
+.stat-card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:20px;text-align:center}
+.stat-card .icon{font-size:24px;margin-bottom:8px}
+.stat-card .value{font-size:28px;font-weight:800;line-height:1.2}
+.stat-card .label{font-size:13px;color:var(--text2);margin-top:4px}
+.stat-card.accent-coral .value{color:var(--coral)}
+.stat-card.accent-amber .value{color:var(--amber)}
+.stat-card.accent-teal .value{color:var(--teal)}
+.table-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse}
+th{text-align:left;padding:12px 16px;font-size:12px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid var(--border)}
+td{padding:12px 16px;font-size:14px;border-bottom:1px solid rgba(39,39,68,.5)}
+tr:hover td{background:rgba(255,255,255,.02)}
+.tabs{display:flex;gap:4px;background:var(--bg-card2);padding:4px;border-radius:10px;overflow-x:auto}
+.tab{padding:8px 20px;border-radius:8px;font-size:13px;font-weight:500;color:var(--text2);cursor:pointer;border:none;background:transparent;font-family:var(--font);transition:all .2s;white-space:nowrap}
+.tab.active{background:var(--coral);color:#fff}
+.tab:hover:not(.active){color:var(--text)}
+.toast{display:flex;align-items:center;gap:10px;padding:12px 16px;border-radius:8px;font-size:13px;font-weight:500;margin-bottom:16px}
+.toast-success{background:rgba(0,201,167,.1);border:1px solid rgba(0,201,167,.3);color:var(--teal)}
+.toast-error{background:rgba(232,65,42,.1);border:1px solid rgba(232,65,42,.3);color:var(--coral)}
+.auth-page{display:flex;min-height:100vh;background:var(--bg)}
+.auth-brand{flex:0 0 44%;background:var(--bg-card);position:relative;overflow:hidden;display:flex;flex-direction:column;justify-content:center;padding:60px 48px}
+.auth-brand::before{content:'';position:absolute;top:-50%;right:-30%;width:600px;height:600px;border-radius:50%;background:radial-gradient(circle,rgba(232,65,42,.12),transparent 70%);pointer-events:none}
+.auth-brand .logo{font-size:32px;font-weight:900;color:var(--coral);margin-bottom:16px}
+.auth-brand h2{font-size:28px;font-weight:800;line-height:1.3;margin-bottom:24px}
+.auth-brand h2 em{font-style:normal;color:var(--coral)}
+.auth-brand .features{display:flex;flex-direction:column;gap:12px}
+.auth-brand .feature{display:flex;align-items:center;gap:12px;font-size:14px;color:var(--text2)}
+.auth-brand .feature::before{content:'';width:8px;height:8px;background:var(--coral);border-radius:2px;flex-shrink:0}
+.auth-brand .stats-bar{display:flex;gap:32px;margin-top:auto;padding-top:40px;border-top:1px solid var(--border)}
+.auth-brand .stat-item{text-align:center}
+.auth-brand .stat-item .num{font-size:20px;font-weight:800;color:var(--text)}
+.auth-brand .stat-item .desc{font-size:12px;color:var(--text3)}
+.auth-form{flex:1;display:flex;align-items:center;justify-content:center;padding:40px}
+.auth-form .form-wrap{width:100%;max-width:400px}
+.auth-form h1{font-size:24px;font-weight:800;margin-bottom:4px}
+.auth-form .subtitle{color:var(--text2);font-size:14px;margin-bottom:24px}
+@media(max-width:768px){
+  .auth-page{flex-direction:column}
+  .auth-brand{display:none}
+}
+.gradient-text{background:linear-gradient(135deg,var(--coral),var(--amber));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.gradient-purple{background:linear-gradient(135deg,var(--purple),var(--blue));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.progress-ring{width:100px;height:100px;border-radius:50%;display:flex;align-items:center;justify-content:center;position:relative}
+.progress-ring svg{transform:rotate(-90deg)}
+.progress-ring .value{position:absolute;font-size:24px;font-weight:800}
+.accordion-item{border-bottom:1px solid var(--border)}
+.accordion-header{display:flex;justify-content:space-between;align-items:center;padding:16px 0;cursor:pointer;font-weight:500;font-size:14px}
+.accordion-header:hover{color:var(--coral)}
+.accordion-body{padding:0 0 16px 0;font-size:14px;color:var(--text2);display:none}
+.accordion-item.open .accordion-body{display:block}
+.accordion-item.open .accordion-header i.fa-chevron-down{transform:rotate(180deg)}
+.accordion-header i{transition:transform .3s}
+.calendar-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+.calendar-day{padding:8px;text-align:center;border-radius:6px;font-size:13px;color:var(--text2);min-height:60px}
+.calendar-day.today{background:rgba(232,65,42,.15);color:var(--coral);font-weight:600}
+.calendar-day.has-event{background:rgba(0,201,167,.1);border:1px solid rgba(0,201,167,.2)}
+.calendar-day .day-num{font-weight:600;margin-bottom:4px}
+.calendar-day .event-dot{width:5px;height:5px;border-radius:50%;background:var(--amber);margin:0 auto}
+.calendar-day-header{font-size:11px;color:var(--text3);font-weight:600;text-transform:uppercase;padding:8px;text-align:center}
+.queue-sidebar{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
+.queue-sidebar .header{display:flex;justify-content:space-between;align-items:center;padding:16px 20px;border-bottom:1px solid var(--border)}
+.queue-sidebar .header h3{font-size:15px;font-weight:600}
+.queue-tabs{display:flex;gap:0;border-bottom:1px solid var(--border)}
+.queue-tab{padding:10px 20px;font-size:13px;font-weight:500;color:var(--text2);cursor:pointer;border:none;background:transparent;font-family:var(--font);border-bottom:2px solid transparent;transition:all .2s}
+.queue-tab.active{color:var(--coral);border-bottom-color:var(--coral)}
+.queue-item{display:flex;align-items:center;gap:12px;padding:12px 20px;border-bottom:1px solid rgba(39,39,68,.5);cursor:pointer;transition:background .2s}
+.queue-item:hover{background:rgba(255,255,255,.02)}
+.queue-item .thumb{width:36px;height:36px;border-radius:6px;background:var(--bg-card2);display:flex;align-items:center;justify-content:center;font-size:14px;color:var(--text3);flex-shrink:0}
+.queue-item .info{flex:1;min-width:0}
+.queue-item .info .title{font-size:13px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.queue-item .info .meta{font-size:11px;color:var(--text3);margin-top:2px}
+.queue-item .status-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.status-coral{background:var(--coral)}
+.status-amber{background:var(--amber)}
+.status-teal{background:var(--teal)}
+.pills{display:flex;gap:8px;flex-wrap:wrap}
+.pill{display:inline-flex;align-items:center;gap:6px;padding:6px 14px 6px 6px;border-radius:999px;font-size:12px;font-weight:500;cursor:pointer;border:1px solid var(--border);background:transparent;color:var(--text2);transition:all .2s;font-family:var(--font)}
+.pill .avatar{width:22px;height:22px;border-radius:50%;background:var(--bg-card2);display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:var(--text2);flex-shrink:0}
+.pill.active,.pill:hover{border-color:var(--coral);color:var(--text);background:rgba(232,65,42,.08)}
+.section-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:12px}
+.section-header h2{font-size:20px;font-weight:700}
+.section-header .subtitle{font-size:14px;color:var(--text2);margin-top:4px}
+.skeleton{background:linear-gradient(90deg,var(--bg-card2) 25%,var(--bg-card) 50%,var(--bg-card2) 75%);background-size:200% 100%;animation:skeleton 1.5s ease infinite;border-radius:6px}
+@keyframes skeleton{0%{background-position:200% 0}100%{background-position:-200% 0}}
+.pricing-toggle{display:flex;align-items:center;gap:12px;justify-content:center;margin-bottom:32px}
+.toggle-switch{width:48px;height:26px;border-radius:13px;background:var(--bg-card2);border:1px solid var(--border);cursor:pointer;position:relative;transition:all .3s}
+.toggle-switch .knob{position:absolute;top:2px;left:2px;width:20px;height:20px;border-radius:50%;background:var(--coral);transition:transform .3s}
+.toggle-switch.yearly .knob{transform:translateX(22px)}
+.discount-badge{background:rgba(0,201,167,.12);color:var(--teal);padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600}
+.theme-options{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.theme-btn{display:flex;flex-direction:column;align-items:center;gap:8px;padding:16px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--text2);cursor:pointer;font-family:var(--font);font-size:12px;transition:all .2s}
+.theme-btn.active{border-color:var(--blue);color:var(--text);background:rgba(59,130,246,.08)}
+.theme-btn i{font-size:20px}
+.hero{text-align:center;padding:80px 0 60px;position:relative}
+.hero::before{content:'';position:absolute;top:-30%;left:50%;transform:translateX(-50%);width:700px;height:700px;border-radius:50%;background:radial-gradient(circle,rgba(232,65,42,.08),transparent 70%);pointer-events:none}
+.hero .eyebrow{display:inline-block;padding:6px 16px;border-radius:999px;background:rgba(232,65,42,.1);color:var(--coral);font-size:12px;font-weight:600;margin-bottom:16px;letter-spacing:.3px}
+.hero h1{font-size:44px;font-weight:900;line-height:1.2;margin-bottom:16px}
+.hero h1 em{font-style:normal;color:var(--coral)}
+.hero p{font-size:18px;color:var(--text2);max-width:600px;margin:0 auto 32px;line-height:1.6}
+.feature-card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:28px 24px;transition:all .3s}
+.feature-card:hover{transform:translateY(-3px);border-color:rgba(232,65,42,.3)}
+.feature-card .icon-wrap{width:44px;height:44px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;margin-bottom:16px}
+.feature-card h3{font-size:16px;font-weight:600;margin-bottom:8px}
+.feature-card p{font-size:13px;color:var(--text2);line-height:1.6}
+.vai-card{padding:40px 28px;border-radius:var(--radius-lg);border:1px solid var(--border);position:relative;overflow:hidden}
+.vai-card .number{font-size:80px;font-weight:900;position:absolute;top:-10px;right:16px;opacity:.06;line-height:1}
+.vai-card .icon-wrap{width:52px;height:52px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:24px;margin-bottom:16px}
+.vai-card h3{font-size:20px;font-weight:700;margin-bottom:8px}
+.vai-card p{font-size:14px;color:var(--text2);line-height:1.6}
+.vai-card ul{list-style:none;margin-top:16px;display:flex;flex-direction:column;gap:8px}
+.vai-card ul li{font-size:13px;color:var(--text2);display:flex;align-items:center;gap:8px}
+.vai-card ul li i{width:16px;font-size:12px}
+.cta-section{text-align:center;padding:80px 0;position:relative}
+.cta-section::before{content:'';position:absolute;top:-20%;left:50%;transform:translateX(-50%);width:600px;height:600px;border-radius:50%;background:radial-gradient(circle,rgba(232,65,42,.1),transparent 70%);pointer-events:none}
+.cta-section h2{font-size:36px;font-weight:800;margin-bottom:16px}
+.cta-section p{font-size:16px;color:var(--text2);margin-bottom:24px;max-width:500px;margin-left:auto;margin-right:auto}
+.cta-section .trust{display:flex;gap:24px;justify-content:center;margin-top:20px;font-size:13px;color:var(--text3)}
+.cta-section .trust i{color:var(--teal);margin-right:4px}
+.navbar{display:flex;align-items:center;justify-content:space-between;padding:16px 24px;max-width:1200px;margin:0 auto}
+.navbar .logo{font-size:20px;font-weight:800}
+.navbar .logo span{color:var(--coral)}
+.navbar .nav-links{display:flex;gap:8px}
+.checklist-item{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid rgba(39,39,68,.5)}
+.checklist-item:last-child{border-bottom:none}
+.checklist-item .checkbox{width:20px;height:20px;border-radius:5px;border:2px solid var(--border);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .2s;background:transparent}
+.checklist-item .checkbox.checked{background:var(--teal);border-color:var(--teal)}
+.checklist-item .checkbox.checked i{color:#fff;font-size:11px}
+.checklist-item .text{font-size:14px;flex:1}
+.checklist-item .text.done{text-decoration:line-through;color:var(--text3)}
+.footer{text-align:center;padding:40px 0;border-top:1px solid var(--border);margin-top:60px}
+.footer .logo{font-size:18px;font-weight:800;color:var(--coral);margin-bottom:8px}
+.footer .links{display:flex;gap:24px;justify-content:center;margin-bottom:12px;font-size:13px}
+.footer .links a{color:var(--text3)}
+.footer .links a:hover{color:var(--text2)}
+.footer .copy{font-size:12px;color:var(--text3)}
+.profile-hero{position:relative;border-radius:var(--radius-lg);overflow:hidden;min-height:180px;margin-bottom:24px}
+.profile-hero .banner{height:140px;border-radius:var(--radius-lg) var(--radius-lg) 0 0}
+.profile-hero .avatar{position:absolute;bottom:0;left:24px;width:80px;height:80px;border-radius:50%;border:4px solid var(--bg);overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:700;background:var(--bg-card2);color:var(--text)}
+.profile-hero .info{margin-left:120px;padding:16px 24px 16px 0}
+.profile-hero .info h3{font-size:18px;font-weight:600}
+.profile-hero .info .handle{font-size:13px;color:var(--text3)}
+.profile-hero .actions{position:absolute;top:12px;right:12px;display:flex;gap:8px}
+.flex{display:flex}
+.flex-col{flex-direction:column}
+.items-center{align-items:center}
+.justify-between{justify-content:space-between}
+.gap-2{gap:8px}
+.gap-3{gap:12px}
+.gap-4{gap:16px}
+.gap-6{gap:24px}
+.mb-2{margin-bottom:8px}
+.mb-4{margin-bottom:16px}
+.mb-6{margin-bottom:24px}
+.mb-8{margin-bottom:32px}
+.mt-4{margin-top:16px}
+.mt-6{margin-top:24px}
+.mt-8{margin-top:32px}
+.text-center{text-align:center}
+.w-full{width:100%}
+.truncate{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.text-coral{color:var(--coral)}
+.text-amber{color:var(--amber)}
+.text-teal{color:var(--teal)}
+.text-purple{color:var(--purple)}
+.text-muted{color:var(--text3)}
+.bg-coral-subtle{background:rgba(232,65,42,.1)}
+.bg-amber-subtle{background:rgba(240,165,0,.1)}
+.bg-teal-subtle{background:rgba(0,201,167,.1)}
+.bg-purple-subtle{background:rgba(124,58,237,.1)}
+.bg-blue-subtle{background:rgba(59,130,246,.1)}
+.icon-coral{color:var(--coral)}
+.icon-amber{color:var(--amber)}
+.icon-teal{color:var(--teal)}
+.spinner{width:32px;height:32px;border:3px solid var(--border);border-top-color:var(--coral);border-radius:50%;animation:spin .7s linear infinite;margin:0 auto}
+@keyframes spin{to{transform:rotate(360deg)}}
+.title-option{display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:8px;border:1px solid var(--border);cursor:pointer;margin-bottom:8px;transition:all .2s}
+.title-option:hover{border-color:var(--purple)}
+.title-option.selected{border-color:var(--purple);background:rgba(124,58,237,.08)}
+.title-option .radio{width:16px;height:16px;border-radius:50%;border:2px solid var(--border);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.title-option.selected .radio{border-color:var(--purple)}
+.title-option.selected .radio::after{content:'';width:8px;height:8px;border-radius:50%;background:var(--purple)}
+.heatmap{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+.heatmap-cell{aspect-ratio:1;border-radius:4px;min-height:16px}
+.hm-0{background:var(--bg-card2)}
+.hm-1{background:rgba(232,65,42,.15)}
+.hm-2{background:rgba(232,65,42,.3)}
+.hm-3{background:rgba(232,65,42,.5)}
+.hm-4{background:rgba(232,65,42,.75)}
+.legend-dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:4px}
+.center-page{display:flex;align-items:center;justify-content:center;min-height:80vh;padding:24px}
+.center-card{text-align:center;max-width:420px;width:100%}
+.center-card .icon-circle{width:72px;height:72px;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 20px;font-size:28px}
+.legal-content{max-width:720px;margin:0 auto}
+.legal-content h1{font-size:28px;font-weight:800;margin-bottom:4px}
+.legal-content .updated{font-size:13px;color:var(--text3);margin-bottom:32px}
+.legal-content section{margin-bottom:28px}
+.legal-content section h3{font-size:16px;font-weight:600;margin-bottom:8px;color:var(--coral)}
+.legal-content section p{font-size:14px;color:var(--text2);line-height:1.7}
+.field-error{color:var(--coral);font-size:12px;margin-top:4px}
+.password-hint{font-size:12px;color:var(--text3);margin-top:4px}
+.tab-content{display:none}
+.tab-content.active{display:block}
+.platform-btn{display:flex;align-items:center;gap:12px;width:100%;padding:12px 16px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--text);cursor:pointer;font-family:var(--font);font-size:14px;transition:all .2s;justify-content:space-between}
+.platform-btn:hover{border-color:var(--coral)}
+.platform-btn .left{display:flex;align-items:center;gap:12px}
+.toggle-group{display:flex;gap:0;border:1px solid var(--border);border-radius:8px;overflow:hidden}
+.toggle-btn{padding:8px 20px;font-size:13px;font-weight:500;border:none;background:transparent;color:var(--text2);cursor:pointer;font-family:var(--font);transition:all .2s}
+.toggle-btn.active{background:var(--coral);color:#fff}
+.toggle-btn:not(:last-child){border-right:1px solid var(--border)}
+.copy-btn{padding:4px 10px;border-radius:4px;font-size:11px;font-weight:500;border:none;cursor:pointer;font-family:var(--font);background:var(--bg-card2);color:var(--text3);transition:all .2s}
+.copy-btn:hover{color:var(--text)}
+.copy-btn.copied{background:rgba(0,201,167,.15);color:var(--teal)}
+.account-card{display:flex;flex-direction:column;gap:2px}
+.account-card .name{font-weight:500;font-size:13px}
+.account-card .email{font-size:12px;color:var(--text3)}
+.section-intro{margin-bottom:24px}
+.section-intro h2{font-size:20px;font-weight:700;display:flex;align-items:center;gap:8px}
+.section-intro p{font-size:14px;color:var(--text2);margin-top:4px}
+.page-footer{text-align:center;padding:32px 0;border-top:1px solid var(--border);margin-top:40px;font-size:13px;color:var(--text3)}
+</style>
+</head>
+<body>
+<nav class="page-nav" id="top-nav">
+  <span class="logo">VC</span>
+  <a href="#landing" class="active">Landing</a>
+  <a href="#login">Login</a>
+  <a href="#register">Register</a>
+  <a href="#forgot">Forgot</a>
+  <a href="#reset">Reset</a>
+  <a href="#verify">Verify</a>
+  <a href="#pricing">Pricing</a>
+  <a href="#creation">Creation</a>
+  <a href="#calendar">Calendar</a>
+  <a href="#analytics">Analytics</a>
+  <a href="#admin">Admin</a>
+  <a href="#profile">Profile</a>
+  <a href="#settings">Settings</a>
+  <a href="#help">Help</a>
+  <a href="#privacy">Privacy</a>
+  <a href="#terms">Terms</a>
+</nav>
+<section class="page-section" id="landing">
+  <div class="navbar">
+    <div class="logo"><span>VC</span> ViralCuts</div>
+    <div class="nav-links"><button class="btn btn-secondary btn-sm">Area de Membros</button></div>
+  </div>
+  <div class="hero">
+    <div class="eyebrow"><i class="fas fa-sparkles"></i> Nova Estrategia 2025</div>
+    <h1>Monetize seu canal em <em>30 dias</em></h1>
+    <p>Cortes Virais e Automacao com IA &mdash; transforme seu conteudo em maquina de resultados.</p>
+    <button class="btn btn-primary btn-lg"><i class="fas fa-arrow-right"></i> Quero acessar o metodo</button>
+    <div style="display:flex;gap:20px;justify-content:center;margin-top:36px;font-size:13px;color:var(--text3)">
+      <span><i class="fas fa-check-circle" style="color:var(--teal)"></i> Acesso imediato</span>
+      <span><i class="fas fa-check-circle" style="color:var(--teal)"></i> Garantia de 7 dias</span>
+    </div>
+  </div>
+  <div class="container" style="margin-bottom:60px">
+    <div style="max-width:700px;margin:0 auto;border-radius:var(--radius-lg);overflow:hidden;position:relative;aspect-ratio:16/9;background:linear-gradient(135deg,var(--bg-card2),var(--bg-card));display:flex;align-items:center;justify-content:center">
+      <div style="text-align:center">
+        <div style="width:72px;height:72px;border-radius:50%;background:rgba(232,65,42,.2);display:flex;align-items:center;justify-content:center;margin:0 auto 12px;cursor:pointer">
+          <i class="fas fa-play" style="font-size:24px;color:var(--coral);margin-left:3px"></i>
+        </div>
+        <span class="badge badge-coral"><i class="fas fa-circle" style="font-size:8px;color:var(--coral)"></i> AO VIVO</span>
+        <div style="margin-top:8px;font-size:13px;color:var(--text3)">Assistir Aula Gratuita</div>
+      </div>
+    </div>
+  </div>
+  <div class="container mb-8"><div class="grid-4">
+    <div class="stat-card"><div class="value" style="color:var(--coral)">1.200+</div><div class="label">Alunos</div></div>
+    <div class="stat-card"><div class="value" style="color:var(--amber)">50M+</div><div class="label">Views Geradas</div></div>
+    <div class="stat-card"><div class="value" style="color:var(--teal)">350+</div><div class="label">Canais Monetizados</div></div>
+    <div class="stat-card"><div class="value" style="color:var(--coral)">R+</div><div class="label">Faturamento</div></div>
+  </div></div>
+  <div class="container mb-8"><div class="grid-2" style="align-items:stretch">
+    <div class="card"><h3 style="font-size:20px;font-weight:700;margin-bottom:16px">Cansado da <span style="color:var(--coral)">rota lenta?</span></h3>
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <div style="display:flex;align-items:center;gap:10px;font-size:14px;color:var(--text2)"><i class="fas fa-times" style="color:var(--coral);font-size:14px"></i> Horas editando manualmente</div>
+        <div style="display:flex;align-items:center;gap:10px;font-size:14px;color:var(--text2)"><i class="fas fa-times" style="color:var(--coral);font-size:14px"></i> Resultados inconsistentes</div>
+        <div style="display:flex;align-items:center;gap:10px;font-size:14px;color:var(--text2)"><i class="fas fa-times" style="color:var(--coral);font-size:14px"></i> Dificuldade em escalar</div>
+        <div style="display:flex;align-items:center;gap:10px;font-size:14px;color:var(--text2)"><i class="fas fa-times" style="color:var(--coral);font-size:14px"></i> Baixo engajamento nos Shorts</div>
+      </div>
+    </div>
+    <div class="card card-top-coral">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px"><i class="fas fa-bolt" style="color:var(--amber);font-size:18px"></i><span style="font-weight:600;font-size:16px">A Nova Era &mdash; Short-Form</span></div>
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <div style="display:flex;align-items:center;gap:10px;font-size:14px;color:var(--text2)"><i class="fas fa-check" style="color:var(--teal);font-size:14px"></i> Upload em lote com IA</div>
+        <div style="display:flex;align-items:center;gap:10px;font-size:14px;color:var(--text2)"><i class="fas fa-check" style="color:var(--teal);font-size:14px"></i> SEO otimizado automaticamente</div>
+        <div style="display:flex;align-items:center;gap:10px;font-size:14px;color:var(--text2)"><i class="fas fa-check" style="color:var(--teal);font-size:14px"></i> Agendamento multicanal</div>
+        <div style="display:flex;align-items:center;gap:10px;font-size:14px;color:var(--text2)"><i class="fas fa-check" style="color:var(--teal);font-size:14px"></i> Analytics em tempo real</div>
+      </div>
+    </div>
+  </div></div>
+  <div class="container mb-8">
+    <div class="section-header"><h2>Funcionalidades</h2><p class="subtitle">Tudo que voce precisa para escalar</p></div>
+    <div class="grid-3">
+      <div class="feature-card"><div class="icon-wrap bg-coral-subtle"><i class="fas fa-upload" style="color:var(--coral)"></i></div><h3>Upload em lote</h3><p>Envie dezenas de videos simultaneamente com programacao automatica.</p></div>
+      <div class="feature-card"><div class="icon-wrap bg-amber-subtle"><i class="fas fa-wand-magic-sparkles" style="color:var(--amber)"></i></div><h3>IA nos metadados</h3><p>Titulos, descricoes e tags gerados por IA para maximo alcance.</p></div>
+      <div class="feature-card"><div class="icon-wrap bg-teal-subtle"><i class="fas fa-calendar" style="color:var(--teal)"></i></div><h3>Agendamento inteligente</h3><p>Distribua nos melhores horarios para cada plataforma.</p></div>
+      <div class="feature-card"><div class="icon-wrap bg-amber-subtle"><i class="fas fa-chart-line" style="color:var(--amber)"></i></div><h3>Analytics unificados</h3><p>Dashboards com metricas de todos os seus canais em um so lugar.</p></div>
+      <div class="feature-card"><div class="icon-wrap bg-teal-subtle"><i class="fas fa-share-nodes" style="color:var(--teal)"></i></div><h3>Distribuicao multicanal</h3><p>Publique simultaneamente no YouTube, TikTok e Instagram.</p></div>
+      <div class="feature-card"><div class="icon-wrap bg-coral-subtle"><i class="fas fa-eye" style="color:var(--coral)"></i></div><h3>Preview de plataforma</h3><p>Veja como seu conteudo sera exibido em cada rede antes de publicar.</p></div>
+    </div>
+  </div>
+  <div class="container mb-8">
+    <div class="section-header text-center" style="justify-content:center;flex-direction:column;align-items:center"><h2>Metodo <span class="gradient-text">V.A.I.</span></h2><p class="subtitle">Tres passos para o sucesso viral</p></div>
+    <div class="grid-3" style="margin-top:24px">
+      <div class="vai-card" style="border-color:rgba(232,65,42,.3)">
+        <div class="number">01</div><div class="icon-wrap bg-coral-subtle"><i class="fas fa-fire" style="color:var(--coral)"></i></div><h3>Viralize</h3>
+        <p>Crie cortes virais com edicao inteligente e recomendacoes baseadas em tendencias.</p>
+        <ul><li><i class="fas fa-check text-coral"></i> Edicao automatica de cortes</li><li><i class="fas fa-check text-coral"></i> Recomendacoes de tendencias</li><li><i class="fas fa-check text-coral"></i> Otimizacao por algoritmo</li></ul>
+      </div>
+      <div class="vai-card" style="border-color:rgba(240,165,0,.3)">
+        <div class="number">02</div><div class="icon-wrap bg-amber-subtle"><i class="fas fa-bolt" style="color:var(--amber)"></i></div><h3>Automatize</h3>
+        <p>Automacao completa de upload, SEO e publicacao para voce focar no conteudo.</p>
+        <ul><li><i class="fas fa-check text-amber"></i> Upload em lote automatico</li><li><i class="fas fa-check text-amber"></i> SEO gerado por IA</li><li><i class="fas fa-check text-amber"></i> Publicacao agendada</li></ul>
+      </div>
+      <div class="vai-card" style="border-color:rgba(0,201,167,.3)">
+        <div class="number">03</div><div class="icon-wrap bg-teal-subtle"><i class="fas fa-chart-simple" style="color:var(--teal)"></i></div><h3>Incremente</h3>
+        <p>Analytics detalhados e insights para otimizar continuamente sua estrategia.</p>
+        <ul><li><i class="fas fa-check text-teal"></i> Dashboards em tempo real</li><li><i class="fas fa-check text-teal"></i> Insights de crescimento</li><li><i class="fas fa-check text-teal"></i> Relatorios exportaveis</li></ul>
+      </div>
+    </div>
+  </div>
+  <div class="cta-section">
+    <h2>Pronto para escalar seu canal?</h2>
+    <p>Junte-se a mais de 1.200 criadores que ja transformaram sua presenca digital.</p>
+    <button class="btn btn-primary btn-lg"><i class="fas fa-arrow-right"></i> Comecar agora</button>
+    <div style="margin-top:12px"><button class="btn btn-secondary btn-sm">Ja sou aluno</button></div>
+    <div class="trust"><span><i class="fas fa-shield"></i> Pagamento Seguro</span><span><i class="fas fa-star"></i> 4.9/5 Avaliacao</span></div>
+  </div>
+  <div class="footer">
+    <div class="logo">VC</div>
+    <div class="links"><a href="#">Termos</a><a href="#">Privacidade</a><a href="#">Suporte</a></div>
+    <div class="copy">&copy; 2026 ViralCuts. Todos os direitos reservados.</div>
+  </div>
+</section>
+<section class="page-section" id="login">
+  <div class="auth-page">
+    <div class="auth-brand">
+      <div class="logo">VC</div>
+      <h2>Distribua mais. <em>Edite menos.</em></h2>
+      <div class="features"><div class="feature">Upload em lote com programacao automatica</div><div class="feature">IA generativa para titulos e miniaturas</div><div class="feature">Analytics multicanal em tempo real</div></div>
+      <div class="stats-bar"><div class="stat-item"><div class="num">1.2K+</div><div class="desc">Criadores</div></div><div class="stat-item"><div class="num">50M+</div><div class="desc">Views</div></div><div class="stat-item"><div class="num">350+</div><div class="desc">Canais</div></div></div>
+    </div>
+    <div class="auth-form">
+      <div class="form-wrap">
+        <div class="toast toast-success"><i class="fas fa-check-circle"></i> Conta criada com sucesso! Faca login.</div>
+        <h1>Bem-vindo de volta</h1>
+        <p class="subtitle">Entre para continuar gerenciando seus canais.</p>
+        <div class="form-group"><label class="form-label"><i class="fas fa-envelope"></i> Email</label><input class="input" type="email" placeholder="seu@email.com"></div>
+        <div class="form-group">
+          <label class="form-label"><i class="fas fa-lock"></i> Senha</label>
+          <div style="position:relative"><input class="input" type="password" placeholder="Sua senha" style="padding-right:80px"><a href="#forgot" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);font-size:12px;color:var(--coral)">Esqueceu?</a></div>
+        </div>
+        <button class="btn btn-primary w-full"><i class="fas fa-arrow-right-to-bracket"></i> Entrar</button>
+        <div style="display:flex;align-items:center;gap:12px;margin:20px 0;color:var(--text3);font-size:13px"><hr style="flex:1;border:none;border-top:1px solid var(--border)">ou<hr style="flex:1;border:none;border-top:1px solid var(--border)"></div>
+        <p style="text-align:center;font-size:14px;color:var(--text2)">Nao tem conta? <a href="#register" style="color:var(--coral);font-weight:600">Criar conta gratis</a></p>
+      </div>
+    </div>
+  </div>
+</section>
+<section class="page-section" id="register">
+  <div class="auth-page">
+    <div class="auth-brand" style="flex:0 0 50%"><div class="logo">VC</div><h2>Comece sua jornada</h2><p style="color:var(--text2);font-size:15px;margin-bottom:32px">Crie cortes virais com o poder da IA.</p><div class="features"><div class="feature">Upload automatico multicanal</div><div class="feature">Analytics detalhados em tempo real</div><div class="feature">Agendamento inteligente com IA</div></div></div>
+    <div class="auth-form">
+      <div class="form-wrap">
+        <h1>Criar conta</h1><p class="subtitle">Preencha os dados para comecar.</p>
+        <div class="form-group"><label class="form-label"><i class="fas fa-user"></i> Nome</label><input class="input" placeholder="Seu nome"><div class="field-error"><i class="fas fa-exclamation-circle"></i> Minimo 2 caracteres</div></div>
+        <div class="form-group"><label class="form-label"><i class="fas fa-envelope"></i> Email</label><input class="input" type="email" placeholder="seu@email.com"></div>
+        <div class="form-group"><label class="form-label"><i class="fas fa-lock"></i> Senha</label><input class="input" type="password" placeholder="Crie uma senha"><div class="password-hint">Min. 8 caracteres, maiuscula, minuscula e numero</div></div>
+        <div class="form-group"><label class="form-label"><i class="fas fa-lock"></i> Confirmar senha</label><input class="input" type="password" placeholder="Repita a senha"></div>
+        <button class="btn btn-primary w-full"><i class="fas fa-user-plus"></i> Cadastrar</button>
+        <p style="text-align:center;font-size:14px;color:var(--text2);margin-top:20px">Ja tem uma conta? <a href="#login" style="color:var(--coral);font-weight:600">Entrar</a></p>
+      </div>
+    </div>
+  </div>
+</section>
+<section class="page-section" id="forgot">
+  <div class="center-page">
+    <div class="center-card card">
+      <i class="fas fa-lock" style="font-size:32px;color:var(--coral);margin-bottom:16px"></i>
+      <h1>Esqueceu sua senha?</h1><p class="subtitle" style="margin-bottom:24px">Digite seu email para receber instrucoes.</p>
+      <div class="form-group"><label class="form-label">Email</label><input class="input" type="email" placeholder="seu@email.com"></div>
+      <button class="btn btn-primary w-full"><i class="fas fa-paper-plane"></i> Enviar Instrucoes</button>
+      <p style="text-align:center;font-size:13px;color:var(--text2);margin-top:16px"><a href="#login" style="color:var(--coral)">Lembrou sua senha? Entrar</a></p>
+    </div>
+  </div>
+</section>
+<section class="page-section" id="reset">
+  <div class="center-page">
+    <div class="center-card card">
+      <i class="fas fa-key" style="font-size:32px;color:var(--coral);margin-bottom:16px"></i>
+      <h1>Resetar Senha</h1><p class="subtitle" style="margin-bottom:24px">Digite sua nova senha.</p>
+      <div class="form-group"><label class="form-label">Nova Senha</label><input class="input" type="password" placeholder="Nova senha"></div>
+      <div class="form-group"><label class="form-label">Confirmar Senha</label><input class="input" type="password" placeholder="Confirme a nova senha"></div>
+      <button class="btn btn-primary w-full"><i class="fas fa-check"></i> Resetar Senha</button>
+      <p style="text-align:center;font-size:13px;color:var(--text2);margin-top:16px"><a href="#login" style="color:var(--coral)">Voltar para Login</a></p>
+    </div>
+  </div>
+</section>
+<section class="page-section" id="verify">
+  <div class="center-page">
+    <div class="center-card card" style="text-align:center">
+      <div class="icon-circle" style="background:rgba(0,201,167,.12);border:2px solid rgba(0,201,167,.3);width:72px;height:72px;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 20px"><i class="fas fa-check" style="font-size:28px;color:var(--teal)"></i></div>
+      <h1>Email Verificado!</h1><p style="color:var(--text2);margin-top:8px">Seu email foi verificado com sucesso.</p>
+      <p style="font-size:13px;color:var(--text3);margin-top:16px">Redirecionando para o login...</p>
+    </div>
+  </div>
+</section>
+<section class="page-section" id="pricing">
+  <div class="navbar">
+    <div class="logo"><span>VC</span> ViralCuts</div>
+    <div class="nav-links"><button class="btn btn-secondary btn-sm">Entrar</button><button class="btn btn-primary btn-sm">Comecar gratis</button></div>
+  </div>
+  <div class="hero" style="padding:48px 0 32px">
+    <div class="eyebrow">Planos e precos</div>
+    <h1>Canais como unidade. <em>Escale no seu ritmo.</em></h1>
+    <p>Escolha o plano ideal para o seu momento.</p>
+    <div class="pricing-toggle">
+      <span style="font-size:14px;color:var(--text2);font-weight:500">Mensal</span>
+      <div class="toggle-switch"><div class="knob"></div></div>
+      <span style="font-size:14px;color:var(--text);font-weight:600">Anual</span>
+      <span class="discount-badge">-17%</span>
+    </div>
+  </div>
+  <div class="container mb-8"><div class="grid-4">
+    <div class="card text-center">
+      <h3 style="font-size:18px;font-weight:700;margin-bottom:4px">Free</h3>
+      <div style="font-size:12px;color:var(--text3);margin-bottom:8px"><i class="fas fa-code-branch"></i> 1 canal</div>
+      <div style="font-size:32px;font-weight:900;margin-bottom:24px">R<span style="font-size:16px;font-weight:400;color:var(--text3)">/mes</span></div>
+      <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:24px;font-size:13px">
+        <span><i class="fas fa-check" style="color:var(--teal);margin-right:6px"></i> Upload manual</span>
+        <span><i class="fas fa-check" style="color:var(--teal);margin-right:6px"></i> 1 video/semana</span>
+        <span><i class="fas fa-times" style="color:var(--text3);margin-right:6px"></i> IA nos metadados</span>
+        <span><i class="fas fa-times" style="color:var(--text3);margin-right:6px"></i> Agendamento</span>
+      </div>
+      <button class="btn btn-secondary w-full"><i class="fas fa-arrow-right"></i> Comecar gratis</button>
+    </div>
+    <div class="card text-center">
+      <h3 style="font-size:18px;font-weight:700;margin-bottom:4px">Starter</h3>
+      <div style="font-size:12px;color:var(--text3);margin-bottom:8px"><i class="fas fa-code-branch"></i> 3 canais</div>
+      <div style="font-size:32px;font-weight:900;margin-bottom:24px">R<span style="font-size:16px;font-weight:400;color:var(--text3)">/mes</span></div>
+      <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:24px;font-size:13px">
+        <span><i class="fas fa-check" style="color:var(--teal);margin-right:6px"></i> Upload em lote</span>
+        <span><i class="fas fa-check" style="color:var(--teal);margin-right:6px"></i> 10 videos/semana</span>
+        <span><i class="fas fa-check" style="color:var(--teal);margin-right:6px"></i> IA nos metadados</span>
+        <span><i class="fas fa-times" style="color:var(--text3);margin-right:6px"></i> Agendamento</span>
+      </div>
+      <button class="btn btn-secondary w-full"><i class="fas fa-bolt"></i> Assinar Starter</button>
+    </div>
+    <div class="card text-center" style="border-color:var(--coral);position:relative">
+      <span class="badge badge-coral" style="position:absolute;top:-10px;right:16px">Popular</span>
+      <div style="background:rgba(232,65,42,.05);margin:-24px;padding:24px;border-radius:var(--radius)">
+        <h3 style="font-size:18px;font-weight:700;margin-bottom:4px">Pro</h3>
+        <div style="font-size:12px;color:var(--text3);margin-bottom:8px"><i class="fas fa-code-branch"></i> 5 canais</div>
+        <div style="font-size:32px;font-weight:900;margin-bottom:24px">R<span style="font-size:16px;font-weight:400;color:var(--text3)">/mes</span></div>
+        <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:24px;font-size:13px">
+          <span><i class="fas fa-check" style="color:var(--teal);margin-right:6px"></i> Upload em lote</span>
+          <span><i class="fas fa-check" style="color:var(--teal);margin-right:6px"></i> Videos ilimitados</span>
+          <span><i class="fas fa-check" style="color:var(--teal);margin-right:6px"></i> IA nos metadados</span>
+          <span><i class="fas fa-check" style="color:var(--teal);margin-right:6px"></i> Agendamento</span>
+        </div>
+        <button class="btn btn-primary w-full"><i class="fas fa-crown"></i> Assinar Pro</button>
+      </div>
+    </div>
+    <div class="card text-center">
+      <h3 style="font-size:18px;font-weight:700;margin-bottom:4px">Agency</h3>
+      <div style="font-size:12px;color:var(--text3);margin-bottom:8px"><i class="fas fa-code-branch"></i> 10 canais</div>
+      <div style="font-size:32px;font-weight:900;margin-bottom:24px">R<span style="font-size:16px;font-weight:400;color:var(--text3)">/mes</span></div>
+      <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:24px;font-size:13px">
+        <span><i class="fas fa-check" style="color:var(--teal);margin-right:6px"></i> Tudo do Pro</span>
+        <span><i class="fas fa-check" style="color:var(--teal);margin-right:6px"></i> Prioridade suporte</span>
+        <span><i class="fas fa-check" style="color:var(--teal);margin-right:6px"></i> API access</span>
+        <span><i class="fas fa-check" style="color:var(--teal);margin-right:6px"></i> Gerente dedicado</span>
+      </div>
+      <button class="btn btn-secondary w-full"><i class="fas fa-rocket"></i> Assinar Agency</button>
+    </div>
+  </div></div>
+  <div class="container" style="max-width:600px;margin:0 auto;padding-bottom:60px">
+    <h3 style="text-align:center;font-size:18px;font-weight:700;margin-bottom:24px">Perguntas Frequentes</h3>
+    <div class="accordion-item open"><div class="accordion-header">Posso mudar de plano depois? <i class="fas fa-chevron-down"></i></div><div class="accordion-body">Sim! Voce pode fazer upgrade ou downgrade a qualquer momento. As alteracoes sao refletidas na proxima fatura.</div></div>
+    <div class="accordion-item"><div class="accordion-header">Tem periodo de teste? <i class="fas fa-chevron-down"></i></div><div class="accordion-body">Oferecemos 7 dias de garantia em todos os planos pagos. Se nao gostar, devolvemos 100% do valor.</div></div>
+    <div class="accordion-item"><div class="accordion-header">Funciona para qualquer nicho? <i class="fas fa-chevron-down"></i></div><div class="accordion-body">Sim! Nossa IA e treinada para funcionar com qualquer tema, de games a educacao financeira.</div></div>
+    <div class="accordion-item"><div class="accordion-header">Posso conectar quantas plataformas? <i class="fas fa-chevron-down"></i></div><div class="accordion-body">Cada canal pode conectar YouTube, TikTok e Instagram. O numero de canais varia por plano.</div></div>
+  </div>
+</section>
+<section class="page-section" id="creation">
+  <div class="container" style="padding-top:32px">
+    <div class="section-intro"><h2><i class="fas fa-wand-magic-sparkles gradient-purple"></i> Estudio de Criacao</h2><p>Ferramentas de IA para criar conteudo de alto desempenho.</p></div>
+    <div class="tabs mb-6">
+      <button class="tab active" data-tab="script">Roteiro</button>
+      <button class="tab" data-tab="titles">Titulos e Descricao</button>
+      <button class="tab" data-tab="thumbnail">Miniatura</button>
+      <button class="tab" data-tab="checklist">Checklist de Publicacao</button>
+    </div>
+    <div class="tab-content active" id="tab-script">
+      <div class="card"><h3 style="font-size:16px;font-weight:600;margin-bottom:16px">Gerador de Roteiro</h3>
+        <div class="form-group"><label class="form-label">Tema ou ideia do video</label><textarea class="input" placeholder="Ex: Bitcoin atingiu novo recorde historico em 2026 e especialistas preveem..."></textarea></div>
+        <div class="grid-3">
+          <div class="form-group"><label class="form-label">Formato</label><select class="input"><option>Shorts/TikTok</option><option>Longo</option><option>Reel</option></select></div>
+          <div class="form-group"><label class="form-label">Duracao</label><select class="input"><option>30s</option><option>60s</option><option>90s</option><option>180s</option><option>300s</option><option>600s</option></select></div>
+          <div class="form-group"><label class="form-label">Tom</label><select class="input"><option>Educativo</option><option>Entretenimento</option><option>Motivacional</option><option>Informativo</option></select></div>
+        </div>
+        <button class="btn btn-gradient"><i class="fas fa-wand-magic-sparkles"></i> Gerar Roteiro</button>
+      </div>
+      <div class="card mt-4" style="border-color:rgba(124,58,237,.3)">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><span style="font-weight:600">Resultado gerado &#x2728;</span><button class="copy-btn copied"><i class="fas fa-check"></i> Copiado!</button></div>
+        <div style="font-size:14px;color:var(--text2);line-height:1.8;padding:16px;background:var(--bg-card2);border-radius:8px">
+          <p><strong>Abertura (0-15s):</strong> &quot;O Bitcoin acabou de romper a barreira dos US$ 150 mil e todo mundo esta se perguntando...&quot;</p>
+          <p style="margin-top:12px"><strong>Desenvolvimento (15-45s):</strong> &quot;Mas o que realmente esta impulsionando esse rally? Tres fatores principais...&quot;</p>
+          <p style="margin-top:12px"><strong>Call to Action (45-60s):</strong> &quot;Se voce quer entender como se posicionar nesse mercado, deixei o link na descricao...&quot;</p>
+        </div>
+        <button class="btn btn-gradient mt-4"><i class="fas fa-calendar"></i> Agendar no Pipeline</button>
+      </div>
+    </div>
+    <div class="tab-content" id="tab-titles">
+      <div class="card"><h3 style="font-size:16px;font-weight:600;margin-bottom:16px">Gerador de Titulos e Descricao</h3>
+        <div class="form-group"><label class="form-label">Assunto ou resumo do video</label><textarea class="input" placeholder="Descreva o assunto do video..."></textarea></div>
+        <div class="form-group"><label class="form-label">Plataforma</label><div class="toggle-group"><button class="toggle-btn active">YouTube</button><button class="toggle-btn">TikTok</button><button class="toggle-btn">Instagram</button></div></div>
+        <button class="btn btn-gradient"><i class="fas fa-wand-magic-sparkles"></i> Gerar Titulos e Descricao</button>
+      </div>
+      <div class="card mt-4" style="border-color:rgba(124,58,237,.3)">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><span style="font-weight:600">Titulos sugeridos &#x2728;</span></div>
+        <div class="title-option selected"><div class="radio"></div><span style="font-size:14px">BITCOIN A  O que esta impulsionando esse rally historico</span></div>
+        <div class="title-option"><div class="radio"></div><span style="font-size:14px">Por que o Bitcoin esta subindo AGORA (e o que esperar)</span></div>
+        <div class="title-option"><div class="radio"></div><span style="font-size:14px">3 razoes pelas quais o Bitcoin vai continuar subindo em 2026</span></div>
+        <div class="title-option"><div class="radio"></div><span style="font-size:14px">Bitcoin: O momento de comprar ou esperar?</span></div>
+        <div class="title-option"><div class="radio"></div><span style="font-size:14px">Recorde historico do Bitcoin - Analise completa</span></div>
+        <div class="form-group mt-4"><label class="form-label">Descricao</label><textarea class="input" rows="3" placeholder="Descricao gerada automaticamente..."></textarea></div>
+        <div class="form-group"><label class="form-label">Tags</label><input class="input" placeholder="bitcoin, criptomoedas, investimento, recorde historico"></div>
+        <button class="btn btn-gradient mt-4"><i class="fas fa-calendar"></i> Agendar no Pipeline</button>
+      </div>
+    </div>
+    <div class="tab-content" id="tab-thumbnail">
+      <div class="card"><h3 style="font-size:16px;font-weight:600;margin-bottom:16px">Gerador de Miniatura</h3>
+        <div class="form-group"><label class="form-label">Descricao da thumbnail</label><textarea class="input" placeholder="Ex: Bitcoin explodindo com fundo de fogo, seta verde apontando para cima..."></textarea></div>
+        <div class="form-group"><label class="form-label">Aspect Ratio</label><div class="toggle-group"><button class="toggle-btn active">YouTube 16:9</button><button class="toggle-btn">Shorts 9:16</button><button class="toggle-btn">Instagram 1:1</button><button class="toggle-btn">Padrao 4:3</button></div></div>
+        <button class="btn btn-gradient"><i class="fas fa-wand-magic-sparkles"></i> Gerar Thumbnail</button>
+      </div>
+      <div class="card mt-4" style="border-color:rgba(124,58,237,.3)">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><span style="font-weight:600">Thumbnail gerada &#x2728;</span></div>
+        <div style="width:100%;aspect-ratio:16/9;border-radius:8px;background:linear-gradient(135deg,var(--coral),var(--amber));display:flex;align-items:center;justify-content:center;font-size:36px;font-weight:900;color:#fff;position:relative;overflow:hidden">
+          <span style="font-size:60px;opacity:.3">&#x024FF;</span>
+          <span style="position:absolute;bottom:16px;left:16px;font-size:20px;text-shadow:0 2px 8px rgba(0,0,0,.5)">BITCOIN A </span>
+        </div>
+        <div class="flex gap-2 mt-4"><button class="btn btn-secondary btn-sm"><i class="fas fa-external-link"></i> Abrir original</button><button class="btn btn-gradient btn-sm" style="margin-left:auto"><i class="fas fa-calendar"></i> Agendar no Pipeline</button></div>
+      </div>
+    </div>
+    <div class="tab-content" id="tab-checklist">
+      <div class="card"><div style="display:flex;align-items:center;gap:24px;margin-bottom:20px">
+        <div class="progress-ring" style="background:conic-gradient(var(--teal) 0deg 210deg, var(--purple) 210deg 360deg)"><svg width="100" height="100"><circle cx="50" cy="50" r="42" fill="none" stroke="transparent" stroke-width="6"/></svg><div class="value gradient-text">7</div></div>
+        <div><div style="font-size:14px;font-weight:600">7 de 12 itens concluidos</div><div style="font-size:12px;color:var(--text2);margin-top:4px">Bom progresso! Continue assim.</div><div class="flex gap-2 mt-4"><div style="display:flex;align-items:center;gap:4px;font-size:11px;color:var(--text3)"><span class="legend-dot" style="background:var(--teal)"></span> Pronto</div><div style="display:flex;align-items:center;gap:4px;font-size:11px;color:var(--text3)"><span class="legend-dot" style="background:var(--purple)"></span> Pendente</div></div></div>
+        <button class="btn btn-ghost btn-sm" style="margin-left:auto">Limpar</button>
+      </div><div class="form-group"><input class="input" placeholder="Titulo do video"></div></div>
+      <div class="card mt-4"><div style="font-size:13px;font-weight:600;color:var(--text3);margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px">Visual</div>
+        <div class="checklist-item"><div class="checkbox checked"><i class="fas fa-check"></i></div><span class="text done">Miniatura personalizada criada</span></div>
+        <div class="checklist-item"><div class="checkbox checked"><i class="fas fa-check"></i></div><span class="text done">Marca d'agua ou logo visivel</span></div>
+        <div class="checklist-item"><div class="checkbox"></div><span class="text">Legendas ou texto na capa</span></div>
+      </div>
+      <div class="card mt-4"><div style="font-size:13px;font-weight:600;color:var(--text3);margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px">SEO</div>
+        <div class="checklist-item"><div class="checkbox checked"><i class="fas fa-check"></i></div><span class="text done">Titulo otimizado com palavras-chave</span></div>
+        <div class="checklist-item"><div class="checkbox"></div><span class="text">Descricao detalhada com links</span></div>
+        <div class="checklist-item"><div class="checkbox checked"><i class="fas fa-check"></i></div><span class="text done">Tags relevantes adicionadas</span></div>
+      </div>
+      <div class="card mt-4"><div style="font-size:13px;font-weight:600;color:var(--text3);margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px">Engajamento</div>
+        <div class="checklist-item"><div class="checkbox"></div><span class="text">CTA no final do video</span></div>
+        <div class="checklist-item"><div class="checkbox checked"><i class="fas fa-check"></i></div><span class="text done">Pergunta para engajar nos comentarios</span></div>
+      </div>
+      <div class="card mt-4"><div style="font-size:13px;font-weight:600;color:var(--text3);margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px">Organizacao</div>
+        <div class="checklist-item"><div class="checkbox checked"><i class="fas fa-check"></i></div><span class="text done">Video categorizado corretamente</span></div>
+        <div class="checklist-item"><div class="checkbox"></div><span class="text">Playlist definida</span></div>
+      </div>
+      <div class="card mt-4"><div style="font-size:13px;font-weight:600;color:var(--text3);margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px">Distribuicao</div>
+        <div class="checklist-item"><div class="checkbox"></div><span class="text">Plataformas de publicacao selecionadas</span></div>
+        <div class="checklist-item"><div class="checkbox"></div><span class="text">Agendamento configurado</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+<section class="page-section" id="calendar">
+  <div class="container" style="padding-top:32px">
+    <div style="font-size:12px;color:var(--text3);margin-bottom:8px">Pipeline / Calendario</div>
+    <div class="section-header"><div><h2>Pipeline</h2><p class="subtitle">Agendamento e distribuicao multicanal dos seus Shorts.</p></div><button class="btn btn-primary"><i class="fas fa-plus"></i> Novo upload</button></div>
+    <div class="grid-4 mb-6">
+      <div class="stat-card accent-coral card-top-coral"><div class="value">12</div><div class="label">Esta semana</div></div>
+      <div class="stat-card accent-amber card-top-amber"><div class="value">3</div><div class="label">Hoje</div></div>
+      <div class="stat-card" style="border-top:3px solid var(--text3)"><div class="value">8</div><div class="label">Proximos</div></div>
+      <div class="stat-card accent-teal card-top-teal"><div class="value">47</div><div class="label">Publicados</div></div>
+    </div>
+    <div class="pills mb-6">
+      <button class="pill active"><div class="avatar">VC</div> Todos</button>
+      <button class="pill"><div class="avatar" style="background:#ff0000;color:#fff">YT</div> Tech Brasil</button>
+      <button class="pill"><div class="avatar" style="background:#ff0000;color:#fff">YT</div> Games BR</button>
+      <button class="pill"><div class="avatar" style="background:#000;color:#fff">TT</div> @techbrasil</button>
+    </div>
+    <div class="grid-2" style="grid-template-columns:1fr 320px">
+      <div class="card" style="padding:20px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px"><span style="font-weight:600"><i class="fas fa-chevron-left" style="cursor:pointer;margin-right:12px;color:var(--text3)"></i> Julho 2026 <i class="fas fa-chevron-right" style="cursor:pointer;margin-left:12px;color:var(--text3)"></i></span></div>
+        <div class="calendar-grid">
+          <div class="calendar-day-header">Dom</div><div class="calendar-day-header">Seg</div><div class="calendar-day-header">Ter</div><div class="calendar-day-header">Qua</div><div class="calendar-day-header">Qui</div><div class="calendar-day-header">Sex</div><div class="calendar-day-header">Sab</div>
+          <div class="calendar-day"><div class="day-num" style="color:var(--text3)">29</div></div><div class="calendar-day"><div class="day-num" style="color:var(--text3)">30</div></div>
+          <div class="calendar-day has-event"><div class="day-num">1</div><div class="event-dot"></div></div>
+          <div class="calendar-day"><div class="day-num">2</div></div><div class="calendar-day has-event"><div class="day-num">3</div><div class="event-dot"></div></div>
+          <div class="calendar-day"><div class="day-num">4</div></div><div class="calendar-day"><div class="day-num">5</div></div>
+          <div class="calendar-day"><div class="day-num">6</div></div><div class="calendar-day today"><div class="day-num">7</div></div>
+          <div class="calendar-day has-event"><div class="day-num">8</div><div class="event-dot"></div></div>
+          <div class="calendar-day"><div class="day-num">9</div></div><div class="calendar-day"><div class="day-num">10</div></div>
+          <div class="calendar-day has-event"><div class="day-num">11</div><div class="event-dot"></div></div>
+          <div class="calendar-day"><div class="day-num">12</div></div><div class="calendar-day"><div class="day-num">13</div></div>
+          <div class="calendar-day"><div class="day-num">14</div></div><div class="calendar-day"><div class="day-num">15</div></div>
+          <div class="calendar-day"><div class="day-num">16</div></div><div class="calendar-day"><div class="day-num">17</div></div>
+          <div class="calendar-day"><div class="day-num">18</div></div><div class="calendar-day"><div class="day-num">19</div></div>
+          <div class="calendar-day"><div class="day-num">20</div></div><div class="calendar-day"><div class="day-num">21</div></div>
+          <div class="calendar-day"><div class="day-num">22</div></div><div class="calendar-day"><div class="day-num">23</div></div>
+          <div class="calendar-day"><div class="day-num">24</div></div><div class="calendar-day"><div class="day-num">25</div></div>
+          <div class="calendar-day"><div class="day-num">26</div></div><div class="calendar-day"><div class="day-num">27</div></div>
+          <div class="calendar-day"><div class="day-num">28</div></div><div class="calendar-day"><div class="day-num">29</div></div>
+          <div class="calendar-day"><div class="day-num">30</div></div><div class="calendar-day"><div class="day-num">31</div></div>
+          <div class="calendar-day"><div class="day-num" style="color:var(--text3)">1</div></div><div class="calendar-day"><div class="day-num" style="color:var(--text3)">2</div></div>
+        </div>
+      </div>
+      <div class="queue-sidebar">
+        <div class="header"><h3>Fila de uploads <span class="badge badge-coral" style="margin-left:6px">12</span></h3><i class="fas fa-refresh" style="cursor:pointer;color:var(--text3);font-size:14px"></i></div>
+        <div class="queue-tabs"><button class="queue-tab active">Proximos</button><button class="queue-tab">Postados</button></div>
+        <div class="queue-item"><div class="thumb"><i class="fab fa-youtube" style="color:#ff0000"></i></div><div class="info"><div class="title">Bitcoin ATH 2026 - Analise Completa</div><div class="meta">Tech Brasil &middot; Hoje, 14:00</div></div><div class="status-dot status-coral"></div></div>
+        <div class="queue-item"><div class="thumb"><i class="fab fa-youtube" style="color:#ff0000"></i></div><div class="info"><div class="title">Review: Novo Smartphone XYZ</div><div class="meta">Tech Brasil &middot; Amanha, 10:00</div></div><div class="status-dot status-amber"></div></div>
+        <div class="queue-item"><div class="thumb"><i class="fab fa-tiktok" style="color:#fff"></i></div><div class="info"><div class="title">Dica rapida de edicao #shorts</div><div class="meta">@techbrasil &middot; 03/07, 18:30</div></div><div class="status-dot status-teal"></div></div>
+        <div class="queue-item"><div class="thumb"><i class="fab fa-youtube" style="color:#ff0000"></i></div><div class="info"><div class="title">Top 10 Games de 2026</div><div class="meta">Games BR &middot; 04/07, 12:00</div></div><div class="status-dot status-amber"></div></div>
+        <div class="queue-item"><div class="thumb"><i class="fab fa-tiktok" style="color:#fff"></i></div><div class="info"><div class="title">Como editar cortes em 1 minuto</div><div class="meta">@techbrasil &middot; 05/07, 16:00</div></div><div class="status-dot status-coral"></div></div>
+      </div>
+    </div>
+  </div>
+</section>
+<section class="page-section" id="analytics">
+  <div class="container" style="padding-top:32px">
+    <div class="section-header">
+      <div><h2>Analytics</h2><p class="subtitle">Metricas e desempenho dos seus canais.</p></div>
+      <div class="flex gap-2 items-center">
+        <select class="input" style="width:auto;padding:6px 12px;font-size:13px"><option>Ultimos 7 dias</option><option>Ultimos 30 dias</option><option>Ultimo trimestre</option></select>
+        <button class="btn btn-secondary btn-sm"><i class="fas fa-download"></i> Exportar</button>
+        <button class="btn btn-ghost btn-sm"><i class="fas fa-refresh"></i> Atualizar</button>
+      </div>
+    </div>
+    <div class="section-intro"><h2>Totais do canal</h2></div>
+    <div class="grid-4 mb-6">
+      <div class="stat-card"><i class="fas fa-eye icon-coral" style="font-size:20px;margin-bottom:8px"></i><div class="value">1.2M</div><div class="label">Total de views</div></div>
+      <div class="stat-card"><i class="fas fa-users" style="font-size:20px;color:var(--blue);margin-bottom:8px"></i><div class="value">45.2K</div><div class="label">Inscritos</div></div>
+      <div class="stat-card"><i class="fas fa-chart-line" style="font-size:20px;color:var(--teal);margin-bottom:8px"></i><div class="value">328</div><div class="label">Videos publicados</div></div>
+      <div class="stat-card"><i class="fas fa-chart-bar" style="font-size:20px;color:var(--purple);margin-bottom:8px"></i><div class="value">3.7K</div><div class="label">Media por video</div></div>
+    </div>
+    <div class="section-intro"><h2>Periodo selecionado</h2></div>
+    <div class="grid-4 mb-6">
+      <div class="card card-top-coral"><div style="font-size:12px;color:var(--text3);margin-bottom:4px">Views</div><div style="font-size:24px;font-weight:700">24.3K</div></div>
+      <div class="card card-top-amber"><div style="font-size:12px;color:var(--text3);margin-bottom:4px">Tempo de exibicao</div><div style="font-size:24px;font-weight:700">1.2K hrs</div></div>
+      <div class="card card-top-teal"><div style="font-size:12px;color:var(--text3);margin-bottom:4px">Inscritos ganhos</div><div style="font-size:24px;font-weight:700">+340</div></div>
+      <div class="card" style="border-top:3px solid var(--purple)"><div style="font-size:12px;color:var(--text3);margin-bottom:4px">CTR medio</div><div style="font-size:24px;font-weight:700">18.4%</div></div>
+    </div>
+    <div class="grid-2" style="grid-template-columns:2fr 1fr;gap:24px">
+      <div class="card"><h3 style="font-size:15px;font-weight:600;margin-bottom:16px">Desempenho (7 dias)</h3>
+        <div style="display:flex;align-items:flex-end;gap:6px;height:160px;padding-top:20px">
+          <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px"><div style="width:100%;background:var(--coral);border-radius:4px 4px 0 0;height:40%;min-height:20px"></div><span style="font-size:10px;color:var(--text3)">Seg</span></div>
+          <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px"><div style="width:100%;background:var(--coral);border-radius:4px 4px 0 0;height:65%;min-height:20px"></div><span style="font-size:10px;color:var(--text3)">Ter</span></div>
+          <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px"><div style="width:100%;background:var(--coral);border-radius:4px 4px 0 0;height:45%;min-height:20px"></div><span style="font-size:10px;color:var(--text3)">Qua</span></div>
+          <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px"><div style="width:100%;background:var(--coral);border-radius:4px 4px 0 0;height:90%;min-height:20px"></div><span style="font-size:10px;color:var(--text3)">Qui</span></div>
+          <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px"><div style="width:100%;background:var(--coral);border-radius:4px 4px 0 0;height:75%;min-height:20px"></div><span style="font-size:10px;color:var(--text3)">Sex</span></div>
+          <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px"><div style="width:100%;background:var(--coral);border-radius:4px 4px 0 0;height:55%;min-height:20px"></div><span style="font-size:10px;color:var(--text3)">Sab</span></div>
+          <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px"><div style="width:100%;background:var(--coral);border-radius:4px 4px 0 0;height:60%;min-height:20px"></div><span style="font-size:10px;color:var(--text3)">Dom</span></div>
+        </div>
+      </div>
+      <div class="card"><h3 style="font-size:15px;font-weight:600;margin-bottom:16px">Top Videos</h3>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <div class="flex items-center justify-between" style="padding:8px;border-radius:6px;background:var(--bg-card2)"><div class="truncate" style="flex:1;font-size:13px">Bitcoin ATH 2026</div><span style="font-size:12px;color:var(--text2);white-space:nowrap;margin-left:8px">8.2K views</span></div>
+          <div class="flex items-center justify-between" style="padding:8px;border-radius:6px;background:var(--bg-card2)"><div class="truncate" style="flex:1;font-size:13px">Review Smartphone XYZ</div><span style="font-size:12px;color:var(--text2);white-space:nowrap;margin-left:8px">5.1K views</span></div>
+          <div class="flex items-center justify-between" style="padding:8px;border-radius:6px;background:var(--bg-card2)"><div class="truncate" style="flex:1;font-size:13px">Como editar cortes</div><span style="font-size:12px;color:var(--text2);white-space:nowrap;margin-left:8px">3.8K views</span></div>
+          <div class="flex items-center justify-between" style="padding:8px;border-radius:6px;background:var(--bg-card2)"><div class="truncate" style="flex:1;font-size:13px">Top 10 Games 2026</div><span style="font-size:12px;color:var(--text2);white-space:nowrap;margin-left:8px">2.4K views</span></div>
+          <div class="flex items-center justify-between" style="padding:8px;border-radius:6px;background:var(--bg-card2)"><div class="truncate" style="flex:1;font-size:13px">Dica de SEO para YouTube</div><span style="font-size:12px;color:var(--text2);white-space:nowrap;margin-left:8px">1.9K views</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="card mt-6"><h3 style="font-size:15px;font-weight:600;margin-bottom:12px">Mapa de Visualizacoes</h3>
+      <div style="display:flex;gap:12px;align-items:center;margin-bottom:12px">
+        <div style="display:flex;gap:4px;align-items:center;font-size:11px;color:var(--text3)"><span class="hm-0" style="width:14px;height:14px;border-radius:3px;display:inline-block"></span> Baixo</div>
+        <div style="display:flex;gap:4px;align-items:center;font-size:11px;color:var(--text3)"><span class="hm-1" style="width:14px;height:14px;border-radius:3px;display:inline-block"></span></div>
+        <div style="display:flex;gap:4px;align-items:center;font-size:11px;color:var(--text3)"><span class="hm-2" style="width:14px;height:14px;border-radius:3px;display:inline-block"></span></div>
+        <div style="display:flex;gap:4px;align-items:center;font-size:11px;color:var(--text3)"><span class="hm-3" style="width:14px;height:14px;border-radius:3px;display:inline-block"></span></div>
+        <div style="display:flex;gap:4px;align-items:center;font-size:11px;color:var(--text3)"><span class="hm-4" style="width:14px;height:14px;border-radius:3px;display:inline-block"></span> Alto</div>
+      </div>
+      <div class="heatmap">
+        <div class="heatmap-cell hm-0"></div><div class="heatmap-cell hm-1"></div><div class="heatmap-cell hm-0"></div><div class="heatmap-cell hm-2"></div><div class="heatmap-cell hm-3"></div><div class="heatmap-cell hm-1"></div><div class="heatmap-cell hm-0"></div>
+        <div class="heatmap-cell hm-1"></div><div class="heatmap-cell hm-2"></div><div class="heatmap-cell hm-1"></div><div class="heatmap-cell hm-3"></div><div class="heatmap-cell hm-4"></div><div class="heatmap-cell hm-2"></div><div class="heatmap-cell hm-1"></div>
+        <div class="heatmap-cell hm-0"></div><div class="heatmap-cell hm-0"></div><div class="heatmap-cell hm-2"></div><div class="heatmap-cell hm-1"></div><div class="heatmap-cell hm-2"></div><div class="heatmap-cell hm-0"></div><div class="heatmap-cell hm-0"></div>
+        <div class="heatmap-cell hm-0"></div><div class="heatmap-cell hm-1"></div><div class="heatmap-cell hm-3"></div><div class="heatmap-cell hm-4"></div><div class="heatmap-cell hm-3"></div><div class="heatmap-cell hm-2"></div><div class="heatmap-cell hm-1"></div>
+      </div>
+    </div>
+  </div>
+</section>
+<section class="page-section" id="admin">
+  <div class="container" style="padding-top:32px">
+    <div class="card mb-6" style="background:linear-gradient(135deg,rgba(232,65,42,.05),transparent)">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-3"><i class="fas fa-shield" style="font-size:24px;color:var(--coral)"></i><div><h2 style="font-size:20px;font-weight:700">Painel de Administracao</h2><p style="font-size:13px;color:var(--text2)">Gerenciamento de usuarios e plataforma.</p></div></div>
+        <button class="btn btn-secondary btn-sm"><i class="fas fa-refresh"></i> Atualizar</button>
+      </div>
+    </div>
+    <div class="flex gap-2 mb-6"><button class="btn btn-primary btn-sm">Usuarios</button><button class="btn btn-secondary btn-sm">Beta Requests (12)</button></div>
+    <div class="grid-6 mb-6">
+      <div class="stat-card accent-coral"><div class="value">1.247</div><div class="label">Total usuarios</div></div>
+      <div class="stat-card accent-teal"><div class="value">38</div><div class="label">Online agora</div></div>
+      <div class="stat-card accent-amber"><div class="value">342</div><div class="label">YouTube conectado</div></div>
+      <div class="stat-card"><div class="value">12.8K</div><div class="label">Total uploads</div></div>
+      <div class="stat-card accent-teal"><div class="value">1.024</div><div class="label">Email verificado</div></div>
+      <div class="stat-card"><div class="value">223</div><div class="label">Pendente verificacao</div></div>
+    </div>
+    <div class="mb-4"><div style="position:relative"><i class="fas fa-search" style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--text3);font-size:14px"></i><input class="input" placeholder="Buscar por nome ou email..." style="padding-left:36px"></div></div>
+    <div class="card" style="padding:0;overflow:hidden">
+      <div class="table-wrap"><table>
+        <thead><tr><th>Usuario</th><th>Email</th><th>Status email</th><th>Status Beta</th><th>Sessao</th><th>Plano</th><th>Canais</th><th>Uploads</th><th>Cadastro</th></tr></thead>
+        <tbody>
+          <tr><td><div class="account-card"><div class="name"><i class="fas fa-user" style="color:var(--coral);margin-right:6px;font-size:12px"></i>Ramon Silva</div><div style="font-size:11px;color:var(--text3)">#USR-001</div></div></td><td><i class="fas fa-envelope" style="color:var(--text3);margin-right:6px;font-size:12px"></i>ramon@email.com</td><td><span class="badge badge-teal">Verificado</span></td><td><span class="badge badge-teal">Aprovado</span></td><td><span class="badge badge-teal"><i class="fas fa-wifi"></i> Online</span></td><td><select class="input" style="padding:4px 8px;font-size:12px;width:auto"><option>Pro</option><option>Starter</option></select></td><td><i class="fab fa-youtube" style="color:#ff0000;margin-right:4px"></i>3</td><td><i class="fas fa-upload" style="color:var(--text3);margin-right:4px;font-size:12px"></i>128</td><td><i class="fas fa-calendar" style="color:var(--text3);margin-right:4px;font-size:12px"></i>12/03/2026</td></tr>
+          <tr><td><div class="account-card"><div class="name"><i class="fas fa-user" style="color:var(--amber);margin-right:6px;font-size:12px"></i>Ana Oliveira</div><div style="font-size:11px;color:var(--text3)">#USR-002</div></div></td><td><i class="fas fa-envelope" style="color:var(--text3);margin-right:6px;font-size:12px"></i>ana@email.com</td><td><span class="badge badge-amber">Pendente</span></td><td><span class="badge badge-amber">Em analise</span></td><td><span class="badge badge-amber"><i class="fas fa-clock"></i> Recente</span></td><td><select class="input" style="padding:4px 8px;font-size:12px;width:auto"><option>Starter</option><option>Pro</option></select></td><td><i class="fab fa-youtube" style="color:#ff0000;margin-right:4px"></i>1</td><td><i class="fas fa-upload" style="color:var(--text3);margin-right:4px;font-size:12px"></i>45</td><td><i class="fas fa-calendar" style="color:var(--text3);margin-right:4px;font-size:12px"></i>18/05/2026</td></tr>
+          <tr><td><div class="account-card"><div class="name"><i class="fas fa-user" style="color:var(--teal);margin-right:6px;font-size:12px"></i>Carlos Mendes</div><div style="font-size:11px;color:var(--text3)">#USR-003</div></div></td><td><i class="fas fa-envelope" style="color:var(--text3);margin-right:6px;font-size:12px"></i>carlos@email.com</td><td><span class="badge badge-teal">Verificado</span></td><td><span class="badge badge-coral">Rejeitado</span></td><td><span class="badge"><i class="fas fa-wifi-slash"></i> Offline</span></td><td><select class="input" style="padding:4px 8px;font-size:12px;width:auto"><option>Free</option><option>Starter</option></select></td><td><i class="fab fa-youtube" style="color:#ff0000;margin-right:4px"></i>2</td><td><i class="fas fa-upload" style="color:var(--text3);margin-right:4px;font-size:12px"></i>67</td><td><i class="fas fa-calendar" style="color:var(--text3);margin-right:4px;font-size:12px"></i>02/01/2026</td></tr>
+        </tbody>
+      </table></div>
+      <div class="flex items-center justify-between" style="padding:12px 16px;border-top:1px solid var(--border)">
+        <span style="font-size:13px;color:var(--text3)">Pagina 1 de 42 &middot; 1.247 usuarios</span>
+        <div class="flex gap-2"><button class="btn btn-ghost btn-sm"><i class="fas fa-chevron-left"></i></button><button class="btn btn-ghost btn-sm"><i class="fas fa-chevron-right"></i></button></div>
+      </div>
+    </div>
+  </div>
+</section>
+<section class="page-section" id="profile">
+  <div class="container" style="padding-top:32px">
+    <div class="section-header"><h2>Perfil e Conexoes</h2></div>
+    <div class="grid-2" style="grid-template-columns:2fr 1fr;gap:24px">
+      <div>
+        <div class="profile-hero"><div class="banner" style="background:linear-gradient(135deg,#ff0000,#cc0000)"></div><div class="avatar" style="background:linear-gradient(135deg,var(--coral),var(--amber))">RS</div>
+          <div class="info"><div class="flex items-center gap-2"><h3>Ramon Silva <i class="fas fa-check-circle" style="color:var(--teal);font-size:14px"></i></h3></div><div class="handle">@RamonSilvaTech</div></div>
+          <div class="actions"><button class="btn btn-secondary btn-sm"><i class="fas fa-refresh"></i> Sincronizar</button><button class="btn btn-secondary btn-sm" style="background:#ff0000;border-color:#ff0000;color:#fff"><i class="fab fa-youtube"></i> Ver canal</button></div>
+        </div>
+        <div class="grid-3 mb-6">
+          <div class="stat-card" style="border-top:3px solid #ff0000"><div class="value" style="color:#ff0000">45.2K</div><div class="label">Inscritos</div></div>
+          <div class="stat-card" style="border-top:3px solid var(--blue)"><div class="value" style="color:var(--blue)">1.2M</div><div class="label">Views</div></div>
+          <div class="stat-card" style="border-top:3px solid var(--purple)"><div class="value" style="color:var(--purple)">328</div><div class="label">Videos</div></div>
+        </div>
+        <div class="profile-hero"><div class="banner" style="background:linear-gradient(135deg,#ff0050,#00f2ea)"></div><div class="avatar" style="background:linear-gradient(135deg,#ff0050,#00f2ea);color:#fff">RS</div>
+          <div class="info"><div class="flex items-center gap-2"><h3>Ramon Silva</h3></div><div class="handle">@ramonsilvatech</div></div>
+          <div class="actions"><button class="btn btn-secondary btn-sm"><i class="fas fa-refresh"></i> Sincronizar</button><button class="btn btn-secondary btn-sm" style="background:#ff0050;border-color:#ff0050;color:#fff"><i class="fab fa-tiktok"></i> Ver TikTok</button></div>
+        </div>
+        <div class="grid-4 mb-6">
+          <div class="stat-card" style="border-top:3px solid #ff0050"><div class="value" style="color:#ff0050">8.7K</div><div class="label">Seguidores</div></div>
+          <div class="stat-card" style="border-top:3px solid var(--blue)"><div class="value" style="color:var(--blue)">420</div><div class="label">Seguindo</div></div>
+          <div class="stat-card" style="border-top:3px solid #ff0050"><div class="value" style="color:#ff0050">124K</div><div class="label">Curtidas</div></div>
+          <div class="stat-card" style="border-top:3px solid var(--purple)"><div class="value" style="color:var(--purple)">156</div><div class="label">Videos</div></div>
+        </div>
+      </div>
+      <div>
+        <div class="card mb-4"><h3 style="font-size:15px;font-weight:600;margin-bottom:16px">Canais Conectados</h3>
+          <div class="flex items-center justify-between" style="padding:10px 0;border-bottom:1px solid var(--border)"><div class="flex items-center gap-2"><div style="width:28px;height:28px;border-radius:50%;background:#ff0000;display:flex;align-items:center;justify-content:center;color:#fff;font-size:12px"><i class="fab fa-youtube"></i></div><span style="font-size:13px;font-weight:500">Ramon Silva Tech</span></div><span class="badge badge-teal">ATIVO</span></div>
+          <div class="flex items-center justify-between" style="padding:10px 0;border-bottom:1px solid var(--border)"><div class="flex items-center gap-2"><div style="width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,#ff0050,#00f2ea);display:flex;align-items:center;justify-content:center;color:#fff;font-size:12px"><i class="fab fa-tiktok"></i></div><span style="font-size:13px;font-weight:500">@ramonsilvatech</span></div><span class="badge badge-teal">ATIVO</span></div>
+          <button class="platform-btn mt-4" style="border-color:#ff0000;color:#ff0000"><div class="left"><i class="fab fa-youtube"></i> Conectar YouTube</div><i class="fas fa-plus"></i></button>
+          <button class="platform-btn mt-2" style="border-color:#ff0050;color:#ff0050"><div class="left"><i class="fab fa-tiktok"></i> Conectar TikTok</div><i class="fas fa-plus"></i></button>
+          <button class="platform-btn mt-2" style="opacity:.5;cursor:not-allowed"><div class="left"><i class="fab fa-instagram" style="color:var(--purple)"></i> Conectar Instagram</div><span class="badge">Em breve</span></button>
+        </div>
+        <div class="card"><h3 style="font-size:15px;font-weight:600;margin-bottom:16px">Acoes rapidas</h3>
+          <div class="flex flex-col gap-2">
+            <button class="platform-btn"><div class="left"><i class="fas fa-upload" style="color:var(--coral)"></i> Novo upload</div><i class="fas fa-chevron-right" style="color:var(--text3)"></i></button>
+            <button class="platform-btn"><div class="left"><i class="fas fa-calendar" style="color:var(--purple)"></i> Agendar publicacao</div><i class="fas fa-chevron-right" style="color:var(--text3)"></i></button>
+            <button class="platform-btn"><div class="left"><i class="fab fa-youtube" style="color:#ff0000"></i> YouTube Studio</div><i class="fas fa-chevron-right" style="color:var(--text3)"></i></button>
+            <button class="platform-btn"><div class="left"><i class="fas fa-chart-line" style="color:var(--teal)"></i> Ver analytics</div><i class="fas fa-chevron-right" style="color:var(--text3)"></i></button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+<section class="page-section" id="settings">
+  <div class="container" style="padding-top:32px">
+    <div class="section-header"><h2>Configuracoes</h2></div>
+    <div class="card card-hover mb-4"><div class="flex items-center gap-3 mb-4"><i class="fas fa-sun" style="font-size:18px;color:var(--amber)"></i><h3 style="font-size:16px;font-weight:600">Aparencia</h3></div>
+      <div class="theme-options"><button class="theme-btn active"><i class="fas fa-sun"></i> Claro</button><button class="theme-btn"><i class="fas fa-moon"></i> Escuro</button><button class="theme-btn"><i class="fas fa-monitor"></i> Sistema</button></div>
+    </div>
+    <div class="card card-hover mb-4"><div class="flex items-center gap-3 mb-4"><i class="fas fa-bell" style="font-size:18px;color:var(--blue)"></i><h3 style="font-size:16px;font-weight:600">Notificacoes</h3></div>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div class="flex items-center justify-between"><span style="font-size:14px">Uploads concluidos</span><div style="width:36px;height:20px;border-radius:10px;background:var(--teal);cursor:pointer;position:relative"><div style="position:absolute;top:2px;right:2px;width:16px;height:16px;border-radius:50%;background:#fff"></div></div></div>
+        <div class="flex items-center justify-between"><span style="font-size:14px">Novos inscritos</span><div style="width:36px;height:20px;border-radius:10px;background:var(--bg-card2);border:1px solid var(--border);cursor:pointer;position:relative"><div style="position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:var(--text3)"></div></div></div>
+        <div class="flex items-center justify-between"><span style="font-size:14px">Erros de publicacao</span><div style="width:36px;height:20px;border-radius:10px;background:var(--teal);cursor:pointer;position:relative"><div style="position:absolute;top:2px;right:2px;width:16px;height:16px;border-radius:50%;background:#fff"></div></div></div>
+      </div>
+    </div>
+    <div class="card card-hover mb-4"><div class="flex items-center gap-3 mb-4"><i class="fas fa-user" style="font-size:18px;color:var(--purple)"></i><h3 style="font-size:16px;font-weight:600">Conta</h3></div>
+      <div class="form-group"><label class="form-label">Nome</label><input class="input" value="Ramon Silva"></div>
+      <div class="form-group"><label class="form-label">Email</label><input class="input" value="ramon@email.com" disabled style="opacity:.6"></div>
+      <button class="btn btn-primary btn-sm mb-4">Salvar nome</button>
+      <hr style="border:none;border-top:1px solid var(--border);margin:16px 0">
+      <div class="form-group"><label class="form-label">Senha atual</label><input class="input" type="password" placeholder="Senha atual"></div>
+      <div class="form-group"><label class="form-label">Nova senha</label><input class="input" type="password" placeholder="Nova senha"></div>
+      <button class="btn btn-secondary btn-sm">Alterar senha</button>
+    </div>
+    <div class="card card-hover mb-4"><div class="flex items-center gap-3 mb-4"><i class="fas fa-globe" style="font-size:18px;color:var(--purple)"></i><h3 style="font-size:16px;font-weight:600">Idioma e Regiao</h3></div>
+      <div class="grid-2"><div class="form-group"><label class="form-label">Idioma</label><select class="input"><option>Portugues (BR)</option><option>English (US)</option><option>Espanol</option></select></div>
+      <div class="form-group"><label class="form-label">Fuso horario</label><select class="input"><option>Sao Paulo (GMT-3)</option><option>Manaus (GMT-4)</option><option>New York (GMT-5)</option></select></div></div>
+    </div>
+    <div class="card card-hover mb-4"><div class="flex items-center gap-3 mb-4"><i class="fas fa-shield" style="font-size:18px;color:var(--teal)"></i><h3 style="font-size:16px;font-weight:600">Dados e Privacidade</h3></div>
+      <button class="platform-btn mb-2"><div class="left"><i class="fas fa-download" style="color:var(--teal)"></i> Exportar meus dados</div><i class="fas fa-chevron-right" style="color:var(--text3)"></i></button>
+      <button class="platform-btn" style="border-color:rgba(232,65,42,.3)"><div class="left"><i class="fas fa-trash" style="color:var(--coral)"></i> Excluir conta</div><i class="fas fa-chevron-right" style="color:var(--text3)"></i></button>
+    </div>
+  </div>
+</section>
+<section class="page-section" id="help">
+  <div class="container" style="padding-top:32px">
+    <div class="section-intro text-center" style="align-items:center"><h2>Central de Ajuda</h2><p>Encontre respostas para suas duvidas.</p></div>
+    <div style="max-width:500px;margin:0 auto 32px;position:relative"><i class="fas fa-search" style="position:absolute;left:14px;top:50%;transform:translateY(-50%);color:var(--text3)"></i><input class="input" placeholder="Busque por duvidas (ex: IA, limites, calendario)..." style="padding-left:38px"></div>
+    <div class="grid-3 mb-6">
+      <div class="card card-hover text-center" style="cursor:pointer"><div style="font-size:32px;margin-bottom:12px;color:var(--coral)"><i class="fas fa-book-open"></i></div><h3 style="font-size:15px;font-weight:600">Como Comecar</h3><p style="font-size:13px;color:var(--text2);margin-top:4px">Guia inicial para novos usuarios</p></div>
+      <div class="card card-hover text-center" style="cursor:pointer"><div style="font-size:32px;margin-bottom:12px;color:var(--amber)"><i class="fas fa-play-circle"></i></div><h3 style="font-size:15px;font-weight:600">Cortes com IA</h3><p style="font-size:13px;color:var(--text2);margin-top:4px">Automacao e edicao inteligente</p></div>
+      <div class="card card-hover text-center" style="cursor:pointer"><div style="font-size:32px;margin-bottom:12px;color:var(--teal)"><i class="fas fa-check-circle"></i></div><h3 style="font-size:15px;font-weight:600">Contas &amp; Conexoes</h3><p style="font-size:13px;color:var(--text2);margin-top:4px">Gerenciamento de plataformas</p></div>
+    </div>
+    <div class="grid-2" style="grid-template-columns:2fr 1fr;gap:24px">
+      <div class="card"><h3 style="font-size:15px;font-weight:600;margin-bottom:16px">Perguntas Frequentes</h3>
+        <div class="accordion-item open"><div class="accordion-header">Como conectar meu canal do YouTube? <i class="fas fa-chevron-down"></i></div><div class="accordion-body">Va em Perfil &gt; Conectar YouTube e autorize o acesso. Seu canal aparecera automaticamente.</div></div>
+        <div class="accordion-item"><div class="accordion-header">Quantos videos posso enviar por dia? <i class="fas fa-chevron-down"></i></div><div class="accordion-body">O limite varia conforme seu plano. Free: 1/dia, Starter: 10/dia, Pro: ilimitado.</div></div>
+        <div class="accordion-item"><div class="accordion-header">A IA funciona para qualquer idioma? <i class="fas fa-chevron-down"></i></div><div class="accordion-body">Sim! Nossa IA suporta portugues, ingles e espanhol com alta qualidade.</div></div>
+        <div class="accordion-item"><div class="accordion-header">Como funciona o agendamento inteligente? <i class="fas fa-chevron-down"></i></div><div class="accordion-body">A IA analisa o melhor horario de postagem para cada canal baseado no historico de engajamento.</div></div>
+      </div>
+      <div>
+        <div class="card mb-4"><div class="flex items-center gap-3 mb-4"><i class="fas fa-message" style="font-size:18px;color:var(--coral)"></i><h3 style="font-size:15px;font-weight:600">Enviar Mensagem</h3></div>
+          <div class="form-group"><input class="input" placeholder="Nome"></div>
+          <div class="form-group"><input class="input" type="email" placeholder="E-mail"></div>
+          <div class="form-group"><textarea class="input" rows="3" placeholder="Mensagem"></textarea></div>
+          <button class="btn btn-primary w-full btn-sm"><i class="fas fa-paper-plane"></i> Enviar</button>
+        </div>
+        <div class="card"><div class="flex items-center gap-3 mb-4"><i class="fas fa-message" style="font-size:18px;color:var(--amber)"></i><h3 style="font-size:15px;font-weight:600">Comunidades</h3></div>
+          <button class="platform-btn mb-2"><div class="left"><i class="fab fa-discord" style="color:#5865f2"></i> Discord Oficial</div></button>
+          <button class="platform-btn"><div class="left"><i class="fab fa-whatsapp" style="color:#25d366"></i> Grupo do WhatsApp</div></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+<section class="page-section" id="privacy">
+  <div class="navbar"><div class="logo"><span>VC</span> ViralCuts</div><div class="nav-links"><button class="btn btn-ghost btn-sm"><i class="fas fa-arrow-left"></i> Voltar</button></div></div>
+  <div class="container legal-content" style="padding-top:20px;padding-bottom:60px">
+    <h1>Politica de Privacidade</h1>
+    <p class="updated">Ultima atualizacao: 25 de Junho de 2026</p>
+    <section><h3>Informacoes que Coletamos</h3><p>Coletamos informacoes da sua conta (nome, email, avatar), dados de autenticacao OAuth, conteudo dos videos enviados e metricas de uso da plataforma para melhorar nossos servicos.</p></section>
+    <section><h3>Como Usamos suas Informacoes</h3><p>Utilizamos seus dados para operar a plataforma, publicar videos nos canais conectados, gerar analytics e enviar comunicacoes relevantes sobre o servico.</p></section>
+    <section><h3>Compartilhamento de Dados</h3><p>Compartilhamos dados estritamente necessarios com as plataformas de video (YouTube, TikTok, Instagram) para publicacao de conteudo, com nossos provedores de infraestrutura e quando exigido por lei.</p></section>
+    <section><h3>Seguranca dos Dados</h3><p>Implementamos criptografia em transito e em repouso, controles de acesso rigorosos e auditorias regulares de seguranca para proteger suas informacoes.</p></section>
+    <section><h3>Seus Direitos</h3><p>Voce pode acessar, corrigir, excluir seus dados ou revogar o acesso das plataformas conectadas a qualquer momento atraves das configuracoes da sua conta.</p></section>
+    <section><h3>Retencao de Dados</h3><p>Mantemos seus dados enquanto sua conta estiver ativa. Apos o encerramento, os dados sao retidos por 90 dias antes da exclusao permanente.</p></section>
+    <section><h3>Cookies</h3><p>Utilizamos cookies essenciais para o funcionamento da plataforma e cookies analiticos de terceiros para melhorar a experiencia do usuario.</p></section>
+    <section><h3>Contato</h3><p>Para questoes sobre privacidade, entre em contato: <a href="mailto:suporte@viralcuts.app">suporte@viralcuts.app</a></p></section>
+  </div>
+</section>
+<section class="page-section" id="terms">
+  <div class="navbar"><div class="logo"><span>VC</span> ViralCuts</div><div class="nav-links"><button class="btn btn-ghost btn-sm"><i class="fas fa-arrow-left"></i> Voltar</button></div></div>
+  <div class="container legal-content" style="padding-top:20px;padding-bottom:60px">
+    <h1>Termos de Servico</h1>
+    <p class="updated">Ultima atualizacao: 25 de Junho de 2026</p>
+    <section><h3>Aceitacao dos Termos</h3><p>Ao criar uma conta no ViralCuts, voce concorda com estes termos de servico. Leia atentamente antes de utilizar a plataforma.</p></section>
+    <section><h3>Descricao do Servico</h3><p>O ViralCuts e uma plataforma de gerenciamento de conteudo multicanal que permite criar, agendar e distribuir videos em multiplas plataformas utilizando ferramentas de inteligencia artificial.</p></section>
+    <section><h3>Contas de Usuario</h3><p>Voce e responsavel por manter a confidencialidade de suas credenciais de acesso e por todas as atividades realizadas em sua conta.</p></section>
+    <section><h3>Uso Aceitavel</h3><p>Voce concorda em utilizar a plataforma conforme as leis aplicaveis, respeitando direitos autorais e nao publicando conteudo ilegal ou prejudicial.</p></section>
+    <section><h3>Propriedade Intelectual</h3><p>Voce mantem todos os direitos sobre seu conteudo. O ViralCuts recebe uma licenca limitada para processar e publicar seu conteudo nas plataformas que voce conectar.</p></section>
+    <section><h3>Limitacao de Responsabilidade</h3><p>O ViralCuts nao se responsabiliza por decisoes editoriais, desempenho de algoritmos de terceiros ou por interrupcoes nas plataformas de video parceiras.</p></section>
+    <section><h3>Alteracoes nos Termos</h3><p>Notificaremos sobre mudancas significativas nestes termos com pelo menos 30 dias de antecedencia por email e atraves da plataforma.</p></section>
+    <section><h3>Contato</h3><p>Para duvidas sobre estes termos: <a href="mailto:suporte@viralcuts.app">suporte@viralcuts.app</a></p></section>
+  </div>
+</section>
+<div class="page-footer">ViralCuts &mdash; Redesign Concept Mockup v1.0</div>
+<script>
+document.querySelectorAll('.tabs').forEach(function(tg){tg.querySelectorAll('.tab').forEach(function(t){t.addEventListener('click',function(){tg.querySelectorAll('.tab').forEach(function(x){x.classList.remove('active')});t.classList.add('active');document.querySelectorAll('.tab-content').forEach(function(tc){tc.classList.remove('active')});document.getElementById('tab-'+t.dataset.tab).classList.add('active')})})});
+document.querySelectorAll('.accordion-header').forEach(function(h){h.addEventListener('click',function(){h.parentElement.classList.toggle('open')})});
+document.querySelectorAll('.page-nav a').forEach(function(a){a.addEventListener('click',function(e){document.querySelectorAll('.page-nav a').forEach(function(x){x.classList.remove('active')});a.classList.add('active')})});
+</script>
+</body>
+</html>

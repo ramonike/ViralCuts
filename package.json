@@ -36,6 +36,7 @@
     "framer-motion": "^11.18.2",
     "hono": "^4.10.6",
     "lucide-react": "^0.263.0",
+    "ollama": "^0.6.3",
     "pg": "^8.16.3",
     "postcss": "^8.4.38",
     "postgres": "^3.4.7",

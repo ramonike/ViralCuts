@@ -48,8 +48,8 @@ export function PerformanceChart({ data, period = '30d', loading = false }) {
 
     if (loading) {
         return (
-            <div className="glass-panel rounded-xl overflow-hidden">
-                <div className="p-4 border-b border-surface-700/50">
+            <div className="vc-card rounded-xl overflow-hidden">
+                <div className="p-4 border-b border-[var(--border-default)]">
                     <div className="h-6 bg-slate-700 rounded animate-pulse w-48"></div>
                 </div>
                 <div className="p-4 flex items-center justify-center" style={{ height: 300 }}>
@@ -60,8 +60,8 @@ export function PerformanceChart({ data, period = '30d', loading = false }) {
     }
 
     return (
-        <div className="glass-panel rounded-xl overflow-hidden">
-            <div className="p-4 border-b border-surface-700/50 flex items-center justify-between">
+        <div className="vc-card rounded-xl overflow-hidden">
+            <div className="p-4 border-b border-[var(--border-default)] flex items-center justify-between">
                 <div>
                     <h3 className="font-bold text-white text-lg flex items-center gap-2">
                         {isPositive ? (

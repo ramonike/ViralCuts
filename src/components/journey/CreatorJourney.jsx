@@ -37,9 +37,9 @@ export function CreatorJourney() {
     const progressPercentage = Math.round((completedStages / stages.length) * 100);
 
     return (
-        <div className="glass-panel rounded-xl overflow-hidden animate-in slide-in-from-left-4 duration-700 h-full flex flex-col">
+        <div className="vc-card rounded-xl overflow-hidden animate-in slide-in-from-left-4 duration-700 h-full flex flex-col">
             {/* Enhanced Header */}
-            <div className="p-4 border-b border-surface-700/50 bg-gradient-to-r from-purple-900/20 via-blue-900/10 to-purple-900/20 relative overflow-hidden flex-shrink-0">
+            <div className="p-4 border-b border-[var(--border-default)] bg-gradient-to-r from-purple-900/20 via-blue-900/10 to-purple-900/20 relative overflow-hidden flex-shrink-0">
                 {/* Background Pattern */}
                 <div className="absolute inset-0 bg-gradient-to-br from-purple-600/5 to-blue-600/5"></div>
                 <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-purple-500/10 to-transparent rounded-full -translate-y-12 translate-x-12"></div>
