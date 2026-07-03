@@ -4,7 +4,7 @@ import { useAnalytics, DATE_RANGE_OPTIONS } from "../hooks/useAnalytics";
 import { analyzeBestPublishingTimes } from "../api/analytics";
 import {
     TrendingUp, Eye, ThumbsUp, Clock, Users, RefreshCw,
-    Calendar, AlertCircle, BarChart2, Info
+    Calendar, AlertCircle, BarChart2, Info, Download,
 } from "lucide-react";
 import { PageLayout } from "../components/layout/PageLayout";
 import { PerformanceChart } from "../components/analytics/PerformanceChart";
@@ -12,8 +12,6 @@ import { ViewingHeatmap } from "../components/analytics/ViewingHeatmap";
 import { TopVideosTable } from "../components/analytics/TopVideosTable";
 import { ExportButton } from "../components/analytics/ExportButton";
 import { InsightsPanel } from "../components/analytics/InsightsPanel";
-import { Button } from "../components/ui/button";
-import { Select } from "../components/ui/select";
 
 const fmt = (num) => {
     if (!num && num !== 0) return "—";
@@ -27,27 +25,6 @@ const fmtMin = (min) => {
     if (min >= 60) return `${(min / 60).toFixed(1)}h`;
     return `${min}min`;
 };
-
-function StatCard({ icon, label, value, sub, loading }) {
-    return (
-        <div className="vc-metric-card metric-neutral">
-            <div className="flex items-center gap-2 mb-3">
-                <div className="p-2 rounded-lg bg-[var(--accent-coral-3)]" style={{ color: 'var(--accent-coral-2)' }}>
-                    {icon}
-                </div>
-                <span className="vc-metric-label" style={{ marginBottom: 0 }}>{label}</span>
-            </div>
-            {loading ? (
-                <div className="h-8 w-24 rounded-lg animate-pulse bg-[var(--bg-elevated)]" />
-            ) : (
-                <>
-                    <p className="vc-metric-value">{value}</p>
-                    {sub && <p className="text-xs mt-1 text-[var(--text-muted)]">{sub}</p>}
-                </>
-            )}
-        </div>
-    );
-}
 
 function AnalyticsScopeBanner() {
     return (
@@ -105,35 +82,34 @@ export default function AnalyticsPage() {
     })();
 
     const channelSummaryStats = [
-        { icon: <Eye size={16} />, label: "Total de views", value: fmt(totalViews), sub: "acumulado do canal" },
-        { icon: <Users size={16} />, label: "Inscritos", value: fmt(totalSubs), sub: "total atual" },
-        { icon: <TrendingUp size={16} />, label: "Vídeos publicados", value: fmt(totalVideos), sub: "no canal" },
-        { icon: <BarChart2 size={16} />, label: "Média por vídeo", value: totalVideos > 0 ? fmt(Math.round(totalViews / totalVideos)) : "—", sub: "views / vídeo" },
+        { icon: <Eye size={20} style={{ color: "var(--coral)" }} />, label: "Total de views", value: fmt(totalViews) },
+        { icon: <Users size={20} style={{ color: "var(--blue)" }} />, label: "Inscritos", value: fmt(totalSubs) },
+        { icon: <TrendingUp size={20} style={{ color: "var(--teal)" }} />, label: "Vídeos publicados", value: fmt(totalVideos) },
+        { icon: <BarChart2 size={20} style={{ color: "var(--purple)" }} />, label: "Média por vídeo", value: totalVideos > 0 ? fmt(Math.round(totalViews / totalVideos)) : "—" },
     ];
 
     const periodStats = hasAnalyticsData ? [
-        { icon: <Eye size={16} />, label: "Views no período", value: fmt(channelAnalytics.views) },
-        { icon: <Clock size={16} />, label: "Tempo de exibição", value: fmtMin(channelAnalytics.watchTimeMinutes) },
-        { icon: <Users size={16} />, label: "Inscritos ganhos", value: `+${fmt(channelAnalytics.subscribersGained)}` },
-        { icon: <ThumbsUp size={16} />, label: "CTR médio", value: `${channelAnalytics.impressionsCTR?.toFixed(1) ?? 0}%` },
+        { label: "Views", value: fmt(channelAnalytics.views), cardTop: "card-top-coral" },
+        { label: "Tempo de exibição", value: fmtMin(channelAnalytics.watchTimeMinutes), cardTop: "card-top-amber" },
+        { label: "Inscritos ganhos", value: `+${fmt(channelAnalytics.subscribersGained)}`, cardTop: "card-top-teal" },
+        { label: "CTR médio", value: `${channelAnalytics.impressionsCTR?.toFixed(1) ?? 0}%`, cardTop: "card-top-purple" },
     ] : null;
+
+    const iconColors = ["var(--coral)", "var(--blue)", "var(--teal)", "var(--purple)"];
 
     return (
         <PageLayout title="Analytics" subtitle="Acompanhe o crescimento do seu canal." maxWidth="7xl">
-
-            <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
-                <div className="flex items-center gap-2">
-                    <Calendar size={16} className="text-[var(--text-muted)]" />
-                    <Select value={period} onChange={e => changePeriod(e.target.value)} disabled={loading}>
+            <div className="section-header">
+                <div />
+                <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                    <select className="input" style={{ width: "auto", padding: "6px 12px", fontSize: 13 }}
+                        value={period} onChange={e => changePeriod(e.target.value)} disabled={loading}>
                         {DATE_RANGE_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-                    </Select>
-                </div>
-                <div className="flex items-center gap-2">
+                    </select>
                     <ExportButton data={channelAnalytics} period={period} disabled={!channelAnalytics || loading} />
-                    <Button onClick={handleRefresh} disabled={refreshing || loading}>
-                        <RefreshCw className={`w-4 h-4 ${refreshing ? "animate-spin" : ""}`} />
-                        {refreshing ? "Atualizando..." : "Atualizar"}
-                    </Button>
+                    <button className="btn btn-ghost btn-sm" onClick={handleRefresh} disabled={refreshing || loading}>
+                        <RefreshCw size={12} className={refreshing ? "spinning" : ""} /> Atualizar
+                    </button>
                 </div>
             </div>
 
@@ -145,46 +121,70 @@ export default function AnalyticsPage() {
             )}
 
             {totalViews > 0 && (
-                <div className="mb-6">
-                    <p className="vc-metric-label mb-3">Totais do canal</p>
-                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                        {channelSummaryStats.map((s, i) => <StatCard key={i} {...s} loading={false} />)}
+                <>
+                    <div className="section-intro">
+                        <h2>Totais do canal</h2>
                     </div>
-                </div>
+                    <div className="grid-4 mb-6">
+                        {channelSummaryStats.map((s, i) => (
+                            <div key={i} className="stat-card">
+                                {s.icon}
+                                <div className="value">{s.value}</div>
+                                <div className="label">{s.label}</div>
+                            </div>
+                        ))}
+                    </div>
+                </>
             )}
 
             {!loading && !hasAnalyticsData && token && <AnalyticsScopeBanner />}
 
             {hasAnalyticsData && (
-                <div className="mb-6">
-                    <p className="vc-metric-label mb-3">Período selecionado</p>
-                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                        {periodStats.map((s, i) => <StatCard key={i} {...s} loading={loading && !channelAnalytics} />)}
+                <>
+                    <div className="section-intro">
+                        <h2>Período selecionado</h2>
                     </div>
-                </div>
+                    <div className="grid-4 mb-6">
+                        {periodStats.map((s, i) => (
+                            <div key={i} className={`card ${s.cardTop}`}>
+                                <div style={{ fontSize: 12, color: "var(--text3)", marginBottom: 4 }}>{s.label}</div>
+                                <div style={{ fontSize: 24, fontWeight: 700 }}>{s.value}</div>
+                            </div>
+                        ))}
+                    </div>
+                </>
             )}
 
             {loading && !channelAnalytics && (
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-                    {[1, 2, 3, 4].map(i => <StatCard key={i} icon={<Eye size={16} />} label="..." value="—" loading={true} />)}
+                <div className="grid-4 mb-6">
+                    {[1, 2, 3, 4].map(i => (
+                        <div key={i} className="stat-card">
+                            <div className="value">—</div>
+                            <div className="label">Carregando...</div>
+                        </div>
+                    ))}
                 </div>
             )}
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-                <div className="lg:col-span-2">
+            <div className="grid-2 mb-6" style={{ gridTemplateColumns: "2fr 1fr", gap: 24 }}>
+                <div className="card">
+                    <h3 style={{ fontSize: 15, fontWeight: 600, marginBottom: 16 }}>
+                        Desempenho ({period === "7days" ? "7 dias" : period === "30days" ? "30 dias" : "período"})
+                    </h3>
                     <PerformanceChart data={chartData} period={period} loading={loading} />
                 </div>
-                <div>
+                <div className="card">
+                    <h3 style={{ fontSize: 15, fontWeight: 600, marginBottom: 16 }}>Top Vídeos</h3>
                     <TopVideosTable loading={loading} limit={5} />
                 </div>
             </div>
 
-            <div className="mb-6">
+            <div className="card mb-6">
+                <h3 style={{ fontSize: 15, fontWeight: 600, marginBottom: 12 }}>Mapa de Visualizações</h3>
                 <ViewingHeatmap loading={loading} />
             </div>
 
             <InsightsPanel channelAnalytics={channelAnalytics} trafficSources={trafficSources} bestTimes={bestTimes} loading={loading} />
-
         </PageLayout>
     );
 }

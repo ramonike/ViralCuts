@@ -8,7 +8,7 @@ import { PageLayout } from "../components/layout/PageLayout";
 import { useNotification } from "../contexts/NotificationContext";
 import { useTheme } from "../contexts/ThemeContext";
 import { rescheduleUpload, cancelScheduledUpload } from "../api/youtube";
-import { CalendarDays, Clock, CheckCircle2, TrendingUp, GitBranch, Video, Loader2, RefreshCw, Plus } from "lucide-react";
+import { RefreshCw, Plus } from "lucide-react";
 import { PlatformIcon } from "../components/shared/PlatformIcon";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -32,45 +32,6 @@ function normalizeUpload(u) {
     };
 }
 
-// ─── Stat Card ────────────────────────────────────────────────────────────────
-
-function PipelineStat({ icon: Icon, label, value, sublabel, accent = "neutral", loading }) {
-    const accentColor = accent === "coral" ? "var(--accent-coral)"
-        : accent === "amber" ? "var(--accent-amber)"
-            : accent === "teal" ? "var(--accent-teal)"
-                : "var(--text-muted)";
-    const accentBg = accent === "coral" ? "var(--accent-coral-3)"
-        : accent === "amber" ? "var(--accent-amber-3)"
-            : accent === "teal" ? "var(--accent-teal-3)"
-                : "var(--bg-elevated)";
-    return (
-        <div className={`vc-metric-card metric-${accent}`}>
-            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
-                <div style={{
-                    width: 28, height: 28, borderRadius: "var(--radius-md)",
-                    background: accentBg,
-                    display: "flex", alignItems: "center", justifyContent: "center",
-                    flexShrink: 0,
-                }}>
-                    <Icon size={14} style={{ color: accentColor }} />
-                </div>
-                <span className="vc-metric-label" style={{ marginBottom: 0 }}>{label}</span>
-            </div>
-            {loading
-                ? <div style={{ height: 28, width: 40, borderRadius: 6, background: "var(--bg-elevated)", animation: "pulse 1.5s ease-in-out infinite" }} />
-                : <>
-                    <div className="vc-metric-value" style={{ fontSize: '1.625rem' }}>{value}</div>
-                    {sublabel && (
-                        <div style={{ fontSize: '10px', color: 'var(--text-muted)', marginTop: 4, fontFamily: 'var(--font-body)' }}>
-                            {sublabel}
-                        </div>
-                    )}
-                </>
-            }
-        </div>
-    );
-}
-
 // ─── Queue Sidebar ────────────────────────────────────────────────────────────
 
 function QueueSidebar({ queue, onScheduleNow, loading, onRefresh }) {
@@ -92,164 +53,39 @@ function QueueSidebar({ queue, onScheduleNow, loading, onRefresh }) {
 
     const items = tab === "upcoming" ? upcoming : posted;
 
-    const statusLabel = (status) => {
-        if (["done", "success", "published", "completed"].includes(status)) return "Publicado";
-        if (["uploading", "processing"].includes(status)) return "Enviando";
-        if (status === "scheduled") return "Agendado";
-        return "Pendente";
-    };
-
-    const statusBadge = (status) => {
-        if (["done", "success", "published", "completed"].includes(status)) return "vc-badge-teal";
-        if (["uploading", "processing"].includes(status)) return "vc-badge-amber";
-        if (status === "scheduled") return "vc-badge-teal"; // agendado = teal (positivo), não coral
-        return "vc-badge-muted"; // pending = neutro
-    };
-
-    const ytCount = queue.filter(v => v.platform === 'youtube').length;
-    const tkCount = queue.filter(v => v.platform === 'tiktok').length;
-
     return (
-        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-            <div className="vc-card">
-                <div style={{ padding: "14px 16px 0", display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                        <GitBranch size={14} style={{ color: "var(--accent-coral)" }} />
-                        <span className="vc-metric-label" style={{ marginBottom: 0 }}>Fila de uploads</span>
-                    </div>
-                    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                                <span className="vc-badge vc-badge-muted">{queue.length} {queue.length === 1 ? "item" : "itens"}</span>
-                                {ytCount > 0 && (
-                                    <span style={{ display: 'flex', alignItems: 'center', gap: 3, fontSize: '10px', color: 'var(--text-muted)' }}>
-                                        <PlatformIcon platform="youtube" size={10} />{ytCount}
-                                    </span>
-                                )}
-                                {tkCount > 0 && (
-                                    <span style={{ display: 'flex', alignItems: 'center', gap: 3, fontSize: '10px', color: 'var(--text-muted)' }}>
-                                        <PlatformIcon platform="tiktok" size={10} />{tkCount}
-                                    </span>
-                                )}
-                            </div>
-                            {/* Platform breakdown */}
-                            {(() => {
-                                const counts = {};
-                                queue.forEach(item => {
-                                    const p = (item.platform || 'youtube').toLowerCase();
-                                    counts[p] = (counts[p] || 0) + 1;
-                                });
-                                const entries = Object.entries(counts);
-                                if (entries.length <= 1) return null;
-                                return (
-                                    <span style={{ display: 'flex', alignItems: 'center', gap: 3, fontSize: '0.6875rem', color: 'var(--text-muted)' }}>
-                                        {entries.map(([platform, count]) => (
-                                            <span key={platform} style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                                                <PlatformIcon platform={platform} size={10} />
-                                                <span>{count}</span>
-                                            </span>
-                                        ))}
-                                    </span>
-                                );
-                            })()}
-                        </div>
-                        <button
-                            onClick={onRefresh}
-                            disabled={loading}
-                            style={{ background: "none", border: "none", cursor: loading ? "not-allowed" : "pointer", color: "var(--text-muted)", padding: 2, display: "flex" }}
-                            title="Atualizar fila"
-                        >
-                            <RefreshCw size={13} style={{ animation: loading ? "spin 1s linear infinite" : "none" }} />
-                        </button>
-                    </div>
-                </div>
-
-                <div style={{ display: "flex", gap: 4, padding: "0 12px 12px", borderBottom: "1px solid var(--border-subtle)" }}>
-                    {[
-                        { key: "upcoming", label: "Próximos", count: upcoming.length },
-                        { key: "posted", label: "Postados", count: posted.length },
-                    ].map(t => (
-                        <button key={t.key} onClick={() => setTab(t.key)} style={{
-                            flex: 1, padding: "6px 8px", borderRadius: "var(--radius-sm)",
-                            background: tab === t.key ? "var(--accent-coral-3)" : "transparent",
-                            border: `1px solid ${tab === t.key ? "rgba(232,65,42,0.2)" : "transparent"}`,
-                            color: tab === t.key ? "var(--accent-coral-2)" : "var(--text-muted)",
-                            fontSize: "0.75rem", fontWeight: 600, fontFamily: "var(--font-display)",
-                            cursor: "pointer", transition: "all 0.15s", letterSpacing: "-0.01em",
-                        }}>
-                            {t.label}
-                            {t.count > 0 && (
-                                <span style={{
-                                    marginLeft: 5, fontSize: "0.625rem",
-                                    background: tab === t.key ? "var(--accent-coral)" : "var(--bg-elevated)",
-                                    color: tab === t.key ? "#fff" : "var(--text-muted)",
-                                    padding: "1px 5px", borderRadius: 10, fontWeight: 700,
-                                }}>{t.count}</span>
-                            )}
-                        </button>
-                    ))}
-                </div>
-
-                <div style={{ padding: "10px 12px 14px", minHeight: 160 }}>
-                    {/* Skeleton durante primeiro load (queue vazia + loading) */}
-                    {loading && queue.length === 0 ? (
-                        <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
-                            {[1, 2, 3].map(i => (
-                                <div key={i} style={{
-                                    height: 52, borderRadius: "var(--radius-md)",
-                                    background: "var(--bg-tertiary)",
-                                    animation: "pulse 1.5s ease-in-out infinite",
-                                    animationDelay: `${i * 0.1}s`
-                                }} />
-                            ))}
-                        </div>
-                    ) : items.length > 0 ? (
-                        items.slice(0, 8).map((item, i) => (
-                            <div key={item.id || i} style={{
-                                display: "flex", alignItems: "center", gap: 10,
-                                padding: "9px 10px", borderRadius: "var(--radius-md)",
-                                background: "var(--bg-tertiary)", border: "1px solid var(--border-subtle)",
-                                marginBottom: i < items.length - 1 ? 7 : 0,
-                            }}>
-                                {/* Thumbnail/ícone */}
-                                <div style={{ width: 32, height: 18, borderRadius: 3, flexShrink: 0, background: "var(--bg-elevated)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                                    <Video size={12} style={{ color: "var(--text-muted)" }} />
-                                </div>
-                                <div style={{ flex: 1, minWidth: 0 }}>
-                                    <p style={{ margin: 0, fontSize: "0.8125rem", fontWeight: 600, fontFamily: "var(--font-display)", color: "var(--text-primary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", letterSpacing: "-0.01em" }}>
-                                        {item.title || "Sem título"}
-                                    </p>
-                                    <div style={{ display: "flex", alignItems: "center", gap: 5, marginTop: 2 }}>
-                                        <PlatformIcon platform={item.platform} size={11} />
-                                        <span style={{ fontSize: "0.6875rem", color: "var(--text-muted)" }}>
-                                            {item.scheduledAt
-                                                ? new Date(item.scheduledAt).toLocaleString("pt-BR", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })
-                                                : item.publishedAt
-                                                    ? new Date(item.publishedAt).toLocaleString("pt-BR", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })
-                                                    : "—"}
-                                        </span>
-                                    </div>
-                                </div>
-                                <span className={`vc-badge ${statusBadge(item.status)}`} style={{ flexShrink: 0, fontSize: "0.5625rem" }}>
-                                    {statusLabel(item.status)}
-                                </span>
-                            </div>
-                        ))
-                    ) : (
-                        <div style={{ textAlign: "center", padding: "28px 0" }}>
-                            <div style={{ width: 40, height: 40, borderRadius: "var(--radius-md)", background: "var(--bg-elevated)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 12px" }}>
-                                <CalendarDays size={18} style={{ color: "var(--text-muted)" }} />
-                            </div>
-                            <p style={{ margin: "0 0 4px", fontSize: "0.875rem", fontWeight: 600, color: "var(--text-secondary)" }}>
-                                {tab === "upcoming" ? "Nenhum vídeo agendado" : "Nenhum publicado ainda"}
-                            </p>
-                            <p style={{ margin: 0, fontSize: "0.75rem", color: "var(--text-muted)" }}>
-                                {tab === "upcoming" ? "Clique em + Agendar para começar" : "Os publicados aparecerão aqui"}
-                            </p>
-                        </div>
-                    )}
-                </div>
+        <div className="queue-sidebar">
+            <div className="header">
+                <h3>Fila de uploads <span className="badge badge-coral" style={{ marginLeft: 6 }}>{queue.length}</span></h3>
+                <RefreshCw size={14} style={{ cursor: 'pointer', color: 'var(--text3)' }} onClick={onRefresh} />
             </div>
+            <div className="queue-tabs">
+                <button className={`queue-tab ${tab === 'upcoming' ? 'active' : ''}`} onClick={() => setTab('upcoming')}>Próximos</button>
+                <button className={`queue-tab ${tab === 'posted' ? 'active' : ''}`} onClick={() => setTab('posted')}>Postados</button>
+            </div>
+            {items.slice(0, 8).map((item, i) => (
+                <div key={item.id || i} className="queue-item">
+                    <div className="thumb">
+                        <PlatformIcon platform={item.platform} size={14} />
+                    </div>
+                    <div className="info">
+                        <div className="title">{item.title || "Sem título"}</div>
+                        <div className="meta">
+                            {item.scheduledAt
+                                ? new Date(item.scheduledAt).toLocaleString("pt-BR", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })
+                                : item.publishedAt
+                                    ? new Date(item.publishedAt).toLocaleString("pt-BR", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })
+                                    : "—"}
+                        </div>
+                    </div>
+                    <div className={`status-dot status-${["done","success","published","completed"].includes(item.status) ? 'teal' : item.status === 'scheduled' ? 'coral' : 'amber'}`} />
+                </div>
+            ))}
+            {items.length === 0 && (
+                <div style={{ padding: '24px 20px', textAlign: 'center', color: 'var(--text3)', fontSize: 13 }}>
+                    {tab === "upcoming" ? "Nenhum vídeo agendado" : "Nenhum publicado ainda"}
+                </div>
+            )}
         </div>
     );
 }
@@ -720,45 +556,53 @@ export default function CalendarPage() {
     return (
         <PageLayout maxWidth="7xl" spacing="standard">
             {/* Header */}
-            <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", flexWrap: "wrap", gap: 12, marginBottom: 20 }}>
+            <div className="section-header">
                 <div>
-                    {/* Breadcrumb */}
-                    <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
-                        <GitBranch size={12} style={{ color: "var(--text-muted)" }} />
-                        <span style={{ fontSize: "11px", color: "var(--text-muted)", fontFamily: "var(--font-body)" }}>Pipeline</span>
-                        <span style={{ fontSize: "11px", color: "var(--text-muted)" }}>/</span>
-                        <span style={{ fontSize: "11px", color: "var(--text-secondary)", fontWeight: 500, fontFamily: "var(--font-body)" }}>Calendário</span>
-                    </div>
-                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
-                        <h1 style={{ margin: 0, fontFamily: "var(--font-display)", fontWeight: 700, fontSize: "1.875rem", letterSpacing: "-0.035em", color: "var(--text-primary)", lineHeight: 1 }}>
-                            Pipeline
-                        </h1>
-                    </div>
-                    <p style={{ margin: 0, fontSize: "0.875rem", color: "var(--text-muted)" }}>
-                        Agendamento e distribuição multicanal dos seus Shorts
-                    </p>
+                    <h2>Pipeline</h2>
+                    <p className="subtitle">Agendamento e distribuição multicanal dos seus Shorts.</p>
                 </div>
-                {/* CTA sempre visível no header */}
-                <button
-                    className="vc-btn vc-btn-primary"
-                    onClick={() => setScheduleModalOpen(true)}
-                    style={{ alignSelf: 'flex-end' }}
-                >
+                <button className="btn btn-primary" onClick={() => setScheduleModalOpen(true)}>
                     <Plus size={15} />
                     Novo upload
                 </button>
             </div>
 
             {/* Stats */}
-            <div className="vc-grid-metrics" style={{ marginBottom: 20 }}>
-                <PipelineStat icon={CalendarDays} label="Esta semana" value={statsWeek} sublabel="agendados" accent="coral" loading={isFirstLoad} />
-                <PipelineStat icon={Clock} label="Hoje" value={statsToday} sublabel="para publicar" accent="amber" loading={isFirstLoad} />
-                <PipelineStat icon={TrendingUp} label="Próximos" value={statsUpcoming} sublabel="nos próximos 7 dias" accent="neutral" loading={isFirstLoad} />
-                <PipelineStat icon={CheckCircle2} label="Publicados" value={statsPosted} sublabel="via ViralCuts" accent="teal" loading={isFirstLoad} />
+            <div className="grid-4 mb-6">
+                <div className="stat-card card-top-coral">
+                    <div className="value">{isFirstLoad ? '—' : statsWeek}</div>
+                    <div className="label">Esta semana</div>
+                </div>
+                <div className="stat-card card-top-amber">
+                    <div className="value">{isFirstLoad ? '—' : statsToday}</div>
+                    <div className="label">Hoje</div>
+                </div>
+                <div className="stat-card">
+                    <div className="value">{isFirstLoad ? '—' : statsUpcoming}</div>
+                    <div className="label">Próximos</div>
+                </div>
+                <div className="stat-card card-top-teal">
+                    <div className="value">{isFirstLoad ? '—' : statsPosted}</div>
+                    <div className="label">Publicados</div>
+                </div>
+            </div>
+
+            {/* Pills filter */}
+            <div className="pills mb-6">
+                <button className={`pill ${activeFilter === 'all' ? 'active' : ''}`} onClick={() => setActiveFilter('all')}>
+                    <div className="avatar">VC</div>
+                    Todos
+                </button>
+                {channelFilter.map(ch => (
+                    <button key={ch.id} className={`pill ${activeFilter === ch.id ? 'active' : ''}`} onClick={() => setActiveFilter(ch.id)}>
+                        <div className="avatar">{ch.name.charAt(0).toUpperCase()}</div>
+                        {ch.name}
+                    </button>
+                ))}
             </div>
 
             {/* Grid */}
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 300px", gap: 20, alignItems: "start" }}>
+            <div className="grid-2" style={{ gridTemplateColumns: "1fr 320px" }}>
                 <ModernCalendar
                     history={filteredHistory}
                     uploadQueue={combinedQueue}
