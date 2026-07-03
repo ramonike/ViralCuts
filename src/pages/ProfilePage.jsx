@@ -60,7 +60,8 @@ function ChannelHero({ channelStats, onRefresh, youtubeAccounts, activeId, onSwi
 
     return (
         <div className="profile-hero">
-            <div className="banner" style={{ background: "linear-gradient(135deg,#ff0000,#cc0000)" }}>
+            {/* banner: era #ff0000,#cc0000 vermelho puro fora da paleta; agora coral→amber ViralCuts */}
+            <div className="banner" style={{ background: "linear-gradient(135deg, var(--coral) 0%, var(--amber) 100%)" }}>
                 {channelStats?.brandingSettings?.image?.bannerExternalUrl && (
                     <img src={channelStats.brandingSettings.image.bannerExternalUrl}
                         style={{ width: "100%", height: "100%", objectFit: "cover", opacity: 0.5 }}
@@ -86,9 +87,10 @@ function ChannelHero({ channelStats, onRefresh, youtubeAccounts, activeId, onSwi
                 <button className="btn btn-secondary btn-sm" onClick={onRefresh}>
                     <RefreshCw size={12} /> Sincronizar
                 </button>
+                {/* Ver canal: era #ff0000 literal, agora usa var(--coral) da paleta */}
                 <a href={channelUrl} target="_blank" rel="noopener noreferrer"
                     className="btn btn-secondary btn-sm"
-                    style={{ background: "#ff0000", borderColor: "#ff0000", color: "#fff" }}>
+                    style={{ background: "var(--coral)", borderColor: "var(--coral)", color: "#fff" }}>
                     <Youtube size={12} /> Ver canal
                 </a>
             </div>
@@ -228,7 +230,8 @@ function ConnectedChannels({ connectedAccounts, activeAccountId, activeTikTokId,
                 onLoginSuccess={onAdd}
                 onLoginError={(err) => alert("Erro: " + JSON.stringify(err))}
                 className="platform-btn mt-2"
-                style={{ borderColor: "#ff0000", color: "#ff0000", justifyContent: "space-between", background: "transparent" }}
+                {/* borderColor usa var(--coral) ao invés de #ff0000 literal */}
+                style={{ borderColor: "var(--coral)", color: "var(--coral)", justifyContent: "space-between", background: "transparent" }}
             >
                 <div className="left"><Youtube size={16} /> Conectar YouTube</div>
                 <Plus size={12} />
@@ -254,7 +257,7 @@ function QuickActions({ navigate }) {
     const actions = [
         { icon: <Upload size={16} style={{ color: "var(--coral)" }} />, label: "Novo upload", onClick: () => navigate("/dashboard/videos") },
         { icon: <Calendar size={16} style={{ color: "var(--purple)" }} />, label: "Agendar publicação", onClick: () => navigate("/dashboard/calendar") },
-        { icon: <Youtube size={16} style={{ color: "#ff0000" }} />, label: "YouTube Studio", onClick: () => window.open("https://studio.youtube.com", "_blank") },
+        { icon: <Youtube size={16} style={{ color: "var(--coral)" }} />, label: "YouTube Studio", onClick: () => window.open("https://studio.youtube.com", "_blank") },
         { icon: <BarChart size={16} style={{ color: "var(--teal)" }} />, label: "Ver analytics", onClick: () => navigate("/dashboard/analytics") },
     ];
     return (

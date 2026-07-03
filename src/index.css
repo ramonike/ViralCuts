@@ -167,7 +167,7 @@ h1, h2, h3, h4, h5, h6,
    ============================================================ */
 
 .vc-sidebar {
-  width: 220px;
+  width: 224px;
   flex-shrink: 0;
   background: var(--bg-secondary);
   border-right: 1px solid var(--border-subtle);
@@ -180,76 +180,113 @@ h1, h2, h3, h4, h5, h6,
   overflow-x: hidden;
 }
 
-/* Logotipo na sidebar */
+/* ── Logo ── */
 .vc-logo {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 20px 18px 16px;
+  gap: 11px;
+  padding: 18px 16px 16px;
   border-bottom: 1px solid var(--border-subtle);
-  text-decoration: none;
+  flex-shrink: 0;
 }
 
+/* Mark com gradiente coral→amber e corte diagonal (assinatura ViralCuts) */
 .vc-logo-mark {
-  width: 32px;
-  height: 32px;
-  background: var(--accent-coral);
-  border-radius: var(--radius-sm);
+  position: relative;
+  width: 34px;
+  height: 34px;
+  background: linear-gradient(135deg, var(--accent-coral) 0%, var(--accent-amber) 100%);
+  border-radius: var(--radius-md);
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(232,65,42,0.35);
+  clip-path: polygon(0 0, 100% 0, 100% 72%, 82% 100%, 0 100%);
+}
+
+.vc-logo-mark-text {
   font-family: var(--font-display);
-  font-weight: 700;
-  font-size: 14px;
+  font-weight: 800;
+  font-size: 13px;
   color: #fff;
   letter-spacing: -0.5px;
-  flex-shrink: 0;
-  /* Corte diagonal — assinatura visual */
-  clip-path: polygon(0 0, 100% 0, 100% 75%, 85% 100%, 0 100%);
+  line-height: 1;
+  /* shift up slightly to counter clip-path visual center offset */
+  margin-bottom: 3px;
+}
+
+.vc-logo-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
 }
 
 .vc-logo-text {
   font-family: var(--font-display);
   font-weight: 700;
-  font-size: 1rem;
+  font-size: 0.9375rem;
   color: var(--text-primary);
   letter-spacing: -0.03em;
+  line-height: 1;
 }
 
-/* Nav items */
+/* Plano embaixo do nome — visível com contraste adequado */
+.vc-logo-plan {
+  font-size: 0.5625rem;
+  font-weight: 700;
+  font-family: var(--font-display);
+  letter-spacing: 0.09em;
+  color: var(--accent-amber);
+  line-height: 1;
+}
+
+/* ── Nav ── */
 .vc-nav {
-  padding: 12px 10px;
+  padding: 14px 10px;
   flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
 }
 
 .vc-nav-section {
-  margin-bottom: 24px;
+  margin-bottom: 20px;
 }
 
+/* Label de seção — contraste melhorado (era --text-muted #5a5a58, ilegível) */
 .vc-nav-label {
+  display: block;
   font-size: 0.625rem;
-  font-weight: 600;
-  letter-spacing: 0.1em;
+  font-weight: 700;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: var(--text-muted);
-  padding: 0 8px;
-  margin-bottom: 6px;
+  color: var(--text-secondary);
+  opacity: 0.55;
+  padding: 0 10px;
+  margin-bottom: 4px;
 }
 
+/* Nav item base */
 .vc-nav-item {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 9px;
-  padding: 8px 10px;
+  padding: 7px 10px;
   border-radius: var(--radius-md);
   color: var(--text-secondary);
   text-decoration: none;
   font-family: var(--font-body);
-  font-size: 0.875rem;
+  font-size: 0.8438rem;
   font-weight: 500;
-  transition: all 0.15s ease;
-  position: relative;
+  transition: background 0.13s ease, color 0.13s ease;
   border: 1px solid transparent;
+  cursor: pointer;
+  background: transparent;
+  width: 100%;
+  text-align: left;
 }
 
 .vc-nav-item:hover {
@@ -257,37 +294,84 @@ h1, h2, h3, h4, h5, h6,
   color: var(--text-primary);
 }
 
+/* Estado ativo */
 .vc-nav-item.active {
   background: var(--accent-coral-3);
   color: var(--accent-coral-2);
-  border-color: rgba(232,65,42,0.2);
+  border-color: rgba(232,65,42,0.18);
+  font-weight: 600;
 }
 
-/* Indicador lateral no item ativo */
-.vc-nav-item.active::before {
-  content: '';
+/* Indicador lateral — DENTRO do item, não clipado */
+.vc-nav-indicator {
   position: absolute;
-  left: -10px;
+  left: 0;
   top: 50%;
   transform: translateY(-50%);
   width: 3px;
-  height: 20px;
-  background: var(--accent-coral);
-  border-radius: 0 2px 2px 0;
-}
-
-.vc-nav-item .nav-icon {
-  width: 18px;
   height: 18px;
-  opacity: 0.7;
+  background: var(--accent-coral);
+  border-radius: 0 3px 3px 0;
   flex-shrink: 0;
 }
 
-.vc-nav-item.active .nav-icon {
+/* Pipeline — destaque âmbar quando inativo */
+.vc-nav-item.pipeline-highlight {
+  color: #d4a017;
+  background: rgba(240,165,0,0.10);
+  border-color: rgba(240,165,0,0.18);
+}
+
+.vc-nav-item.pipeline-highlight:hover {
+  background: rgba(240,165,0,0.16);
+  color: var(--accent-amber-2);
+}
+
+/* Wrapper do ícone — tamanho fixo, nunca encolhe */
+.vc-nav-icon-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  opacity: 0.75;
+  transition: opacity 0.13s;
+}
+
+.vc-nav-item:hover .vc-nav-icon-wrap,
+.vc-nav-item.active .vc-nav-icon-wrap {
   opacity: 1;
 }
 
-/* Badge de notificação */
+.vc-nav-item.pipeline-highlight .vc-nav-icon-wrap {
+  opacity: 1;
+}
+
+.vc-nav-item-label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Badge CORE no Pipeline — âmbar escuro sobre fundo âmbar, contraste >4.5:1 */
+.vc-badge-core {
+  margin-left: auto;
+  font-size: 0.5rem;
+  font-weight: 800;
+  font-family: var(--font-display);
+  letter-spacing: 0.06em;
+  color: #7a5200;
+  background: #f0a500;
+  padding: 1px 5px;
+  border-radius: 3px;
+  line-height: 1.6;
+  flex-shrink: 0;
+}
+
+/* Badge de notificação genérico */
 .vc-nav-badge {
   margin-left: auto;
   background: var(--accent-coral);
@@ -299,20 +383,64 @@ h1, h2, h3, h4, h5, h6,
   font-family: var(--font-display);
 }
 
-/* Footer da sidebar */
+/* ── Footer ── */
 .vc-sidebar-footer {
-  padding: 12px 10px;
+  padding: 8px 10px 12px;
   border-top: 1px solid var(--border-subtle);
+  flex-shrink: 0;
 }
 
+/* Ações do footer (Tema / Sair) — visualmente distintas dos itens de nav */
+.vc-footer-action {
+  .tabs{display:flex;gap:4px;background:var(--bg-card2);padding:4px;border-radius:10px;overflow-x:auto}
+/* tab inativa — era var(--text2) quase invisível no dark; agora var(--text) para contraste */
+.tab{padding:8px 20px;border-radius:8px;font-size:13px;font-weight:500;color:var(--text);opacity:.65;cursor:pointer;border:none;background:transparent;font-family:var(--font);transition:all .2s;white-space:nowrap}
+.tab.active{background:var(--coral);color:#fff;opacity:1}
+.tab:hover:not(.active){opacity:1;background:rgba(255,255,255,.06)}
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  padding: 6px 10px;
+  border-radius: var(--radius-md);
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  font-family: var(--font-body);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.13s, color 0.13s;
+  text-align: left;
+}
+
+.vc-footer-action:hover {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+}
+
+/* Sair — vermelho ao hover para sinalizar ação destrutiva */
+.vc-footer-signout:hover {
+  color: var(--accent-coral-2);
+  background: var(--accent-coral-3);
+}
+
+/* Divisor visual entre ações e user chip */
+.vc-footer-divider {
+  height: 1px;
+  background: var(--border-subtle);
+  margin: 8px 0;
+}
+
+/* ── User chip ── */
 .vc-user-chip {
   display: flex;
   align-items: center;
   gap: 10px;
   padding: 8px 10px;
   border-radius: var(--radius-md);
-  cursor: pointer;
-  transition: background 0.15s;
+  cursor: default;
+  transition: background 0.13s;
 }
 
 .vc-user-chip:hover {
@@ -320,18 +448,27 @@ h1, h2, h3, h4, h5, h6,
 }
 
 .vc-avatar {
-  width: 32px;
-  height: 32px;
-  border-radius: var(--radius-sm);
-  background: var(--accent-coral);
+  width: 34px;
+  height: 34px;
+  border-radius: var(--radius-md);
+  background: linear-gradient(135deg, var(--accent-coral) 0%, var(--accent-amber) 100%);
   display: flex;
   align-items: center;
   justify-content: center;
   font-family: var(--font-display);
-  font-weight: 700;
-  font-size: 13px;
+  font-weight: 800;
+  font-size: 12px;
   color: #fff;
   flex-shrink: 0;
+  overflow: hidden;
+  box-shadow: 0 1px 4px rgba(232,65,42,0.3);
+}
+
+.vc-user-info {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
 }
 
 .vc-user-name {
@@ -340,6 +477,51 @@ h1, h2, h3, h4, h5, h6,
   font-family: var(--font-display);
   color: var(--text-primary);
   line-height: 1.2;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.vc-user-meta {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+}
+
+/* Email — contraste adequado (era --text-muted #5a5a58 quase invisível) */
+.vc-user-email {
+  font-size: 0.6563rem;
+  color: var(--text-secondary);
+  opacity: 0.7;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Badge de plano — FREE vs PRO com contraste distinto */
+.vc-plan-badge {
+  font-size: 0.5rem;
+  font-weight: 700;
+  font-family: var(--font-display);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 1px 5px;
+  border-radius: 3px;
+  line-height: 1.6;
+  flex-shrink: 0;
+}
+
+.vc-plan-badge.free {
+  color: var(--text-secondary);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-default);
+}
+
+.vc-plan-badge.pro {
+  color: #7a5200;
+  background: var(--accent-amber);
+  border: 1px solid rgba(240,165,0,0.4);
 }
 
 .vc-user-plan {
@@ -388,7 +570,7 @@ h1, h2, h3, h4, h5, h6,
    ============================================================ */
 
 .vc-main {
-  margin-left: 220px;
+  margin-left: 224px;
   flex: 1;
   min-width: 0;
 }
@@ -615,6 +797,15 @@ h1, h2, h3, h4, h5, h6,
 
 .vc-input {
   width: 100%;
+  .stat-card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:20px 20px 18px;text-align:center;transition:border-color .2s}
+.stat-card:hover{border-color:rgba(232,65,42,.2)}
+.stat-card .icon{display:flex;align-items:center;justify-content:center;margin-bottom:10px}
+.stat-card .value{font-size:26px;font-weight:800;line-height:1.15;letter-spacing:-.02em}
+/* label com contraste adequado — era var(--text2) mas pequeno demais */
+.stat-card .label{font-size:12px;font-weight:600;color:var(--text2);margin-top:6px;letter-spacing:.02em}
+.stat-card.accent-coral .value{color:var(--coral)}
+.stat-card.accent-amber .value{color:var(--amber)}
+.stat-card.accent-teal .value{color:var(--teal)}
   background: var(--bg-tertiary);
   border: 1px solid var(--border-default);
   border-radius: var(--radius-md);
@@ -684,6 +875,10 @@ h1, h2, h3, h4, h5, h6,
 
 .vc-badge-live::before {
   content: '';
+  .spinner{width:32px;height:32px;border:3px solid var(--border);border-top-color:var(--coral);border-radius:50%;animation:spin .7s linear infinite;margin:0 auto}
+@keyframes spin{to{transform:rotate(360deg)}}
+/* .spinning — usada em ícones Lucide para animar (era undefined no CSS) */
+.spinning{animation:spin .8s linear infinite};
   width: 5px;
   height: 5px;
   background: var(--accent-coral);
@@ -823,7 +1018,18 @@ h1, h2, h3, h4, h5, h6,
 
 .vc-divider::before,
 .vc-divider::after {
-  content: '';
+  content: '';.queue-item{display:flex;align-items:center;gap:12px;padding:12px 20px;border-bottom:1px solid rgba(39,39,68,.5);cursor:pointer;transition:background .2s}
+.queue-item:hover{background:rgba(255,255,255,.04)}
+/* thumb — ícone mais visível (era var(--text3)=#6e7291 em bg-card2 muito parecidos) */
+.queue-item .thumb{width:36px;height:36px;border-radius:6px;background:var(--bg-card2);display:flex;align-items:center;justify-content:center;font-size:14px;color:var(--text2);flex-shrink:0;border:1px solid var(--border)}
+.queue-item .info{flex:1;min-width:0}
+.queue-item .info .title{font-size:13px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text)}
+/* meta — era var(--text3) muito apagado; agora var(--text2) com opacidade */
+.queue-item .info .meta{font-size:11px;color:var(--text2);opacity:.7;margin-top:2px}
+.queue-item .status-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.status-coral{background:var(--coral)}
+.status-amber{background:var(--amber)}
+.status-teal{background:var(--teal)}
   flex: 1;
   height: 1px;
   background: var(--border-subtle);
@@ -922,7 +1128,8 @@ h1, h2, h3, h4, h5, h6,
 }
 
 .vc-toast-coral   { background: var(--accent-coral-3); border-color: rgba(232,65,42,0.25); color: var(--accent-coral-2); }
-.vc-toast-amber   { background: var(--accent-amber-3); border-color: rgba(240,165,0,0.25); color: var(--accent-amber-2); }
+/* amber toast — era accent-amber-2 (#d99400) sobre amber-3 bg muito claro → contraste baixo; agora usa text-primary */
+.vc-toast-amber   { background: var(--accent-amber-3); border-color: rgba(240,165,0,0.3); color: var(--text-primary); }
 .vc-toast-teal    { background: var(--accent-teal-3);  border-color: rgba(0,201,167,0.25); color: var(--accent-teal); }
 .vc-toast-neutral { background: var(--bg-elevated);    border-color: var(--border-default); color: var(--text-primary); }
 
@@ -990,6 +1197,50 @@ h1, h2, h3, h4, h5, h6,
     transition-duration: 0.01ms !important;
   }
   .vc-timeline-bar { animation: none; }
+}
+
+/* ============================================================
+   HELPERS DE LAYOUT — adicionados para consistência de páginas
+   ============================================================ */
+
+/* Separador visual sutil entre seções de uma página */
+.vc-section-divider {
+  height: 1px;
+  background: var(--border-subtle);
+  margin: 24px 0;
+}
+
+/* Cabeçalho de página padronizado */
+.vc-page-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 28px;
+}
+
+.vc-page-header-text h1,
+.vc-page-header-text h2 {
+  margin: 0 0 4px;
+  font-size: 1.625rem;
+  font-weight: 700;
+  letter-spacing: -.03em;
+}
+
+.vc-page-header-text p {
+  margin: 0;
+  font-size: 14px;
+  color: var(--text2);
+}
+
+/* Botões à direita do header — usa margin-left:auto como alternativa ao div vazio */
+.vc-page-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+  flex-shrink: 0;
+
 }
 
 /* ============================================================

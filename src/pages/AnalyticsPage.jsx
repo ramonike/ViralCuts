@@ -100,8 +100,8 @@ export default function AnalyticsPage() {
     return (
         <PageLayout title="Analytics" subtitle="Acompanhe o crescimento do seu canal." maxWidth="7xl">
             <div className="section-header">
-                <div />
-                <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                {/* sem div vazio — margin-left:auto no container de botões faz o mesmo */}
+                <div style={{ display: "flex", gap: 8, alignItems: "center", marginLeft: "auto" }}>
                     <select className="input" style={{ width: "auto", padding: "6px 12px", fontSize: 13 }}
                         value={period} onChange={e => changePeriod(e.target.value)} disabled={loading}>
                         {DATE_RANGE_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
@@ -146,9 +146,10 @@ export default function AnalyticsPage() {
                     </div>
                     <div className="grid-4 mb-6">
                         {periodStats.map((s, i) => (
-                            <div key={i} className={`card ${s.cardTop}`}>
-                                <div style={{ fontSize: 12, color: "var(--text3)", marginBottom: 4 }}>{s.label}</div>
-                                <div style={{ fontSize: 24, fontWeight: 700 }}>{s.value}</div>
+                            <div key={i} className={`card ${s.cardTop}`} style={{ padding: "18px 20px" }}>
+                                {/* label: era 12px var(--text3) #6e7291, contraste insuficiente */}
+                                <div style={{ fontSize: 12, fontWeight: 600, color: "var(--text2)", marginBottom: 6, letterSpacing: ".02em" }}>{s.label}</div>
+                                <div style={{ fontSize: 24, fontWeight: 800, letterSpacing: "-.02em" }}>{s.value}</div>
                             </div>
                         ))}
                     </div>
@@ -166,7 +167,7 @@ export default function AnalyticsPage() {
                 </div>
             )}
 
-            <div className="grid-2 mb-6" style={{ gridTemplateColumns: "2fr 1fr", gap: 24 }}>
+            <div className="grid-2 mb-6" style={{ gridTemplateColumns: "3fr 2fr", gap: 20 }}>
                 <div className="card">
                     <h3 style={{ fontSize: 15, fontWeight: 600, marginBottom: 16 }}>
                         Desempenho ({period === "7days" ? "7 dias" : period === "30days" ? "30 dias" : "período"})

@@ -588,7 +588,7 @@ export default function CalendarPage() {
             </div>
 
             {/* Pills filter */}
-            <div className="pills mb-6">
+            <div className="pills mb-4">
                 <button className={`pill ${activeFilter === 'all' ? 'active' : ''}`} onClick={() => setActiveFilter('all')}>
                     <div className="avatar">VC</div>
                     Todos
@@ -600,6 +600,8 @@ export default function CalendarPage() {
                     </button>
                 ))}
             </div>
+            {/* separador sutil entre filtros e calendário */}
+            <div style={{ height: 1, background: "var(--border)", marginBottom: 20, opacity: .4 }} />
 
             {/* Grid */}
             <div className="grid-2" style={{ gridTemplateColumns: "1fr 320px" }}>

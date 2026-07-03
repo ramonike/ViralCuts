@@ -38,9 +38,11 @@ a{color:var(--coral);text-decoration:none}
 .card-top-blue{border-top:3px solid var(--blue)}
 .card-top-purple{border-top:3px solid var(--purple)}
 .card-top-pink{border-top:3px solid var(--pink)}
-.input{background:var(--bg-card2);border:1px solid var(--border);border-radius:8px;padding:10px 14px;color:var(--text);font-size:14px;width:100%;font-family:var(--font);transition:border .2s}
-.input:focus{outline:none;border-color:var(--coral)}
-.input::placeholder{color:var(--text3)}
+.input{background:var(--bg-card2);border:1px solid var(--border);border-radius:8px;padding:10px 14px;color:var(--text);font-size:14px;width:100%;font-family:var(--font);transition:border .2s,box-shadow .2s}
+.input:hover{border-color:rgba(255,255,255,.18)}
+.input:focus{outline:none;border-color:var(--coral);box-shadow:0 0 0 3px rgba(232,65,42,.1)}
+/* placeholder: era var(--text3)=#6e7291, contraste ~2.3:1 insuficiente; agora var(--text2) */
+.input::placeholder{color:var(--text2);opacity:.55}
 textarea.input{resize:vertical;min-height:80px}
 select.input{cursor:pointer}
 .form-label{display:block;font-size:13px;font-weight:500;color:var(--text2);margin-bottom:6px}
@@ -53,10 +55,12 @@ select.input{cursor:pointer}
   .grid-2,.grid-3,.grid-4{grid-template-columns:1fr}
   .grid-6{grid-template-columns:repeat(2,1fr)}
 }
-.stat-card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:20px;text-align:center}
-.stat-card .icon{font-size:24px;margin-bottom:8px}
-.stat-card .value{font-size:28px;font-weight:800;line-height:1.2}
-.stat-card .label{font-size:13px;color:var(--text2);margin-top:4px}
+.stat-card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:20px 20px 18px;text-align:center;transition:border-color .2s,box-shadow .2s}
+.stat-card:hover{border-color:rgba(232,65,42,.2);box-shadow:var(--shadow)}
+.stat-card .icon{display:flex;align-items:center;justify-content:center;margin-bottom:10px}
+.stat-card .value{font-size:26px;font-weight:800;line-height:1.15;letter-spacing:-.02em}
+/* label: era font-size:13px color:var(--text2) — aumentado peso para legibilidade */
+.stat-card .label{font-size:12px;font-weight:600;color:var(--text2);margin-top:6px;letter-spacing:.02em}
 .stat-card.accent-coral .value{color:var(--coral)}
 .stat-card.accent-amber .value{color:var(--amber)}
 .stat-card.accent-teal .value{color:var(--teal)}
@@ -66,9 +70,10 @@ th{text-align:left;padding:12px 16px;font-size:12px;font-weight:600;color:var(--
 td{padding:12px 16px;font-size:14px;border-bottom:1px solid rgba(39,39,68,.5)}
 tr:hover td{background:rgba(255,255,255,.02)}
 .tabs{display:flex;gap:4px;background:var(--bg-card2);padding:4px;border-radius:10px;overflow-x:auto}
-.tab{padding:8px 20px;border-radius:8px;font-size:13px;font-weight:500;color:var(--text2);cursor:pointer;border:none;background:transparent;font-family:var(--font);transition:all .2s;white-space:nowrap}
-.tab.active{background:var(--coral);color:#fff}
-.tab:hover:not(.active){color:var(--text)}
+/* tab inativa: era var(--text2) quase invisível; agora var(--text) com opacidade */
+.tab{padding:8px 20px;border-radius:8px;font-size:13px;font-weight:500;color:var(--text);opacity:.6;cursor:pointer;border:none;background:transparent;font-family:var(--font);transition:all .2s;white-space:nowrap}
+.tab.active{background:var(--coral);color:#fff;opacity:1}
+.tab:hover:not(.active){opacity:1;background:rgba(255,255,255,.06)}
 .toast{display:flex;align-items:center;gap:10px;padding:12px 16px;border-radius:8px;font-size:13px;font-weight:500;margin-bottom:16px}
 .toast-success{background:rgba(0,201,167,.1);border:1px solid rgba(0,201,167,.3);color:var(--teal)}
 .toast-error{background:rgba(232,65,42,.1);border:1px solid rgba(232,65,42,.3);color:var(--coral)}
@@ -119,19 +124,22 @@ tr:hover td{background:rgba(255,255,255,.02)}
 .queue-tab{padding:10px 20px;font-size:13px;font-weight:500;color:var(--text2);cursor:pointer;border:none;background:transparent;font-family:var(--font);border-bottom:2px solid transparent;transition:all .2s}
 .queue-tab.active{color:var(--coral);border-bottom-color:var(--coral)}
 .queue-item{display:flex;align-items:center;gap:12px;padding:12px 20px;border-bottom:1px solid rgba(39,39,68,.5);cursor:pointer;transition:background .2s}
-.queue-item:hover{background:rgba(255,255,255,.02)}
-.queue-item .thumb{width:36px;height:36px;border-radius:6px;background:var(--bg-card2);display:flex;align-items:center;justify-content:center;font-size:14px;color:var(--text3);flex-shrink:0}
+.queue-item:hover{background:rgba(255,255,255,.04)}
+/* thumb: era var(--text3) em bg-card2 indistinguível; agora borda + cor mais clara */
+.queue-item .thumb{width:36px;height:36px;border-radius:6px;background:var(--bg-card2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:14px;color:var(--text2);flex-shrink:0}
 .queue-item .info{flex:1;min-width:0}
-.queue-item .info .title{font-size:13px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.queue-item .info .meta{font-size:11px;color:var(--text3);margin-top:2px}
+.queue-item .info .title{font-size:13px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text)}
+/* meta: era var(--text3) muito apagado */
+.queue-item .info .meta{font-size:11px;color:var(--text2);opacity:.65;margin-top:2px}
 .queue-item .status-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
 .status-coral{background:var(--coral)}
 .status-amber{background:var(--amber)}
 .status-teal{background:var(--teal)}
 .pills{display:flex;gap:8px;flex-wrap:wrap}
-.pill{display:inline-flex;align-items:center;gap:6px;padding:6px 14px 6px 6px;border-radius:999px;font-size:12px;font-weight:500;cursor:pointer;border:1px solid var(--border);background:transparent;color:var(--text2);transition:all .2s;font-family:var(--font)}
-.pill .avatar{width:22px;height:22px;border-radius:50%;background:var(--bg-card2);display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:var(--text2);flex-shrink:0}
-.pill.active,.pill:hover{border-color:var(--coral);color:var(--text);background:rgba(232,65,42,.08)}
+.pill{display:inline-flex;align-items:center;gap:6px;padding:6px 14px 6px 6px;border-radius:999px;font-size:12px;font-weight:500;cursor:pointer;border:1px solid var(--border);background:transparent;color:var(--text);opacity:.65;transition:all .2s;font-family:var(--font)}
+/* avatar: era 9px var(--text2) em bg-card2 — contraste insuficiente; agora fundo sólido escuro e branco */
+.pill .avatar{width:22px;height:22px;border-radius:50%;background:rgba(255,255,255,.12);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:var(--text);flex-shrink:0}
+.pill.active,.pill:hover{border-color:var(--coral);color:var(--text);opacity:1;background:rgba(232,65,42,.1)}
 .section-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:12px}
 .section-header h2{font-size:20px;font-weight:700}
 .section-header .subtitle{font-size:14px;color:var(--text2);margin-top:4px}
@@ -228,6 +236,8 @@ tr:hover td{background:rgba(255,255,255,.02)}
 .icon-teal{color:var(--teal)}
 .spinner{width:32px;height:32px;border:3px solid var(--border);border-top-color:var(--coral);border-radius:50%;animation:spin .7s linear infinite;margin:0 auto}
 @keyframes spin{to{transform:rotate(360deg)}}
+/* .spinning — classe usada em ícones Lucide; não existia no CSS causando RefreshCw estático */
+.spinning{animation:spin .8s linear infinite}
 .title-option{display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:8px;border:1px solid var(--border);cursor:pointer;margin-bottom:8px;transition:all .2s}
 .title-option:hover{border-color:var(--purple)}
 .title-option.selected{border-color:var(--purple);background:rgba(124,58,237,.08)}

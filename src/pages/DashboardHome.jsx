@@ -76,7 +76,7 @@ function TodayTimeline({ uploadQueue }) {
                 </div>
                 <div style={{ display: "flex", justifyContent: "space-between", marginTop: 8 }}>
                     {hours.map(function(h) {
-                        return <span key={h} style={{ fontSize: 10, color: "var(--text3)", fontWeight: 500 }}>{h}h</span>;
+                        return <span key={h} style={{ fontSize: 10, color: "var(--text2)", fontWeight: 500 }}>{h}h</span>;
                     })}
                 </div>
             </div>
@@ -93,13 +93,15 @@ function QueueItem({ item, onNavigate }) {
 
     return (
         <div onClick={onNavigate}
-            style={{ display: "flex", alignItems: "center", gap: 12, padding: "11px 14px", background: "var(--bg-card2)", borderRadius: "var(--radius)", border: "1px solid var(--border)", marginBottom: 8, cursor: "pointer" }}>
-            <div style={{ width: 48, height: 27, borderRadius: 4, background: "var(--bg-card)", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                <Video size={14} style={{ color: "var(--text3)" }} />
+            style={{ display: "flex", alignItems: "center", gap: 12, padding: "11px 14px", borderRadius: "var(--radius)", border: "1px solid var(--border)", marginBottom: 8, cursor: "pointer", transition: "background .15s" }}
+            onMouseEnter={e => e.currentTarget.style.background = "var(--bg-card2)"}
+            onMouseLeave={e => e.currentTarget.style.background = ""}>
+            <div style={{ width: 48, height: 27, borderRadius: 4, background: "var(--bg-card2)", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", border: "1px solid var(--border)" }}>
+                <Video size={14} style={{ color: "var(--text2)" }} />
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>
                 <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: "var(--text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{item.title}</p>
-                <span style={{ fontSize: 11, color: "var(--text3)" }}>
+                <span style={{ fontSize: 11, color: "var(--text2)", opacity: .7 }}>
                     {item.platform || "YouTube"}
                     {item.scheduledAt ? " - " + new Date(item.scheduledAt).toLocaleString("pt-BR", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" }) : ""}
                 </span>
@@ -136,7 +138,7 @@ function InsightTip({ tip }) {
     else if (tip.icon === "\uD83D\uDCC5") iconEl = <Calendar size={14} />;
     else if (tip.icon === "\uD83D\uDE80") iconEl = <Rocket size={14} />;
     return (
-        <div style={{ display: "flex", gap: 10, padding: "11px 13px", background: "var(--coral-3)", border: "1px solid rgba(232,65,42,0.15)", borderRadius: "var(--radius)", marginBottom: 8 }}>
+        <div style={{ display: "flex", gap: 10, padding: "11px 13px", background: "var(--bg-card2)", border: "1px solid var(--border)", borderLeft: "3px solid var(--coral-3)", borderRadius: "var(--radius)", marginBottom: 8 }}>
             <span style={{ color: "var(--coral-2)", flexShrink: 0, marginTop: 1 }}>{iconEl}</span>
             <p style={{ margin: 0, fontSize: 13, color: "var(--text2)", lineHeight: 1.55 }}>{tip.text}</p>
         </div>
