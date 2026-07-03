@@ -76,16 +76,23 @@ export default function SettingsPage() {
             <Toast message={message} />
 
             {/* Aparência */}
-            <div className="card card-hover mb-4">
+            <div style={{ background: "var(--bg-card)", border: "1px solid var(--border-default)", borderRadius: "var(--radius-lg)", padding: 24, marginBottom: 16 }}>
                 <div className="flex items-center gap-3 mb-4">
-                    <Sun size={18} style={{ color: "var(--amber)" }} />
+                    <Sun size={18} style={{ color: "var(--accent-amber)" }} />
                     <h3 style={{ fontSize: 16, fontWeight: 600 }}>Aparência</h3>
                 </div>
-                <div className="theme-options">
+                <div style={{ display: "flex", gap: 8 }}>
                     {themeOptions.map(({ value, icon: Icon, label }) => (
                         <button key={value}
-                            className={`theme-btn ${theme === value ? "active" : ""}`}
-                            onClick={() => setTheme(value)}>
+                            onClick={() => setTheme(value)}
+                            style={{
+                                display: "flex", alignItems: "center", gap: 6, padding: "8px 14px",
+                                borderRadius: "var(--radius)", fontSize: 13, fontWeight: 500,
+                                cursor: "pointer", transition: "all 0.15s",
+                                border: theme === value ? "1px solid var(--accent-coral)" : "1px solid var(--border-default)",
+                                background: theme === value ? "var(--accent-coral-3)" : "var(--bg-elevated)",
+                                color: theme === value ? "var(--accent-coral-2)" : "var(--text-secondary)",
+                            }}>
                             <Icon size={16} /> {label}
                         </button>
                     ))}
@@ -93,70 +100,70 @@ export default function SettingsPage() {
             </div>
 
             {/* Notificações */}
-            <div className="card card-hover mb-4">
+            <div style={{ background: "var(--bg-card)", border: "1px solid var(--border-default)", borderRadius: "var(--radius-lg)", padding: 24, marginBottom: 16 }}>
                 <div className="flex items-center gap-3 mb-4">
-                    <Bell size={18} style={{ color: "var(--blue)" }} />
+                    <Bell size={18} style={{ color: "var(--accent-amber)" }} />
                     <h3 style={{ fontSize: 16, fontWeight: 600 }}>Notificações</h3>
                 </div>
                 <NotificationPreferences />
             </div>
 
             {/* Plataformas */}
-            <div className="card card-hover mb-4">
+            <div style={{ background: "var(--bg-card)", border: "1px solid var(--border-default)", borderRadius: "var(--radius-lg)", padding: 24, marginBottom: 16 }}>
                 <div className="flex items-center gap-3 mb-4">
-                    <Share2 size={18} style={{ color: "var(--teal)" }} />
+                    <Share2 size={18} style={{ color: "var(--accent-teal)" }} />
                     <h3 style={{ fontSize: 16, fontWeight: 600 }}>Plataformas</h3>
                 </div>
                 <PlatformConnections />
             </div>
 
             {/* Conta + Idioma/Região (2 colunas) */}
-            <div className="grid-2 mb-4" style={{ gap: 24 }}>
-                <div className="card card-hover">
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 24, marginBottom: 24 }}>
+                <div style={{ background: "var(--bg-card)", border: "1px solid var(--border-default)", borderRadius: "var(--radius-lg)", padding: 24 }}>
                     <div className="flex items-center gap-3 mb-4">
-                        <User size={18} style={{ color: "var(--coral)" }} />
+                        <User size={18} style={{ color: "var(--accent-coral)" }} />
                         <h3 style={{ fontSize: 16, fontWeight: 600 }}>Conta</h3>
                     </div>
-                    <div className="form-group">
-                        <label className="form-label">Nome</label>
-                        <input className="input" value={name} onChange={e => setName(e.target.value)} placeholder="Seu nome" />
+                    <div style={{ marginBottom: 16 }}>
+                        <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "var(--text-secondary)", marginBottom: 6 }}>Nome</label>
+                        <input style={{ width: "100%", padding: "10px 12px", background: "var(--bg-elevated)", border: "1px solid var(--border-default)", borderRadius: "var(--radius)", color: "var(--text-primary)", fontSize: 14, outline: "none" }} value={name} onChange={e => setName(e.target.value)} placeholder="Seu nome" />
                     </div>
-                    <div className="form-group">
-                        <label className="form-label">Email</label>
-                        <input className="input" value={user?.email || ""} disabled style={{ opacity: 0.6 }} />
+                    <div style={{ marginBottom: 16 }}>
+                        <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "var(--text-secondary)", marginBottom: 6 }}>Email</label>
+                        <input style={{ width: "100%", padding: "10px 12px", background: "var(--bg-elevated)", border: "1px solid var(--border-default)", borderRadius: "var(--radius)", color: "var(--text-primary)", fontSize: 14, outline: "none", opacity: 0.6 }} value={user?.email || ""} disabled />
                     </div>
-                    <button className="btn btn-primary btn-sm mb-4" onClick={handleSaveAccount}>
+                    <button className="vc-btn vc-btn-primary btn-sm" onClick={handleSaveAccount} style={{ marginBottom: 16 }}>
                         {savingAccount ? "Salvando..." : "Salvar nome"}
                     </button>
-                    <hr style={{ border: "none", borderTop: "1px solid var(--border)", margin: "16px 0" }} />
-                    <div className="form-group">
-                        <label className="form-label">Senha atual</label>
-                        <input className="input" type="password" value={currentPassword} onChange={e => setCurrentPassword(e.target.value)} placeholder="Senha atual" />
+                    <hr style={{ border: "none", borderTop: "1px solid var(--border-default)", margin: "16px 0" }} />
+                    <div style={{ marginBottom: 16 }}>
+                        <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "var(--text-secondary)", marginBottom: 6 }}>Senha atual</label>
+                        <input style={{ width: "100%", padding: "10px 12px", background: "var(--bg-elevated)", border: "1px solid var(--border-default)", borderRadius: "var(--radius)", color: "var(--text-primary)", fontSize: 14, outline: "none" }} type="password" value={currentPassword} onChange={e => setCurrentPassword(e.target.value)} placeholder="Senha atual" />
                     </div>
-                    <div className="form-group">
-                        <label className="form-label">Nova senha</label>
-                        <input className="input" type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)} placeholder="Nova senha" />
+                    <div style={{ marginBottom: 16 }}>
+                        <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "var(--text-secondary)", marginBottom: 6 }}>Nova senha</label>
+                        <input style={{ width: "100%", padding: "10px 12px", background: "var(--bg-elevated)", border: "1px solid var(--border-default)", borderRadius: "var(--radius)", color: "var(--text-primary)", fontSize: 14, outline: "none" }} type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)} placeholder="Nova senha" />
                     </div>
-                    <button className="btn btn-secondary btn-sm" onClick={handleChangePassword}>Alterar senha</button>
+                    <button className="vc-btn vc-btn-secondary btn-sm" onClick={handleChangePassword}>Alterar senha</button>
                 </div>
 
-                <div className="card card-hover">
+                <div style={{ background: "var(--bg-card)", border: "1px solid var(--border-default)", borderRadius: "var(--radius-lg)", padding: 24 }}>
                     <div className="flex items-center gap-3 mb-4">
-                        <Globe size={18} style={{ color: "var(--amber)" }} />
+                        <Globe size={18} style={{ color: "var(--accent-amber)" }} />
                         <h3 style={{ fontSize: 16, fontWeight: 600 }}>Idioma e Região</h3>
                     </div>
-                    <div className="grid-2">
-                        <div className="form-group">
-                            <label className="form-label">Idioma</label>
-                            <select className="input" value={language} onChange={e => setLanguage(e.target.value)}>
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 16 }}>
+                        <div style={{ marginBottom: 16 }}>
+                            <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "var(--text-secondary)", marginBottom: 6 }}>Idioma</label>
+                            <select style={{ width: "100%", padding: "10px 12px", background: "var(--bg-elevated)", border: "1px solid var(--border-default)", borderRadius: "var(--radius)", color: "var(--text-primary)", fontSize: 14, outline: "none" }} value={language} onChange={e => setLanguage(e.target.value)}>
                                 <option value="pt-BR">Português (BR)</option>
                                 <option value="en-US">English (US)</option>
                                 <option value="es">Español</option>
                             </select>
                         </div>
-                        <div className="form-group">
-                            <label className="form-label">Fuso horário</label>
-                            <select className="input" value={timezone} onChange={e => setTimezone(e.target.value)}>
+                        <div style={{ marginBottom: 16 }}>
+                            <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "var(--text-secondary)", marginBottom: 6 }}>Fuso horário</label>
+                            <select style={{ width: "100%", padding: "10px 12px", background: "var(--bg-elevated)", border: "1px solid var(--border-default)", borderRadius: "var(--radius)", color: "var(--text-primary)", fontSize: 14, outline: "none" }} value={timezone} onChange={e => setTimezone(e.target.value)}>
                                 <option value="America/Sao_Paulo">São Paulo (GMT-3)</option>
                                 <option value="America/Manaus">Manaus (GMT-4)</option>
                                 <option value="America/Belem">Belém (GMT-3)</option>
@@ -169,18 +176,18 @@ export default function SettingsPage() {
             </div>
 
             {/* Dados e Privacidade */}
-            <div className="card card-hover mb-4">
+            <div style={{ background: "var(--bg-card)", border: "1px solid var(--border-default)", borderRadius: "var(--radius-lg)", padding: 24, marginBottom: 16 }}>
                 <div className="flex items-center gap-3 mb-4">
-                    <Shield size={18} style={{ color: "var(--teal)" }} />
+                    <Shield size={18} style={{ color: "var(--accent-teal)" }} />
                     <h3 style={{ fontSize: 16, fontWeight: 600 }}>Dados e Privacidade</h3>
                 </div>
-                <button className="platform-btn mb-2" onClick={handleExportData}>
-                    <div className="left"><Download size={16} style={{ color: "var(--teal)" }} /> Exportar meus dados</div>
-                    <ChevronRight size={14} style={{ color: "var(--text3)" }} />
+                <button style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%", padding: "14px 16px", borderRadius: "var(--radius)", background: "var(--bg-elevated)", border: "1px solid var(--border-default)", color: "var(--text-primary)", cursor: "pointer", transition: "all 0.15s", fontFamily: "var(--font-body)", marginBottom: 8 }} onClick={handleExportData}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 10 }}><Download size={16} style={{ color: "var(--accent-teal)" }} /> Exportar meus dados</div>
+                    <ChevronRight size={14} style={{ color: "var(--text-muted)" }} />
                 </button>
-                <button className="platform-btn" style={{ borderColor: "rgba(232,65,42,.3)" }} onClick={handleDeleteAccount}>
-                    <div className="left"><Trash2 size={16} style={{ color: "var(--coral)" }} /> Excluir conta</div>
-                    <ChevronRight size={14} style={{ color: "var(--text3)" }} />
+                <button style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%", padding: "14px 16px", borderRadius: "var(--radius)", background: "var(--bg-elevated)", border: "1px solid rgba(232,65,42,.3)", color: "var(--text-primary)", cursor: "pointer", transition: "all 0.15s", fontFamily: "var(--font-body)" }} onClick={handleDeleteAccount}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 10 }}><Trash2 size={16} style={{ color: "var(--accent-coral)" }} /> Excluir conta</div>
+                    <ChevronRight size={14} style={{ color: "var(--text-muted)" }} />
                 </button>
             </div>
 

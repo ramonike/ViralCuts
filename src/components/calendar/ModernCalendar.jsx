@@ -432,8 +432,7 @@ export function ModernCalendar({
     return (
         <div
             style={{
-                background: 'linear-gradient(135deg, rgba(15,20,35,0.98), rgba(20,25,40,0.98))',
-                backdropFilter: 'blur(20px)',
+                background: 'var(--bg-card)',
                 border: '1px solid var(--border-default)',
                 borderRadius: 'var(--radius-lg)',
                 overflow: 'hidden',
@@ -443,7 +442,7 @@ export function ModernCalendar({
         >
             {/* Header */}
             <div style={{
-                background: 'linear-gradient(135deg, rgba(30,40,70,0.6), rgba(40,30,70,0.4))',
+                background: 'var(--bg-secondary)',
                 borderBottom: '1px solid var(--border-subtle)',
                 padding: '16px 20px 12px',
             }}>
@@ -451,7 +450,7 @@ export function ModernCalendar({
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                         <div style={{
                             width: 32, height: 32, borderRadius: 8,
-                            background: 'linear-gradient(135deg, #3b82f6, #8b5cf6)',
+                            background: 'linear-gradient(135deg, var(--accent-coral), var(--accent-amber))',
                             display: 'flex', alignItems: 'center', justifyContent: 'center',
                         }}>
                             <CalendarIcon size={15} color="#fff" />
@@ -553,12 +552,12 @@ export function ModernCalendar({
                                 border: day.isSelected
                                     ? '1.5px solid var(--accent-coral)'
                                     : day.isToday
-                                        ? '1.5px solid rgba(139,92,246,0.6)'
+                                        ? '1.5px solid var(--accent-amber)'
                                         : '1px solid var(--border-subtle)',
-                                background: day.isToday
-                                    ? 'linear-gradient(135deg, rgba(99,102,241,0.2), rgba(139,92,246,0.2))'
-                                    : day.hasActivity
-                                        ? 'rgba(20,184,166,0.08)'
+                                background: day.isSelected
+                                    ? 'var(--accent-coral-3)'
+                                    : day.isToday
+                                        ? 'var(--accent-amber-3)'
                                         : 'var(--bg-tertiary)',
                                 opacity: day.isCurrentMonth ? 1 : 0.35,
                                 color: day.isToday ? 'var(--text-primary)' : day.hasActivity ? 'var(--text-primary)' : 'var(--text-secondary)',
@@ -590,7 +589,7 @@ export function ModernCalendar({
                 {selectedDayData && (
                     <div style={{
                         marginTop: 16,
-                        background: 'rgba(255,255,255,0.02)',
+                        background: 'var(--bg-tertiary)',
                         border: '1px solid var(--border-subtle)',
                         borderRadius: 10,
                         overflow: 'hidden',
@@ -599,7 +598,7 @@ export function ModernCalendar({
                             display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                             padding: '12px 16px',
                             borderBottom: '1px solid var(--border-subtle)',
-                            background: 'rgba(255,255,255,0.02)',
+                            background: 'var(--bg-elevated)',
                         }}>
                             <div>
                                 <h4 style={{ margin: 0, fontSize: '0.9375rem', fontWeight: 700, color: 'var(--text-primary)', fontFamily: 'var(--font-display)', letterSpacing: '-0.02em' }}>

@@ -28,16 +28,16 @@ function PipelineCTABanner({ unscheduledCount, navigate }) {
     if (unscheduledCount === 0) return null;
     const text1 = unscheduledCount + " video" + (unscheduledCount > 1 ? "s" : "") + " pronto" + (unscheduledCount > 1 ? "s" : "") + " para agendar";
     return (
-        <div className="card" style={{ padding: "14px 18px", cursor: "pointer", display: "flex", alignItems: "center", gap: 14, marginBottom: 16 }}
+        <div style={{ padding: "14px 18px", cursor: "pointer", display: "flex", alignItems: "center", gap: 14, marginBottom: 16 }}
             onClick={() => navigate("/dashboard/calendar")}>
             <div style={{ width: 36, height: 36, borderRadius: "var(--radius)", background: "rgba(240,165,0,0.2)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                <GitBranch size={18} style={{ color: "var(--amber)" }} />
+                <GitBranch size={18} style={{ color: "var(--accent-amber)" }} />
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>
-                <p style={{ margin: "0 0 2px", fontWeight: 700, fontSize: 15, color: "var(--text)" }}>{text1}</p>
-                <p style={{ margin: 0, fontSize: 13, color: "var(--text2)" }}>Abra o Pipeline e defina os horarios de publicacao multicanal</p>
+                <p style={{ margin: "0 0 2px", fontWeight: 700, fontSize: 15, color: "var(--text-primary)" }}>{text1}</p>
+                <p style={{ margin: 0, fontSize: 13, color: "var(--text-secondary)" }}>Abra o Pipeline e defina os horarios de publicacao multicanal</p>
             </div>
-            <ArrowRight size={16} style={{ color: "var(--amber)", flexShrink: 0 }} />
+            <ArrowRight size={16} style={{ color: "var(--accent-amber)", flexShrink: 0 }} />
         </div>
     );
 }
@@ -55,28 +55,28 @@ function TodayTimeline({ uploadQueue }) {
     var nowPct = Math.min(100, Math.max(0, ((now.getHours() * 60 + now.getMinutes()) / (24 * 60)) * 100));
 
     return (
-        <div className="card" style={{ padding: "16px 20px 18px", marginBottom: 16 }}>
+        <div style={{ padding: "16px 20px 18px", marginBottom: 16 }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
-                <span className="label" style={{ marginBottom: 0 }}>Timeline de hoje</span>
-                <span className="badge badge-coral" style={{ fontSize: 10 }}>
+                <span style={{ fontSize: 13, fontWeight: 600, color: "var(--text-secondary)", marginBottom: 0 }}>Timeline de hoje</span>
+                <span className="vc-badge vc-badge-coral" style={{ fontSize: 10 }}>
                     {scheduled.length} agendado{scheduled.length !== 1 ? "s" : ""}
                 </span>
             </div>
             <div style={{ position: "relative", paddingBottom: 22 }}>
-                <div style={{ height: 3, background: "var(--bg-card2)", borderRadius: 2, position: "relative" }}>
-                    <div style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: nowPct + "%", background: "linear-gradient(90deg, var(--coral), var(--amber))", borderRadius: 2 }} />
-                    <div style={{ position: "absolute", left: nowPct + "%", top: "50%", transform: "translate(-50%, -50%)", width: 10, height: 10, borderRadius: "50%", background: "var(--coral)", border: "2px solid var(--bg-card)", zIndex: 3 }} />
+                <div style={{ height: 3, background: "var(--bg-elevated)", borderRadius: 2, position: "relative" }}>
+                    <div style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: nowPct + "%", background: "linear-gradient(90deg, var(--accent-coral), var(--accent-amber))", borderRadius: 2 }} />
+                    <div style={{ position: "absolute", left: nowPct + "%", top: "50%", transform: "translate(-50%, -50%)", width: 10, height: 10, borderRadius: "50%", background: "var(--accent-coral)", border: "2px solid var(--bg-card)", zIndex: 3 }} />
                     {scheduled.map(function(v, i) {
                         var pct = Math.min(100, ((v.hour * 60 + v.minute) / (24 * 60)) * 100);
                         return (
                             <div key={i} title={v.title + " - " + v.hour + "h" + String(v.minute).padStart(2, "0")}
-                                style={{ position: "absolute", left: pct + "%", top: "50%", transform: "translate(-50%, -50%)", width: 8, height: 8, borderRadius: 2, background: "var(--amber)", border: "2px solid var(--bg-card)", zIndex: 2 }} />
+                                style={{ position: "absolute", left: pct + "%", top: "50%", transform: "translate(-50%, -50%)", width: 8, height: 8, borderRadius: 2, background: "var(--accent-amber)", border: "2px solid var(--bg-card)", zIndex: 2 }} />
                         );
                     })}
                 </div>
                 <div style={{ display: "flex", justifyContent: "space-between", marginTop: 8 }}>
                     {hours.map(function(h) {
-                        return <span key={h} style={{ fontSize: 10, color: "var(--text2)", fontWeight: 500 }}>{h}h</span>;
+                        return <span key={h} style={{ fontSize: 10, color: "var(--text-secondary)", fontWeight: 500 }}>{h}h</span>;
                     })}
                 </div>
             </div>
@@ -85,28 +85,28 @@ function TodayTimeline({ uploadQueue }) {
 }
 
 function QueueItem({ item, onNavigate }) {
-    var badgeClass = "badge-coral";
+    var badgeClass = "vc-badge-coral";
     var badgeLabel = "Agendado";
-    if (item.status === "publicando") { badgeClass = "badge-amber"; badgeLabel = "Publicando"; }
-    else if (item.status === "erro") { badgeClass = "badge-coral"; badgeLabel = "Erro"; }
-    else if (item.status === "concluido") { badgeClass = "badge-teal"; badgeLabel = "Publicado"; }
+    if (item.status === "publicando") { badgeClass = "vc-badge-amber"; badgeLabel = "Publicando"; }
+    else if (item.status === "erro") { badgeClass = "vc-badge-coral"; badgeLabel = "Erro"; }
+    else if (item.status === "concluido") { badgeClass = "vc-badge-teal"; badgeLabel = "Publicado"; }
 
     return (
         <div onClick={onNavigate}
-            style={{ display: "flex", alignItems: "center", gap: 12, padding: "11px 14px", borderRadius: "var(--radius)", border: "1px solid var(--border)", marginBottom: 8, cursor: "pointer", transition: "background .15s" }}
-            onMouseEnter={e => e.currentTarget.style.background = "var(--bg-card2)"}
+            style={{ display: "flex", alignItems: "center", gap: 12, padding: "11px 14px", borderRadius: "var(--radius)", border: "1px solid var(--border-default)", marginBottom: 8, cursor: "pointer", transition: "background .15s" }}
+            onMouseEnter={e => e.currentTarget.style.background = "var(--bg-elevated)"}
             onMouseLeave={e => e.currentTarget.style.background = ""}>
-            <div style={{ width: 48, height: 27, borderRadius: 4, background: "var(--bg-card2)", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", border: "1px solid var(--border)" }}>
-                <Video size={14} style={{ color: "var(--text2)" }} />
+            <div style={{ width: 48, height: 27, borderRadius: 4, background: "var(--bg-elevated)", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", border: "1px solid var(--border-default)" }}>
+                <Video size={14} style={{ color: "var(--text-secondary)" }} />
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>
-                <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: "var(--text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{item.title}</p>
-                <span style={{ fontSize: 11, color: "var(--text2)", opacity: .7 }}>
+                <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: "var(--text-primary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{item.title}</p>
+                <span style={{ fontSize: 11, color: "var(--text-secondary)", opacity: .7 }}>
                     {item.platform || "YouTube"}
                     {item.scheduledAt ? " - " + new Date(item.scheduledAt).toLocaleString("pt-BR", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" }) : ""}
                 </span>
             </div>
-            <span className={"badge " + badgeClass}>{badgeLabel}</span>
+            <span className={"vc-badge " + badgeClass}>{badgeLabel}</span>
         </div>
     );
 }
@@ -114,19 +114,19 @@ function QueueItem({ item, onNavigate }) {
 function RecentVideoRow({ video }) {
     var views = video.views || video.statistics?.viewCount || 0;
     return (
-        <div style={{ display: "flex", alignItems: "center", gap: 11, padding: "10px 0", borderBottom: "1px solid var(--border)" }}>
-            <div style={{ width: 44, height: 25, borderRadius: 4, background: "var(--bg-card2)", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                <Play size={12} style={{ color: "var(--text3)" }} />
+        <div style={{ display: "flex", alignItems: "center", gap: 11, padding: "10px 0", borderBottom: "1px solid var(--border-default)" }}>
+            <div style={{ width: 44, height: 25, borderRadius: 4, background: "var(--bg-elevated)", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <Play size={12} style={{ color: "var(--text-muted)" }} />
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>
-                <p style={{ margin: 0, fontSize: 13, fontWeight: 500, color: "var(--text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                <p style={{ margin: 0, fontSize: 13, fontWeight: 500, color: "var(--text-primary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                     {video.title || video.snippet?.title || "Sem titulo"}
                 </p>
-                <span style={{ fontSize: 11, color: "var(--text3)" }}>{video.date || video.snippet?.publishedAt?.split("T")[0] || "\u2014"}</span>
+                <span style={{ fontSize: 11, color: "var(--text-muted)" }}>{video.date || video.snippet?.publishedAt?.split("T")[0] || "\u2014"}</span>
             </div>
             <div style={{ textAlign: "right", flexShrink: 0 }}>
-                <p style={{ margin: 0, fontWeight: 700, color: "var(--text)", fontSize: 15 }}>{formatNumber(views)}</p>
-                <p style={{ margin: 0, fontSize: 10, color: "var(--text3)", textTransform: "uppercase", letterSpacing: ".05em" }}>views</p>
+                <p style={{ margin: 0, fontWeight: 700, color: "var(--text-primary)", fontSize: 15 }}>{formatNumber(views)}</p>
+                <p style={{ margin: 0, fontSize: 10, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: ".05em" }}>views</p>
             </div>
         </div>
     );
@@ -138,9 +138,9 @@ function InsightTip({ tip }) {
     else if (tip.icon === "\uD83D\uDCC5") iconEl = <Calendar size={14} />;
     else if (tip.icon === "\uD83D\uDE80") iconEl = <Rocket size={14} />;
     return (
-        <div style={{ display: "flex", gap: 10, padding: "11px 13px", background: "var(--bg-card2)", border: "1px solid var(--border)", borderLeft: "3px solid var(--coral-3)", borderRadius: "var(--radius)", marginBottom: 8 }}>
-            <span style={{ color: "var(--coral-2)", flexShrink: 0, marginTop: 1 }}>{iconEl}</span>
-            <p style={{ margin: 0, fontSize: 13, color: "var(--text2)", lineHeight: 1.55 }}>{tip.text}</p>
+        <div style={{ display: "flex", gap: 10, padding: "11px 13px", background: "var(--bg-elevated)", border: "1px solid var(--border-default)", borderLeft: "3px solid var(--accent-coral-3)", borderRadius: "var(--radius)", marginBottom: 8 }}>
+            <span style={{ color: "var(--accent-coral-2)", flexShrink: 0, marginTop: 1 }}>{iconEl}</span>
+            <p style={{ margin: 0, fontSize: 13, color: "var(--text-secondary)", lineHeight: 1.55 }}>{tip.text}</p>
         </div>
     );
 }
@@ -154,30 +154,30 @@ function OnboardingState({ user, onNavigateProfile }) {
 
     return (
         <div>
-            <p style={{ margin: "0 0 4px", fontSize: 13, color: "var(--text3)" }}>
+            <p style={{ margin: "0 0 4px", fontSize: 13, color: "var(--text-muted)" }}>
                 {getGreeting()}, {user?.name?.split(" ")[0] || "criador"}
             </p>
-            <h1 style={{ margin: "0 0 6px", fontSize: "2rem", fontWeight: 700, color: "var(--text)", letterSpacing: "-.03em", lineHeight: 1.1 }}>
+            <h1 style={{ margin: "0 0 6px", fontSize: "2rem", fontWeight: 700, color: "var(--text-primary)", letterSpacing: "-.03em", lineHeight: 1.1 }}>
                 Vamos comecar
             </h1>
-            <p style={{ margin: "0 0 32px", fontSize: 15, color: "var(--text3)" }}>
+            <p style={{ margin: "0 0 32px", fontSize: 15, color: "var(--text-muted)" }}>
                 3 passos para ativar o ViralCuts no seu canal.
             </p>
             <div style={{ maxWidth: 520, display: "flex", flexDirection: "column", gap: 10 }}>
                 {steps.map(function(s) {
-                    var borderColor = s.done ? "rgba(0,201,167,0.25)" : "var(--border)";
-                    var bgColor = s.done ? "var(--teal-3)" : "var(--bg-card)";
+                    var borderColor = s.done ? "rgba(0,201,167,0.25)" : "var(--border-default)";
+                    var bgColor = s.done ? "var(--accent-teal-3)" : "var(--bg-card)";
                     var opacity = s.disabled ? 0.4 : 1;
                     return (
                         <div key={s.num} style={{ display: "flex", gap: 16, padding: "18px 20px", borderRadius: "var(--radius-lg)", border: "1px solid " + borderColor, background: bgColor, opacity: opacity }}>
                             <div style={{ minWidth: 30, paddingTop: 2 }}>
-                                {s.done ? <CheckCircle size={22} style={{ color: "var(--teal)" }} /> : <span style={{ fontSize: "1.375rem", fontWeight: 700, color: "var(--text3)", lineHeight: 1 }}>{s.num}</span>}
+                                {s.done ? <CheckCircle size={22} style={{ color: "var(--accent-teal)" }} /> : <span style={{ fontSize: "1.375rem", fontWeight: 700, color: "var(--text-muted)", lineHeight: 1 }}>{s.num}</span>}
                             </div>
                             <div style={{ flex: 1 }}>
-                                <p style={{ margin: "0 0 3px", fontSize: 15, fontWeight: 600, color: "var(--text)" }}>{s.title}</p>
-                                <p style={{ margin: 0, fontSize: 13, color: "var(--text2)", lineHeight: 1.55 }}>{s.desc}</p>
+                                <p style={{ margin: "0 0 3px", fontSize: 15, fontWeight: 600, color: "var(--text-primary)" }}>{s.title}</p>
+                                <p style={{ margin: 0, fontSize: 13, color: "var(--text-secondary)", lineHeight: 1.55 }}>{s.desc}</p>
                                 {s.cta && !s.disabled && (
-                                    <button onClick={s.onCta} className="btn btn-primary btn-sm" style={{ marginTop: 12 }}>
+                                    <button onClick={s.onCta} className="vc-btn vc-btn-primary btn-sm" style={{ marginTop: 12 }}>
                                         {s.cta} <ArrowRight size={13} />
                                     </button>
                                 )}
@@ -223,34 +223,34 @@ function ConnectedDashboard({ user, state, supabase, navigate }) {
 
     return (
         <div>
-            <div className="section-header" style={{ marginBottom: 24 }}>
-                <div>
-                    <p style={{ margin: "0 0 2px", fontSize: 13, color: "var(--text3)" }}>
+            <div className="vc-page-header" style={{ marginBottom: 24 }}>
+                <div className="vc-page-header-text">
+                    <p style={{ margin: "0 0 2px", fontSize: 13, color: "var(--text-muted)" }}>
                         {getGreeting()}, {user?.name?.split(" ")[0] || "criador"}
                     </p>
                     <h1 style={{ margin: 0, fontSize: "1.875rem", fontWeight: 700, letterSpacing: "-.03em", lineHeight: 1.1 }}>Dashboard</h1>
                     {channelStats?.title && (
-                        <p style={{ margin: "5px 0 0", fontSize: 13, color: "var(--amber)", fontWeight: 600, display: "flex", alignItems: "center", gap: 5 }}>
-                            <span className="badge" style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--coral)", display: "inline-block", padding: 0 }} />
+                        <p style={{ margin: "5px 0 0", fontSize: 13, color: "var(--accent-amber)", fontWeight: 600, display: "flex", alignItems: "center", gap: 5 }}>
+                            <span style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--accent-coral)", display: "inline-block", padding: 0 }} />
                             {channelStats.title}
                         </p>
                     )}
                 </div>
-                <div style={{ display: "flex", gap: 8 }}>
-                    <button onClick={function() { navigate("/dashboard/creation"); }} className="btn btn-secondary btn-sm">
+                <div className="vc-page-actions">
+                    <button onClick={function() { navigate("/dashboard/creation"); }} className="vc-btn vc-btn-secondary btn-sm">
                         <Sparkles size={12} /> Otimizar com IA
                     </button>
-                    <button onClick={function() { navigate("/dashboard/videos"); }} className="btn btn-primary btn-sm">
+                    <button onClick={function() { navigate("/dashboard/videos"); }} className="vc-btn vc-btn-primary btn-sm">
                         <Upload size={12} /> Novo upload
                     </button>
                 </div>
             </div>
 
-            <div className="grid-4 mb-4">
-                <div className="stat-card"><div className="label">Visualizacoes</div><div className="value">{totalViews}</div></div>
-                <div className="stat-card"><div className="label">Inscritos</div><div className="value">{subscribers}</div></div>
-                <div className="stat-card"><div className="label">Na fila</div><div className="value">{uploadQueue.length}</div></div>
-                <div className="stat-card"><div className="label">Publicados</div><div className="value">{totalPublished}</div></div>
+            <div className="vc-grid-metrics mb-4">
+                <div className="vc-metric-card"><div className="vc-metric-label">Visualizacoes</div><div className="vc-metric-value">{totalViews}</div></div>
+                <div className="vc-metric-card"><div className="vc-metric-label">Inscritos</div><div className="vc-metric-value">{subscribers}</div></div>
+                <div className="vc-metric-card"><div className="vc-metric-label">Na fila</div><div className="vc-metric-value">{uploadQueue.length}</div></div>
+                <div className="vc-metric-card"><div className="vc-metric-label">Publicados</div><div className="vc-metric-value">{totalPublished}</div></div>
             </div>
 
             <PipelineCTABanner
@@ -260,13 +260,13 @@ function ConnectedDashboard({ user, state, supabase, navigate }) {
 
             <TodayTimeline uploadQueue={uploadQueue} />
 
-            <div className="grid-2" style={{ gridTemplateColumns: "1fr 296px", gap: 16 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 296px", gap: 16 }}>
                 <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-                    <div className="card">
+                    <div style={{ padding: "16px 20px 18px" }}>
                         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
-                            <span className="label" style={{ marginBottom: 0 }}>Fila de uploads</span>
+                            <span style={{ fontSize: 13, fontWeight: 600, color: "var(--text-secondary)", marginBottom: 0 }}>Fila de uploads</span>
                             <button onClick={function() { navigate("/dashboard/videos"); }}
-                                style={{ fontSize: 12, fontWeight: 600, color: "var(--coral-2)", background: "none", border: "none", cursor: "pointer" }}>
+                                style={{ fontSize: 12, fontWeight: 600, color: "var(--accent-coral-2)", background: "none", border: "none", cursor: "pointer" }}>
                                 Ver todos
                             </button>
                         </div>
@@ -274,22 +274,22 @@ function ConnectedDashboard({ user, state, supabase, navigate }) {
                             ? uploadQueue.slice(0, 3).map(function(item, i) { return <QueueItem key={item.id || i} item={item} onNavigate={function() { navigate("/dashboard/videos"); }} />; })
                             : (
                                 <div style={{ textAlign: "center", padding: "28px 0" }}>
-                                    <div style={{ width: 44, height: 44, borderRadius: "var(--radius)", background: "var(--bg-card2)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 12px" }}>
-                                        <Rocket size={20} style={{ color: "var(--text3)" }} />
+                                    <div style={{ width: 44, height: 44, borderRadius: "var(--radius)", background: "var(--bg-elevated)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 12px" }}>
+                                        <Rocket size={20} style={{ color: "var(--text-muted)" }} />
                                     </div>
-                                    <p style={{ margin: "0 0 12px", fontSize: 14, color: "var(--text3)" }}>Fila vazia</p>
-                                    <button onClick={function() { navigate("/dashboard/videos"); }} className="btn btn-primary btn-sm">
+                                    <p style={{ margin: "0 0 12px", fontSize: 14, color: "var(--text-muted)" }}>Fila vazia</p>
+                                    <button onClick={function() { navigate("/dashboard/videos"); }} className="vc-btn vc-btn-primary btn-sm">
                                         <Plus size={13} /> Adicionar video
                                     </button>
                                 </div>
                             )}
                     </div>
 
-                    <div className="card">
+                    <div style={{ padding: "16px 20px 18px" }}>
                         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
-                            <span className="label" style={{ marginBottom: 0 }}>Publicados recentemente</span>
+                            <span style={{ fontSize: 13, fontWeight: 600, color: "var(--text-secondary)", marginBottom: 0 }}>Publicados recentemente</span>
                             <button onClick={function() { navigate("/dashboard/analytics"); }}
-                                style={{ fontSize: 12, fontWeight: 600, color: "var(--coral-2)", background: "none", border: "none", cursor: "pointer" }}>
+                                style={{ fontSize: 12, fontWeight: 600, color: "var(--accent-coral-2)", background: "none", border: "none", cursor: "pointer" }}>
                                 Ver analytics
                             </button>
                         </div>
@@ -297,10 +297,10 @@ function ConnectedDashboard({ user, state, supabase, navigate }) {
                             ? recentVideos.map(function(v, i) { return <RecentVideoRow key={v.id || i} video={v} />; })
                             : (
                                 <div style={{ textAlign: "center", padding: "28px 0" }}>
-                                    <div style={{ width: 44, height: 44, borderRadius: "var(--radius)", background: "var(--bg-card2)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 12px" }}>
-                                        <Video size={20} style={{ color: "var(--text3)" }} />
+                                    <div style={{ width: 44, height: 44, borderRadius: "var(--radius)", background: "var(--bg-elevated)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 12px" }}>
+                                        <Video size={20} style={{ color: "var(--text-muted)" }} />
                                     </div>
-                                    <p style={{ margin: 0, fontSize: 14, color: "var(--text3)" }}>Nenhum video publicado ainda</p>
+                                    <p style={{ margin: 0, fontSize: 14, color: "var(--text-muted)" }}>Nenhum video publicado ainda</p>
                                 </div>
                             )}
                     </div>
@@ -308,41 +308,41 @@ function ConnectedDashboard({ user, state, supabase, navigate }) {
 
                 <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
                     {nextScheduled ? (
-                        <div className="card" style={{ padding: "18px 20px", borderTop: "2px solid var(--coral)" }}>
-                            <span className="label" style={{ marginBottom: 0 }}>Proximo upload</span>
-                            <p style={{ margin: "8px 0 4px", fontSize: 15, fontWeight: 600, color: "var(--text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        <div style={{ padding: "18px 20px", borderTop: "2px solid var(--accent-coral)" }}>
+                            <span style={{ fontSize: 13, fontWeight: 600, color: "var(--text-secondary)", marginBottom: 0 }}>Proximo upload</span>
+                            <p style={{ margin: "8px 0 4px", fontSize: 15, fontWeight: 600, color: "var(--text-primary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                                 {nextScheduled.title}
                             </p>
-                            <span style={{ fontSize: 12, color: "var(--text3)", display: "block", marginBottom: 14 }}>
+                            <span style={{ fontSize: 12, color: "var(--text-muted)", display: "block", marginBottom: 14 }}>
                                 {nextScheduled.platform || "YouTube"} - {new Date(nextScheduled.scheduledAt).toLocaleString("pt-BR", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}
                             </span>
-                            <button onClick={function() { navigate("/dashboard/videos"); }} className="btn btn-secondary btn-sm" style={{ width: "100%" }}>
+                            <button onClick={function() { navigate("/dashboard/videos"); }} className="vc-btn vc-btn-secondary btn-sm" style={{ width: "100%" }}>
                                 Gerenciar uploads
                             </button>
                         </div>
                     ) : (
-                        <div className="card" style={{ textAlign: "center", padding: 20 }}>
-                            <div style={{ width: 40, height: 40, borderRadius: "var(--radius)", background: "var(--bg-card2)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 12px" }}>
-                                <Calendar size={18} style={{ color: "var(--text3)" }} />
+                        <div style={{ textAlign: "center", padding: 20 }}>
+                            <div style={{ width: 40, height: 40, borderRadius: "var(--radius)", background: "var(--bg-elevated)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 12px" }}>
+                                <Calendar size={18} style={{ color: "var(--text-muted)" }} />
                             </div>
-                            <p style={{ margin: "0 0 12px", fontSize: 14, fontWeight: 600, color: "var(--text2)" }}>Sem uploads agendados</p>
-                            <button onClick={function() { navigate("/dashboard/calendar"); }} className="btn btn-secondary btn-sm" style={{ width: "100%" }}>
+                            <p style={{ margin: "0 0 12px", fontSize: 14, fontWeight: 600, color: "var(--text-secondary)" }}>Sem uploads agendados</p>
+                            <button onClick={function() { navigate("/dashboard/calendar"); }} className="vc-btn vc-btn-secondary btn-sm" style={{ width: "100%" }}>
                                 Abrir calendario
                             </button>
                         </div>
                     )}
 
-                    <div className="card">
+                    <div style={{ padding: "16px 20px 18px" }}>
                         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
-                            <span className="label" style={{ marginBottom: 0 }}>Insights do canal</span>
+                            <span style={{ fontSize: 13, fontWeight: 600, color: "var(--text-secondary)", marginBottom: 0 }}>Insights do canal</span>
                         </div>
                         {insights.map(function(tip, i) { return <InsightTip key={i} tip={tip} />; })}
                     </div>
 
                     <button onClick={function() { navigate("/dashboard/analytics"); }}
-                        className="platform-btn">
-                        <div className="left"><BarChart2 size={16} style={{ color: "var(--amber)" }} /> Analytics completos</div>
-                        <ArrowRight size={14} style={{ color: "var(--text3)" }} />
+                        style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%", padding: "12px 16px", borderRadius: "var(--radius)", border: "1px solid var(--border-default)", background: "transparent", cursor: "pointer", fontSize: 14, fontWeight: 500, color: "var(--text-primary)" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 8 }}><BarChart2 size={16} style={{ color: "var(--accent-amber)" }} /> Analytics completos</div>
+                        <ArrowRight size={14} style={{ color: "var(--text-muted)" }} />
                     </button>
                 </div>
             </div>

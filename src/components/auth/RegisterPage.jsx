@@ -56,36 +56,37 @@ export default function RegisterPage() {
     const handleKeyDown = (e) => { if (e.key === "Enter") handleRegister(e); };
 
     return (
-        <div className="auth-page">
-            <button onClick={toggleTheme} style={{ position: "fixed", top: 16, right: 16, zIndex: 50, padding: 8, background: "var(--bg-card2)", border: "1px solid var(--border)", borderRadius: 8, color: "var(--text2)", cursor: "pointer" }}>
+        <div style={{ display: "flex", minHeight: "100vh", background: "var(--bg-default)" }}>
+            <button onClick={toggleTheme} style={{ position: "fixed", top: 16, right: 16, zIndex: 50, padding: 8, background: "var(--bg-elevated)", border: "1px solid var(--border)", borderRadius: 8, color: "var(--text-secondary)", cursor: "pointer" }}>
                 {isDark ? <Sun size={16} /> : <Moon size={16} />}
             </button>
 
-            <div className="auth-brand">
+            <div style={{ flex: "0 0 44%", background: "var(--bg-card)", position: "relative", overflow: "hidden", display: "flex", flexDirection: "column", justifyContent: "center", padding: "60px 48px" }}>
+                <div style={{ position: "absolute", top: "-50%", right: "-30%", width: 600, height: 600, borderRadius: "50%", background: "radial-gradient(circle, rgba(232,65,42,0.12), transparent 70%)", pointerEvents: "none" }} />
                 <Link to="/" style={{ textDecoration: "none" }}>
-                    <div className="logo">ViralCuts</div>
+                    <div style={{ fontSize: 32, fontWeight: 900, color: "var(--accent-coral)", marginBottom: 16 }}>ViralCuts</div>
                 </Link>
                 <h2>Crie sua conta<br /><em>e comece agora</em></h2>
-                <div className="features">
-                    <div className="feature">Upload automático para múltiplas plataformas</div>
-                    <div className="feature">Analytics detalhados do seu canal</div>
-                    <div className="feature">Agendamento inteligente de publicações</div>
+                <div>
+                    <div style={{ display: "flex", alignItems: "center", gap: 12, fontSize: 14, color: "var(--text-secondary)" }}><span style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--accent-coral)", flexShrink: 0 }} />Upload automático para múltiplas plataformas</div>
+                    <div style={{ display: "flex", alignItems: "center", gap: 12, fontSize: 14, color: "var(--text-secondary)" }}><span style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--accent-coral)", flexShrink: 0 }} />Analytics detalhados do seu canal</div>
+                    <div style={{ display: "flex", alignItems: "center", gap: 12, fontSize: 14, color: "var(--text-secondary)" }}><span style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--accent-coral)", flexShrink: 0 }} />Agendamento inteligente de publicações</div>
                 </div>
-                <div className="stats-bar">
-                    <div className="stat-item"><div className="num">1.2K+</div><div className="desc">Criadores</div></div>
-                    <div className="stat-item"><div className="num">50M+</div><div className="desc">Views geradas</div></div>
-                    <div className="stat-item"><div className="num">350+</div><div className="desc">Canais</div></div>
+                <div style={{ display: "flex", gap: 32, marginTop: "auto", paddingTop: 40, borderTop: "1px solid var(--border-default)" }}>
+                    <div style={{ textAlign: "center" }}><div style={{ fontSize: 20, fontWeight: 800, color: "var(--text-primary)" }}>1.2K+</div><div style={{ fontSize: 12, color: "var(--text-muted)" }}>Criadores</div></div>
+                    <div style={{ textAlign: "center" }}><div style={{ fontSize: 20, fontWeight: 800, color: "var(--text-primary)" }}>50M+</div><div style={{ fontSize: 12, color: "var(--text-muted)" }}>Views geradas</div></div>
+                    <div style={{ textAlign: "center" }}><div style={{ fontSize: 20, fontWeight: 800, color: "var(--text-primary)" }}>350+</div><div style={{ fontSize: 12, color: "var(--text-muted)" }}>Canais</div></div>
                 </div>
             </div>
 
-            <div className="auth-form">
-                <div className="form-wrap">
-                    <Link to="/" className="lg:hidden" style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 13, color: "var(--text3)", textDecoration: "none", marginBottom: 32 }}>
+            <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", padding: 40 }}>
+                <div style={{ width: "100%", maxWidth: 400 }}>
+                    <Link to="/" className="lg:hidden" style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 13, color: "var(--text-muted)", textDecoration: "none", marginBottom: 32 }}>
                         <ArrowLeft size={14} /> Voltar
                     </Link>
 
                     <h1>Criar conta</h1>
-                    <p className="subtitle">Preencha os dados para começar</p>
+                    <p style={{ color: "var(--text-secondary)", fontSize: 14, marginBottom: 24 }}>Preencha os dados para começar</p>
 
                     {error && (
                         <div className="vc-toast vc-toast-coral mb-6">
@@ -112,9 +113,9 @@ export default function RegisterPage() {
                         </Button>
                     </form>
 
-                    <p style={{ marginTop: 32, textAlign: "center", fontSize: 14, color: "var(--text3)" }}>
+                    <p style={{ marginTop: 32, textAlign: "center", fontSize: 14, color: "var(--text-muted)" }}>
                         Já tem uma conta?{" "}
-                        <Link to="/login" style={{ color: "var(--coral-2)", fontWeight: 600, textDecoration: "none" }}>Entrar</Link>
+                        <Link to="/login" style={{ color: "var(--accent-coral-2)", fontWeight: 600, textDecoration: "none" }}>Entrar</Link>
                     </p>
                 </div>
             </div>

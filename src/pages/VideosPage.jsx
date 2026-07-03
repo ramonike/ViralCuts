@@ -38,14 +38,14 @@ function VideoCard({ video }) {
     const [imgError, setImgError] = useState(false);
 
     return (
-        <div className="card" style={{ padding: 0, overflow: "hidden" }}>
-            <div style={{ position: "relative", aspectRatio: "16/9", background: "var(--bg-card2)", overflow: "hidden" }}>
+        <div style={{ padding: 0, overflow: "hidden", borderRadius: "var(--radius)", background: "var(--bg-default)" }}>
+            <div style={{ position: "relative", aspectRatio: "16/9", background: "var(--bg-elevated)", overflow: "hidden" }}>
                 {thumb && !imgError ? (
                     <img src={thumb} alt={title} onError={() => setImgError(true)}
                         style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                 ) : (
                     <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                        <Video size={28} style={{ color: "var(--text3)" }} />
+                        <Video size={28} style={{ color: "var(--text-muted)" }} />
                     </div>
                 )}
                 <a href={videoUrl} target="_blank" rel="noopener noreferrer"
@@ -56,17 +56,17 @@ function VideoCard({ video }) {
                 </a>
             </div>
             <div style={{ padding: "12px 14px" }}>
-                <p style={{ margin: "0 0 8px", fontSize: 14, fontWeight: 600, color: "var(--text)", lineHeight: 1.4, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
+                <p style={{ margin: "0 0 8px", fontSize: 14, fontWeight: 600, color: "var(--text-primary)", lineHeight: 1.4, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
                     {title}
                 </p>
                 <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
-                    <span style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12, color: "var(--text3)" }}>
+                    <span style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12, color: "var(--text-muted)" }}>
                         <Eye size={12} /> {formatNum(viewCount)}
                     </span>
-                    <span style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12, color: "var(--text3)" }}>
+                    <span style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12, color: "var(--text-muted)" }}>
                         <ThumbsUp size={12} /> {formatNum(likeCount)}
                     </span>
-                    <span style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12, color: "var(--text3)", marginLeft: "auto" }}>
+                    <span style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12, color: "var(--text-muted)", marginLeft: "auto" }}>
                         <Clock size={12} /> {formatDate(video.publishedAt)}
                     </span>
                 </div>
@@ -84,11 +84,11 @@ function ChannelStrip({ channelStats }) {
         { label: "Vídeos", value: formatNum(stats.videoCount) },
     ];
     return (
-        <div className="grid-3 mb-6" style={{ gap: 12 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12, marginBottom: 24 }}>
             {items.map(item => (
-                <div key={item.label} className="stat-card">
-                    <div className="label" style={{ fontSize: 11 }}>{item.label}</div>
-                    <div className="value" style={{ fontSize: "1.5rem" }}>{item.value}</div>
+                <div key={item.label} className="vc-metric-card">
+                    <div className="vc-metric-label" style={{ fontSize: 11 }}>{item.label}</div>
+                    <div className="vc-metric-value" style={{ fontSize: "1.5rem" }}>{item.value}</div>
                 </div>
             ))}
         </div>
@@ -97,23 +97,23 @@ function ChannelStrip({ channelStats }) {
 
 function EmptyState({ hasChannel, onNavigateProfile }) {
     if (!hasChannel) return (
-        <div className="card" style={{ textAlign: "center", padding: "56px 24px", borderStyle: "dashed" }}>
-            <div style={{ width: 52, height: 52, borderRadius: "var(--radius)", background: "var(--bg-card2)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 14px" }}>
-                <Youtube size={24} style={{ color: "var(--text3)" }} />
+        <div style={{ textAlign: "center", padding: "56px 24px", borderStyle: "dashed", borderRadius: "var(--radius)", background: "var(--bg-default)" }}>
+            <div style={{ width: 52, height: 52, borderRadius: "var(--radius)", background: "var(--bg-elevated)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 14px" }}>
+                <Youtube size={24} style={{ color: "var(--text-muted)" }} />
             </div>
-            <p style={{ margin: "0 0 6px", fontWeight: 600, fontSize: 16, color: "var(--text2)" }}>Canal não conectado</p>
-            <p style={{ margin: "0 0 16px", fontSize: 14, color: "var(--text3)" }}>Conecte seu YouTube nas configurações para ver seus vídeos aqui</p>
+            <p style={{ margin: "0 0 6px", fontWeight: 600, fontSize: 16, color: "var(--text-secondary)" }}>Canal não conectado</p>
+            <p style={{ margin: "0 0 16px", fontSize: 14, color: "var(--text-muted)" }}>Conecte seu YouTube nas configurações para ver seus vídeos aqui</p>
             {onNavigateProfile && (
-                <button onClick={onNavigateProfile} className="btn btn-primary btn-sm">
+                <button onClick={onNavigateProfile} className="vc-btn vc-btn-primary btn-sm">
                     Conectar YouTube <ArrowUpRight size={13} />
                 </button>
             )}
         </div>
     );
     return (
-        <div className="card" style={{ textAlign: "center", padding: "56px 24px", borderStyle: "dashed" }}>
-            <Video size={28} style={{ color: "var(--text3)", marginBottom: 12 }} />
-            <p style={{ margin: 0, fontSize: 14, color: "var(--text3)" }}>Nenhum vídeo encontrado</p>
+        <div style={{ textAlign: "center", padding: "56px 24px", borderStyle: "dashed", borderRadius: "var(--radius)", background: "var(--bg-default)" }}>
+            <Video size={28} style={{ color: "var(--text-muted)", marginBottom: 12 }} />
+            <p style={{ margin: 0, fontSize: 14, color: "var(--text-muted)" }}>Nenhum vídeo encontrado</p>
         </div>
     );
 }
@@ -152,22 +152,21 @@ export default function ChannelPage() {
 
     return (
         <PageLayout maxWidth="7xl" spacing="standard">
-            <div className="section-header">
-                <div>
-                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
-                        <Youtube size={18} style={{ color: "var(--coral)" }} />
-                        <h2 style={{ margin: 0, fontSize: "1.875rem", fontWeight: 700, letterSpacing: "-.035em" }}>Canal</h2>
-                    </div>
-                    <p style={{ margin: 0, fontSize: 14, color: "var(--text2)" }}>
+            <div className="vc-page-header">
+                <div className="vc-page-header-text">
+                    <h2><Youtube size={18} style={{ color: "var(--accent-coral)", marginRight: 8 }} /> Canal</h2>
+                    <p>
                         {channelStats?.title
                             ? `@${channelStats.title} · biblioteca de vídeos publicados`
                             : "Biblioteca de vídeos publicados no YouTube"
                         }
                     </p>
                 </div>
-                <button onClick={() => actions.refreshChannelStats?.()} className="btn btn-secondary btn-sm">
-                    <RefreshCw size={12} /> Sincronizar
-                </button>
+                <div className="vc-page-actions">
+                    <button onClick={() => actions.refreshChannelStats?.()} className="vc-btn vc-btn-secondary btn-sm">
+                        <RefreshCw size={12} /> Sincronizar
+                    </button>
+                </div>
             </div>
 
             <ChannelStrip channelStats={channelStats} />
@@ -188,12 +187,12 @@ export default function ChannelPage() {
             {allVideos.length > 0 && (
                 <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16, flexWrap: "wrap" }}>
                     <div style={{ position: "relative", flex: "1 1 200px", maxWidth: 320 }}>
-                        <Search size={14} style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: "var(--text3)", pointerEvents: "none" }} />
+                        <Search size={14} style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: "var(--text-muted)", pointerEvents: "none" }} />
                         <input value={search} onChange={e => setSearch(e.target.value)}
-                            placeholder="Buscar vídeo..." className="input" style={{ paddingLeft: 32, paddingRight: search ? 32 : 12 }} />
+                            placeholder="Buscar vídeo..." className="vc-input" style={{ paddingLeft: 32, paddingRight: search ? 32 : 12 }} />
                         {search && (
                             <button onClick={() => setSearch("")}
-                                style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", color: "var(--text3)", cursor: "pointer", padding: 0 }}>
+                                style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", color: "var(--text-muted)", cursor: "pointer", padding: 0 }}>
                                 <X size={14} />
                             </button>
                         )}
@@ -206,12 +205,12 @@ export default function ChannelPage() {
                         ].map(opt => (
                             <button key={opt.key}
                                 onClick={() => setSortBy(opt.key)}
-                                className={`btn ${sortBy === opt.key ? "btn-primary" : "btn-secondary"} btn-sm`}>
+                                className={`vc-btn ${sortBy === opt.key ? "vc-btn-primary" : "vc-btn-secondary"} btn-sm`}>
                                 {opt.icon} {opt.label}
                             </button>
                         ))}
                     </div>
-                    <span style={{ marginLeft: "auto", fontSize: 12, color: "var(--text3)", fontWeight: 500 }}>
+                    <span style={{ marginLeft: "auto", fontSize: 12, color: "var(--text-muted)", fontWeight: 500 }}>
                         {filteredVideos.length} vídeo{filteredVideos.length !== 1 ? "s" : ""}
                     </span>
                 </div>

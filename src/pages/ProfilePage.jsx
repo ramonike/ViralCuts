@@ -21,7 +21,6 @@ const formatNumber = (num) => {
     return n.toLocaleString("pt-BR");
 };
 
-// ─── Account Switcher ─────────────────────────────────────────────────────────
 function AccountSwitcher({ accounts, activeId, onSwitch }) {
     if (accounts.length <= 1) return null;
     return (
@@ -30,13 +29,13 @@ function AccountSwitcher({ accounts, activeId, onSwitch }) {
                 <button
                     key={acc.id}
                     onClick={() => onSwitch(acc.id)}
-                    className={`btn btn-secondary btn-sm ${acc.id === activeId ? "" : ""}`}
-                    style={acc.id === activeId ? { borderColor: "var(--coral)", color: "var(--coral)" } : {}}
+                    className={`vc-btn vc-btn-secondary btn-sm ${acc.id === activeId ? "" : ""}`}
+                    style={acc.id === activeId ? { borderColor: "var(--accent-coral)", color: "var(--accent-coral)" } : {}}
                 >
                     {acc.avatar ? (
                         <img src={acc.avatar} style={{ width: 14, height: 14, borderRadius: "50%", objectFit: "cover" }} alt="" />
                     ) : (
-                        <span style={{ width: 14, height: 14, borderRadius: "50%", background: "var(--bg-card2)", display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: 8, fontWeight: 700, flexShrink: 0 }}>
+                        <span style={{ width: 14, height: 14, borderRadius: "50%", background: "var(--bg-elevated)", display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: 8, fontWeight: 700, flexShrink: 0 }}>
                             {(acc.name || '?')[0].toUpperCase()}
                         </span>
                     )}
@@ -47,7 +46,6 @@ function AccountSwitcher({ accounts, activeId, onSwitch }) {
     );
 }
 
-// ─── Channel Hero ─────────────────────────────────────────────────────────────
 function ChannelHero({ channelStats, onRefresh, youtubeAccounts, activeId, onSwitch }) {
     const avatarUrl =
         channelStats?.thumbnails?.high?.url ||
@@ -59,9 +57,8 @@ function ChannelHero({ channelStats, onRefresh, youtubeAccounts, activeId, onSwi
         : `https://youtube.com/channel/${channelStats?.id}`;
 
     return (
-        <div className="profile-hero">
-            {/* banner: era #ff0000,#cc0000 vermelho puro fora da paleta; agora coral→amber ViralCuts */}
-            <div className="banner" style={{ background: "linear-gradient(135deg, var(--coral) 0%, var(--amber) 100%)" }}>
+        <div style={{ position: "relative", borderRadius: "var(--radius-lg)", overflow: "hidden", minHeight: 180, marginBottom: 24 }}>
+            <div style={{ height: 140, borderRadius: "var(--radius-lg) var(--radius-lg) 0 0", background: "linear-gradient(135deg, var(--accent-coral) 0%, var(--accent-amber) 100%)" }}>
                 {channelStats?.brandingSettings?.image?.bannerExternalUrl && (
                     <img src={channelStats.brandingSettings.image.bannerExternalUrl}
                         style={{ width: "100%", height: "100%", objectFit: "cover", opacity: 0.5 }}
@@ -69,28 +66,27 @@ function ChannelHero({ channelStats, onRefresh, youtubeAccounts, activeId, onSwi
                 )}
             </div>
             {avatarUrl ? (
-                <div className="avatar"><img src={avatarUrl} style={{ width: "100%", height: "100%", objectFit: "cover" }} alt="" /></div>
+                <div style={{ position: "absolute", bottom: 0, left: 24, width: 80, height: 80, borderRadius: "50%", border: "4px solid var(--bg-primary)", overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28, fontWeight: 700, background: "var(--bg-elevated)", color: "var(--text-primary)" }}><img src={avatarUrl} style={{ width: "100%", height: "100%", objectFit: "cover" }} alt="" /></div>
             ) : (
-                <div className="avatar" style={{ background: "linear-gradient(135deg,var(--coral),var(--amber))" }}>
+                <div style={{ position: "absolute", bottom: 0, left: 24, width: 80, height: 80, borderRadius: "50%", border: "4px solid var(--bg-primary)", overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28, fontWeight: 700, background: "linear-gradient(135deg,var(--accent-coral),var(--accent-amber))", color: "var(--text-primary)" }}>
                     {(channelStats?.title || "?")[0].toUpperCase()}
                 </div>
             )}
-            <div className="info">
+            <div style={{ marginLeft: 120, padding: "16px 24px 16px 0" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                    <h3>{channelStats?.title || "Seu Canal"}</h3>
-                    <CheckCircle size={14} style={{ color: "var(--teal)", flexShrink: 0 }} />
+                    <h3 style={{ fontSize: 18, fontWeight: 600 }}>{channelStats?.title || "Seu Canal"}</h3>
+                    <CheckCircle size={14} style={{ color: "var(--accent-teal)", flexShrink: 0 }} />
                 </div>
-                <div className="handle">{channelStats?.customUrl || ""}</div>
+                <div style={{ fontSize: 13, color: "var(--text-muted)" }}>{channelStats?.customUrl || ""}</div>
             </div>
-            <div className="actions">
+            <div style={{ position: "absolute", top: 12, right: 12, display: "flex", gap: 8 }}>
                 <AccountSwitcher accounts={youtubeAccounts} activeId={activeId} onSwitch={onSwitch} />
-                <button className="btn btn-secondary btn-sm" onClick={onRefresh}>
+                <button className="vc-btn vc-btn-secondary btn-sm" onClick={onRefresh}>
                     <RefreshCw size={12} /> Sincronizar
                 </button>
-                {/* Ver canal: era #ff0000 literal, agora usa var(--coral) da paleta */}
                 <a href={channelUrl} target="_blank" rel="noopener noreferrer"
-                    className="btn btn-secondary btn-sm"
-                    style={{ background: "var(--coral)", borderColor: "var(--coral)", color: "#fff" }}>
+                    className="vc-btn vc-btn-secondary btn-sm"
+                    style={{ background: "var(--accent-coral)", borderColor: "var(--accent-coral)", color: "#fff" }}>
                     <Youtube size={12} /> Ver canal
                 </a>
             </div>
@@ -98,7 +94,6 @@ function ChannelHero({ channelStats, onRefresh, youtubeAccounts, activeId, onSwi
     );
 }
 
-// ─── TikTok Hero ──────────────────────────────────────────────────────────────
 function TikTokHero({ accounts, activeId, onSwitch, onRefresh, loading }) {
     const account = accounts.find(a => a.id === activeId) || accounts[0];
     if (!account) return null;
@@ -106,28 +101,28 @@ function TikTokHero({ accounts, activeId, onSwitch, onRefresh, loading }) {
     const handle = account.username || account.name;
 
     return (
-        <div className="profile-hero" style={{ marginTop: 24 }}>
-            <div className="banner" style={{ background: "linear-gradient(135deg,#ff0050,#00f2ea)" }} />
+        <div style={{ position: "relative", borderRadius: "var(--radius-lg)", overflow: "hidden", minHeight: 180, marginBottom: 24, marginTop: 24 }}>
+            <div style={{ height: 140, borderRadius: "var(--radius-lg) var(--radius-lg) 0 0", background: "linear-gradient(135deg,#ff0050,#00f2ea)" }} />
             {account.avatar ? (
-                <div className="avatar"><img src={account.avatar} style={{ width: "100%", height: "100%", objectFit: "cover" }} alt="" /></div>
+                <div style={{ position: "absolute", bottom: 0, left: 24, width: 80, height: 80, borderRadius: "50%", border: "4px solid var(--bg-primary)", overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28, fontWeight: 700, background: "var(--bg-elevated)", color: "var(--text-primary)" }}><img src={account.avatar} style={{ width: "100%", height: "100%", objectFit: "cover" }} alt="" /></div>
             ) : (
-                <div className="avatar" style={{ background: "linear-gradient(135deg,#ff0050,#00f2ea)", color: "#fff" }}>
+                <div style={{ position: "absolute", bottom: 0, left: 24, width: 80, height: 80, borderRadius: "50%", border: "4px solid var(--bg-primary)", overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28, fontWeight: 700, background: "linear-gradient(135deg,#ff0050,#00f2ea)", color: "var(--text-primary)" }}>
                     {(account.name || "T")[0].toUpperCase()}
                 </div>
             )}
-            <div className="info">
-                <h3>{account.name}</h3>
-                <div className="handle">@{handle}</div>
+            <div style={{ marginLeft: 120, padding: "16px 24px 16px 0" }}>
+                <h3 style={{ fontSize: 18, fontWeight: 600 }}>{account.name}</h3>
+                <div style={{ fontSize: 13, color: "var(--text-muted)" }}>@{handle}</div>
             </div>
-            <div className="actions">
+            <div style={{ position: "absolute", top: 12, right: 12, display: "flex", gap: 8 }}>
                 <AccountSwitcher accounts={accounts} activeId={activeId} onSwitch={onSwitch} />
                 {onRefresh && (
-                    <button className="btn btn-secondary btn-sm" onClick={onRefresh} disabled={loading}>
+                    <button className="vc-btn vc-btn-secondary btn-sm" onClick={onRefresh} disabled={loading}>
                         {loading ? "..." : <RefreshCw size={12} />} Sincronizar
                     </button>
                 )}
                 <a href={`https://tiktok.com/@${encodeURIComponent(handle)}`} target="_blank" rel="noopener noreferrer"
-                    className="btn btn-secondary btn-sm"
+                    className="vc-btn vc-btn-secondary btn-sm"
                     style={{ background: "#ff0050", borderColor: "#ff0050", color: "#fff" }}>
                     <Music2 size={12} /> Ver TikTok
                 </a>
@@ -136,7 +131,14 @@ function TikTokHero({ accounts, activeId, onSwitch, onRefresh, loading }) {
     );
 }
 
-// ─── Stats Grid (YouTube) ─────────────────────────────────────────────────────
+const cardTopToMetric = {
+    "card-top-coral": "metric-coral",
+    "card-top-blue": "metric-neutral",
+    "card-top-purple": "metric-neutral",
+    "card-top-pink": "metric-amber",
+    "card-top-teal": "metric-teal",
+};
+
 function ChannelStats({ stats }) {
     const items = [
         { value: formatNumber(stats?.statistics?.subscriberCount), label: "Inscritos", cardTop: "card-top-coral" },
@@ -144,18 +146,17 @@ function ChannelStats({ stats }) {
         { value: formatNumber(stats?.statistics?.videoCount), label: "Vídeos", cardTop: "card-top-purple" },
     ];
     return (
-        <div className="grid-3 mb-6">
+        <div className="vc-grid-3 mb-6" style={{ marginBottom: 24 }}>
             {items.map((s, i) => (
-                <div key={i} className={`stat-card ${s.cardTop}`}>
-                    <div className="value">{s.value}</div>
-                    <div className="label">{s.label}</div>
+                <div key={i} className={`vc-metric-card ${cardTopToMetric[s.cardTop] || "metric-neutral"}`}>
+                    <div className="vc-metric-value">{s.value}</div>
+                    <div className="vc-metric-label">{s.label}</div>
                 </div>
             ))}
         </div>
     );
 }
 
-// ─── Stats Grid (TikTok) ──────────────────────────────────────────────────────
 function TikTokStats({ account }) {
     const items = [
         { value: account.followerCount != null ? formatNumber(account.followerCount) : "—", label: "Seguidores", cardTop: "card-top-pink" },
@@ -164,18 +165,17 @@ function TikTokStats({ account }) {
         { value: account.videoCount != null ? formatNumber(account.videoCount) : "—", label: "Vídeos", cardTop: "card-top-purple" },
     ];
     return (
-        <div className="grid-4 mb-6">
+        <div className="vc-grid-metrics mb-6" style={{ marginBottom: 24 }}>
             {items.map((s, i) => (
-                <div key={i} className={`stat-card ${s.cardTop}`}>
-                    <div className="value">{s.value}</div>
-                    <div className="label">{s.label}</div>
+                <div key={i} className={`vc-metric-card ${cardTopToMetric[s.cardTop] || "metric-neutral"}`}>
+                    <div className="vc-metric-value">{s.value}</div>
+                    <div className="vc-metric-label">{s.label}</div>
                 </div>
             ))}
         </div>
     );
 }
 
-// ─── Connected Channels Sidebar ────────────────────────────────────────────────
 function ConnectedChannels({ connectedAccounts, activeAccountId, activeTikTokId, onSwitch, onSwitchTikTok, onDisconnect, onAdd, onConnectTikTok }) {
     const getPlatformColor = (platform) => {
         if (platform === 'tiktok') return '#ff0050';
@@ -183,7 +183,7 @@ function ConnectedChannels({ connectedAccounts, activeAccountId, activeTikTokId,
     };
 
     return (
-        <div className="card mb-4">
+        <div className="vc-card mb-4" style={{ padding: 24, marginBottom: 16 }}>
             <h3 style={{ fontSize: 15, fontWeight: 600, marginBottom: 16 }}>Canais Conectados</h3>
 
             {connectedAccounts.map(account => {
@@ -194,7 +194,7 @@ function ConnectedChannels({ connectedAccounts, activeAccountId, activeTikTokId,
                 const color = getPlatformColor(platform);
                 return (
                     <div key={account.id}
-                        style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 0", borderBottom: "1px solid var(--border)" }}>
+                        style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 0", borderBottom: "1px solid var(--border-default)" }}>
                         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                             <div style={{
                                 width: 28, height: 28, borderRadius: "50%",
@@ -207,9 +207,9 @@ function ConnectedChannels({ connectedAccounts, activeAccountId, activeTikTokId,
                         </div>
                         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                             {isActive ? (
-                                <span className="badge badge-teal">ATIVO</span>
+                                <span className="vc-badge vc-badge-teal">ATIVO</span>
                             ) : (
-                                <button className="btn btn-secondary btn-sm"
+                                <button className="vc-btn vc-btn-secondary btn-sm"
                                     onClick={() => platform === 'tiktok' ? onSwitchTikTok(account.id) : onSwitch(account.id)}
                                     style={{ fontSize: 10, padding: "2px 8px" }}>
                                     Usar este
@@ -217,7 +217,7 @@ function ConnectedChannels({ connectedAccounts, activeAccountId, activeTikTokId,
                             )}
                             <button
                                 onClick={() => { if (confirm(`Desconectar "${account.name}"?`)) onDisconnect(account.id); }}
-                                style={{ background: "none", border: "none", color: "var(--text3)", cursor: "pointer", fontSize: 12, padding: 4 }}
+                                style={{ background: "none", border: "none", color: "var(--text-muted)", cursor: "pointer", fontSize: 12, padding: 4 }}
                                 title="Desconectar">
                                 <Trash2 size={12} />
                             </button>
@@ -229,45 +229,48 @@ function ConnectedChannels({ connectedAccounts, activeAccountId, activeTikTokId,
             <GoogleAuthButton
                 onLoginSuccess={onAdd}
                 onLoginError={(err) => alert("Erro: " + JSON.stringify(err))}
-                className="platform-btn mt-2"
-                {/* borderColor usa var(--coral) ao invés de #ff0000 literal */}
-                style={{ borderColor: "var(--coral)", color: "var(--coral)", justifyContent: "space-between", background: "transparent" }}
+                style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%", padding: "14px 16px", borderRadius: "var(--radius)", background: "var(--bg-elevated)", border: "1px solid var(--border-default)", color: "var(--accent-coral)", cursor: "pointer", transition: "all 0.15s", marginTop: 8, borderColor: "var(--accent-coral)" }}
             >
-                <div className="left"><Youtube size={16} /> Conectar YouTube</div>
+                <div style={{ display: "flex", alignItems: "center", gap: 12 }}><Youtube size={16} /> Conectar YouTube</div>
                 <Plus size={12} />
             </GoogleAuthButton>
-            <button className="platform-btn mt-2" style={{ borderColor: "#ff0050", color: "#ff0050" }} onClick={onConnectTikTok}>
-                <div className="left"><Music2 size={16} /> Conectar TikTok</div>
+            <button
+                style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%", padding: "14px 16px", borderRadius: "var(--radius)", background: "var(--bg-elevated)", border: "1px solid #ff0050", color: "#ff0050", cursor: "pointer", transition: "all 0.15s", marginTop: 8 }}
+                onClick={onConnectTikTok}>
+                <div style={{ display: "flex", alignItems: "center", gap: 12 }}><Music2 size={16} /> Conectar TikTok</div>
                 <Plus size={12} />
             </button>
-            <button className="platform-btn mt-2" style={{ opacity: 0.5, cursor: "not-allowed" }}>
-                <div className="left"><Instagram size={16} style={{ color: "var(--purple)" }} /> Conectar Instagram</div>
-                <span className="badge">Em breve</span>
+            <button
+                style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%", padding: "14px 16px", borderRadius: "var(--radius)", background: "var(--bg-elevated)", border: "1px solid var(--border-default)", color: "var(--text-primary)", cursor: "not-allowed", transition: "all 0.15s", marginTop: 8, opacity: 0.5 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 12 }}><Instagram size={16} style={{ color: "var(--accent-coral)" }} /> Conectar Instagram</div>
+                <span className="vc-badge vc-badge-muted" style={{ fontFamily: "var(--font-body)" }}>Em breve</span>
             </button>
-            <button className="platform-btn mt-2" style={{ opacity: 0.5, cursor: "not-allowed" }}>
-                <div className="left"><Globe size={16} style={{ color: "var(--blue)" }} /> Conectar Facebook</div>
-                <span className="badge">Em breve</span>
+            <button
+                style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%", padding: "14px 16px", borderRadius: "var(--radius)", background: "var(--bg-elevated)", border: "1px solid var(--border-default)", color: "var(--text-primary)", cursor: "not-allowed", transition: "all 0.15s", marginTop: 8, opacity: 0.5 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 12 }}><Globe size={16} style={{ color: "var(--text-muted)" }} /> Conectar Facebook</div>
+                <span className="vc-badge vc-badge-muted" style={{ fontFamily: "var(--font-body)" }}>Em breve</span>
             </button>
         </div>
     );
 }
 
-// ─── Quick Actions ────────────────────────────────────────────────────────────
 function QuickActions({ navigate }) {
     const actions = [
-        { icon: <Upload size={16} style={{ color: "var(--coral)" }} />, label: "Novo upload", onClick: () => navigate("/dashboard/videos") },
-        { icon: <Calendar size={16} style={{ color: "var(--purple)" }} />, label: "Agendar publicação", onClick: () => navigate("/dashboard/calendar") },
-        { icon: <Youtube size={16} style={{ color: "var(--coral)" }} />, label: "YouTube Studio", onClick: () => window.open("https://studio.youtube.com", "_blank") },
-        { icon: <BarChart size={16} style={{ color: "var(--teal)" }} />, label: "Ver analytics", onClick: () => navigate("/dashboard/analytics") },
+        { icon: <Upload size={16} style={{ color: "var(--accent-coral)" }} />, label: "Novo upload", onClick: () => navigate("/dashboard/videos") },
+        { icon: <Calendar size={16} style={{ color: "var(--accent-amber)" }} />, label: "Agendar publicação", onClick: () => navigate("/dashboard/calendar") },
+        { icon: <Youtube size={16} style={{ color: "var(--accent-coral)" }} />, label: "YouTube Studio", onClick: () => window.open("https://studio.youtube.com", "_blank") },
+        { icon: <BarChart size={16} style={{ color: "var(--accent-teal)" }} />, label: "Ver analytics", onClick: () => navigate("/dashboard/analytics") },
     ];
     return (
-        <div className="card">
+        <div className="vc-card" style={{ padding: 24 }}>
             <h3 style={{ fontSize: 15, fontWeight: 600, marginBottom: 16 }}>Ações rápidas</h3>
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                 {actions.map((a, i) => (
-                    <button key={i} className="platform-btn" onClick={a.onClick}>
-                        <div className="left">{a.icon} {a.label}</div>
-                        <ChevronRight size={14} style={{ color: "var(--text3)" }} />
+                    <button key={i}
+                        style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%", padding: "14px 16px", borderRadius: "var(--radius)", background: "var(--bg-elevated)", border: "1px solid var(--border-default)", color: "var(--text-primary)", cursor: "pointer", transition: "all 0.15s" }}
+                        onClick={a.onClick}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>{a.icon} {a.label}</div>
+                        <ChevronRight size={14} style={{ color: "var(--text-muted)" }} />
                     </button>
                 ))}
             </div>
@@ -275,15 +278,14 @@ function QuickActions({ navigate }) {
     );
 }
 
-// ─── Empty State ──────────────────────────────────────────────────────────────
 function EmptyState({ onConnect }) {
     return (
-        <div className="card" style={{ textAlign: "center", padding: 40, borderStyle: "dashed" }}>
-            <div style={{ width: 64, height: 64, borderRadius: 16, background: "var(--bg-card2)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
-                <Youtube size={32} style={{ color: "var(--text3)" }} />
+        <div className="vc-card" style={{ textAlign: "center", padding: 40, borderStyle: "dashed" }}>
+            <div style={{ width: 64, height: 64, borderRadius: 16, background: "var(--bg-elevated)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
+                <Youtube size={32} style={{ color: "var(--text-muted)" }} />
             </div>
             <h3 style={{ fontSize: 18, fontWeight: 600, marginBottom: 8 }}>Nenhum canal conectado</h3>
-            <p style={{ fontSize: 13, color: "var(--text3)", marginBottom: 24, maxWidth: 320, margin: "0 auto 24px" }}>
+            <p style={{ fontSize: 13, color: "var(--text-muted)", marginBottom: 24, maxWidth: 320, margin: "0 auto 24px" }}>
                 Conecte seu canal do YouTube para ver suas estatísticas e fazer uploads automáticos.
             </p>
             <GoogleAuthButton
@@ -294,7 +296,6 @@ function EmptyState({ onConnect }) {
     );
 }
 
-// ─── Main ─────────────────────────────────────────────────────────────────────
 export default function ProfilePage() {
     const { state, setState, actions } = useDashboardState();
     const navigate = useNavigate();
@@ -335,7 +336,7 @@ export default function ProfilePage() {
     return (
         <>
             <PageLayout title="Perfil e Conexões" subtitle="Gerencie seu canal e conexões com plataformas.">
-                <div className="grid-2" style={{ gridTemplateColumns: "2fr 1fr", gap: 24 }}>
+                <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: 24 }}>
 
                     <div>
                         {isConnected && channelStats ? (

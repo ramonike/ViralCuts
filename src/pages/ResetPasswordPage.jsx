@@ -16,13 +16,13 @@ export default function ResetPasswordPage() {
     const token = searchParams.get("token");
 
     useEffect(() => {
-        if (!token) setError("Token inválido. Solicite um novo reset de senha.");
+        if (!token) setError("Token inv\u00e1lido. Solicite um novo reset de senha.");
     }, [token]);
 
     const handleSubmit = async () => {
         if (!newPassword || !confirmPassword) { setError("Preencha todos os campos"); return; }
         if (newPassword.length < 6) { setError("A senha deve ter pelo menos 6 caracteres"); return; }
-        if (newPassword !== confirmPassword) { setError("As senhas não coincidem"); return; }
+        if (newPassword !== confirmPassword) { setError("As senhas n\u00e3o coincidem"); return; }
         setLoading(true); setError("");
         try {
             const response = await fetch(API_ENDPOINTS.AUTH.RESET_PASSWORD, {
@@ -40,15 +40,15 @@ export default function ResetPasswordPage() {
 
     if (success) {
         return (
-            <div className="auth-page">
-                <div className="auth-form">
-                    <div className="form-wrap">
+            <div style={{ display: "flex", minHeight: "100vh", background: "var(--bg-default)" }}>
+                <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", padding: 40 }}>
+                    <div style={{ width: "100%", maxWidth: 400 }}>
                         <div className="card" style={{ textAlign: "center", padding: 40 }}>
                             <div style={{ width: 48, height: 48, borderRadius: "var(--radius)", background: "var(--teal-3)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
                                 <Lock size={24} style={{ color: "var(--teal)" }} />
                             </div>
                             <h1 style={{ fontSize: 20, fontWeight: 700, marginBottom: 8 }}>Senha Alterada!</h1>
-                            <p style={{ fontSize: 14, color: "var(--text2)", lineHeight: 1.6 }}>Sua senha foi alterada com sucesso. Redirecionando para o login...</p>
+                            <p style={{ fontSize: 14, color: "var(--text-secondary)", lineHeight: 1.6 }}>Sua senha foi alterada com sucesso. Redirecionando para o login...</p>
                         </div>
                     </div>
                 </div>
@@ -57,23 +57,24 @@ export default function ResetPasswordPage() {
     }
 
     return (
-        <div className="auth-page">
-            <div className="auth-brand">
+        <div style={{ display: "flex", minHeight: "100vh", background: "var(--bg-default)" }}>
+            <div style={{ flex: "0 0 44%", background: "var(--bg-card)", position: "relative", overflow: "hidden", display: "flex", flexDirection: "column", justifyContent: "center", padding: "60px 48px" }}>
+                <div style={{ position: "absolute", top: "-50%", right: "-30%", width: 600, height: 600, borderRadius: "50%", background: "radial-gradient(circle, rgba(232,65,42,0.12), transparent 70%)", pointerEvents: "none" }} />
                 <Link to="/" style={{ textDecoration: "none" }}>
-                    <div className="logo">ViralCuts</div>
+                    <div style={{ fontSize: 32, fontWeight: 900, color: "var(--accent-coral)", marginBottom: 16 }}>ViralCuts</div>
                 </Link>
                 <h2>Nova senha</h2>
-                <p style={{ fontSize: 14, color: "var(--text2)", lineHeight: 1.6, marginBottom: 24 }}>
+                <p style={{ fontSize: 14, color: "var(--text-secondary)", lineHeight: 1.6, marginBottom: 24 }}>
                     Escolha uma senha forte para proteger sua conta ViralCuts.
                 </p>
                 <div className="features">
-                    <div className="feature">Upload automático para múltiplas plataformas</div>
+                    <div className="feature">Upload autom\u00e1tico para m\u00faltiplas plataformas</div>
                     <div className="feature">Analytics detalhados do seu canal</div>
                 </div>
             </div>
-            <div className="auth-form">
-                <div className="form-wrap">
-                    <Link to="/login" style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 13, color: "var(--text3)", textDecoration: "none", marginBottom: 32 }}>
+            <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", padding: 40 }}>
+                <div style={{ width: "100%", maxWidth: 400 }}>
+                    <Link to="/login" style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 13, color: "var(--text-muted)", textDecoration: "none", marginBottom: 32 }}>
                         <ArrowLeft size={14} /> Voltar ao login
                     </Link>
                     <h1>Resetar senha</h1>
@@ -86,7 +87,7 @@ export default function ResetPasswordPage() {
                     <div className="space-y-5">
                         <Input label="Nova Senha" type="password" icon={Lock} value={newPassword}
                             onChange={(e) => setNewPassword(e.target.value)}
-                            placeholder="Mínimo 6 caracteres" disabled={loading || !token} />
+                            placeholder="M\u00ednimo 6 caracteres" disabled={loading || !token} />
                         <Input label="Confirmar Senha" type="password" icon={Lock} value={confirmPassword}
                             onChange={(e) => setConfirmPassword(e.target.value)}
                             onKeyPress={(e) => e.key === 'Enter' && handleSubmit()}

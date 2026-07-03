@@ -36,7 +36,15 @@ function useCopy() {
 function CopyBtn({ text }) {
     const { copied, copy } = useCopy();
     return (
-        <button className={`copy-btn ${copied ? 'copied' : ''}`} onClick={() => copy(text)}>
+        <button onClick={() => copy(text)}
+            style={{
+                padding: '4px 10px', borderRadius: 4, fontSize: 11, fontWeight: 500,
+                border: 'none', cursor: 'pointer', fontFamily: 'var(--font-body)',
+                display: 'inline-flex', alignItems: 'center', gap: 4,
+                background: copied ? 'rgba(0,201,167,.15)' : 'var(--bg-elevated)',
+                color: copied ? 'var(--accent-teal)' : 'var(--text-muted)',
+                transition: 'all .2s'
+            }}>
             {copied ? <Check size={13} /> : <Copy size={13} />}
             {copied ? 'Copiado!' : 'Copiar'}
         </button>
@@ -46,15 +54,15 @@ function CopyBtn({ text }) {
 function ResultBox({ content }) {
     if (!content) return null;
     return (
-        <div className="card mt-4" style={{ borderColor: 'rgba(124,58,237,.3)' }}>
+        <div className="vc-card" style={{ marginTop: 16, borderColor: 'rgba(232,65,42,.3)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
                 <span style={{ fontWeight: 600 }}>Resultado gerado ✨</span>
                 <CopyBtn text={content} />
             </div>
-            <div style={{ fontSize: 14, color: 'var(--text2)', lineHeight: 1.8, padding: 16, background: 'var(--bg-card2)', borderRadius: 8 }}>
+            <div style={{ fontSize: 14, color: 'var(--text-secondary)', lineHeight: 1.8, padding: 16, background: 'var(--bg-elevated)', borderRadius: 8 }}>
                 {content}
             </div>
-            <button className="btn btn-gradient mt-4"><Calendar size={13} /> Agendar no Pipeline</button>
+            <button className="vc-btn vc-btn-primary" style={{ marginTop: 16 }}><Calendar size={13} /> Agendar no Pipeline</button>
         </div>
     );
 }
@@ -63,7 +71,7 @@ function ErrorBox({ error }) {
     if (!error) return null;
     return (
         <div className="vc-toast vc-toast-coral" style={{ marginTop: 12 }}>
-            <AlertCircle size={15} className="shrink-0" />
+            <AlertCircle size={15} style={{ flexShrink: 0 }} />
             <span>{error}</span>
         </div>
     );
@@ -102,33 +110,34 @@ Formate com emojis e deixe claro o tempo de cada parte. Escreva em português do
     };
 
     return (
-        <div className="card">
+        <div className="vc-card">
             <h3 style={{ fontSize: 16, fontWeight: 600, marginBottom: 16 }}>Gerador de Roteiro</h3>
-            <div className="form-group">
-                <label className="form-label">Tema ou ideia do vídeo</label>
-                <textarea className="input" value={tema} onChange={e => setTema(e.target.value)}
-                    placeholder="Ex: Bitcoin atingiu novo recorde histórico em 2026 e especialistas preveem..." rows={3} />
+            <div style={{ marginBottom: 16 }}>
+                <label className="vc-label">Tema ou ideia do vídeo</label>
+                <textarea className="vc-input" value={tema} onChange={e => setTema(e.target.value)}
+                    placeholder="Ex: Bitcoin atingiu novo recorde histórico em 2026 e especialistas preveem..." rows={3}
+                    style={{ resize: 'vertical', minHeight: 80 }} />
             </div>
-            <div className="grid-3">
-                <div className="form-group">
-                    <label className="form-label">Formato</label>
-                    <select className="input" value={formato} onChange={e => setFormato(e.target.value)}>
+            <div className="vc-grid-3">
+                <div style={{ marginBottom: 16 }}>
+                    <label className="vc-label">Formato</label>
+                    <select className="vc-input" value={formato} onChange={e => setFormato(e.target.value)} style={{ cursor: 'pointer' }}>
                         <option value="shorts">Shorts/TikTok</option>
                         <option value="longo">Longo</option>
                         <option value="reel">Reel</option>
                     </select>
                 </div>
-                <div className="form-group">
-                    <label className="form-label">Duração</label>
-                    <select className="input" value={duracao} onChange={e => setDuracao(e.target.value)}>
+                <div style={{ marginBottom: 16 }}>
+                    <label className="vc-label">Duração</label>
+                    <select className="vc-input" value={duracao} onChange={e => setDuracao(e.target.value)} style={{ cursor: 'pointer' }}>
                         {['30', '60', '90', '180', '300', '600'].map(d => (
                             <option key={d} value={d}>{d}s{d >= 60 ? ` (${d / 60}min)` : ''}</option>
                         ))}
                     </select>
                 </div>
-                <div className="form-group">
-                    <label className="form-label">Tom</label>
-                    <select className="input" value={tom} onChange={e => setTom(e.target.value)}>
+                <div style={{ marginBottom: 16 }}>
+                    <label className="vc-label">Tom</label>
+                    <select className="vc-input" value={tom} onChange={e => setTom(e.target.value)} style={{ cursor: 'pointer' }}>
                         <option value="educativo">Educativo</option>
                         <option value="entretenimento">Entretenimento</option>
                         <option value="motivacional">Motivacional</option>
@@ -136,13 +145,13 @@ Formate com emojis e deixe claro o tempo de cada parte. Escreva em português do
                     </select>
                 </div>
             </div>
-            <button className="btn btn-gradient" onClick={generate} disabled={!tema.trim()}>
+            <button className="vc-btn vc-btn-primary" onClick={generate} disabled={!tema.trim()}>
                 <Wand2 size={14} /> {loading ? 'Gerando roteiro...' : 'Gerar Roteiro'}
             </button>
             <ErrorBox error={error} />
             <ResultBox content={result} />
             {result && onPipeline && (
-                <button className="btn btn-gradient mt-4" onClick={() => onPipeline({ script: result })}>
+                <button className="vc-btn vc-btn-primary" style={{ marginTop: 16 }} onClick={() => onPipeline({ script: result })}>
                     <Calendar size={13} /> Agendar no Pipeline
                 </button>
             )}
@@ -217,51 +226,73 @@ Tudo em português do Brasil.`
     const handlePipeline = () => { if (onPipeline) onPipeline({ title: selectedTitle, description, tags }); };
 
     return (
-        <div className="card">
+        <div className="vc-card">
             <h3 style={{ fontSize: 16, fontWeight: 600, marginBottom: 16 }}>Gerador de Títulos e Descrição</h3>
-            <div className="form-group">
-                <label className="form-label">Assunto ou resumo do vídeo</label>
-                <textarea className="input" value={assunto} onChange={e => setAssunto(e.target.value)}
-                    placeholder="Descreva o assunto do vídeo..." rows={3} />
+            <div style={{ marginBottom: 16 }}>
+                <label className="vc-label">Assunto ou resumo do vídeo</label>
+                <textarea className="vc-input" value={assunto} onChange={e => setAssunto(e.target.value)}
+                    placeholder="Descreva o assunto do vídeo..." rows={3}
+                    style={{ resize: 'vertical', minHeight: 80 }} />
             </div>
-            <div className="form-group">
-                <label className="form-label">Plataforma</label>
-                <div className="toggle-group">
-                    {['youtube', 'tiktok', 'instagram'].map(p => (
+            <div style={{ marginBottom: 16 }}>
+                <label className="vc-label">Plataforma</label>
+                <div style={{ display: 'flex', gap: 0, border: '1px solid var(--border-default)', borderRadius: 8, overflow: 'hidden' }}>
+                    {['youtube', 'tiktok', 'instagram'].map((p, idx) => (
                         <button key={p}
-                            className={`toggle-btn ${plataforma === p ? 'active' : ''}`}
+                            style={{
+                                flex: 1, padding: '8px 20px', fontSize: 13, fontWeight: 500,
+                                border: 'none', fontFamily: 'var(--font-body)',
+                                borderRight: idx < 2 ? '1px solid var(--border-default)' : 'none',
+                                background: plataforma === p ? 'var(--accent-coral)' : 'transparent',
+                                color: plataforma === p ? '#fff' : 'var(--text-secondary)',
+                                cursor: 'pointer', transition: 'all .2s'
+                            }}
                             onClick={() => setPlataforma(p)}>
                             {p === 'youtube' ? 'YouTube' : p === 'tiktok' ? 'TikTok' : 'Instagram'}
                         </button>
                     ))}
                 </div>
             </div>
-            <button className="btn btn-gradient" onClick={generate} disabled={!assunto.trim()}>
+            <button className="vc-btn vc-btn-primary" onClick={generate} disabled={!assunto.trim()}>
                 <Wand2 size={14} /> {loading ? 'Gerando títulos...' : 'Gerar Títulos e Descrição'}
             </button>
             <ErrorBox error={error} />
             {titles.length > 0 && (
-                <div className="mt-4">
-                    <label className="form-label">Títulos sugeridos ✨</label>
+                <div style={{ marginTop: 16 }}>
+                    <label className="vc-label">Títulos sugeridos ✨</label>
                     {titles.map((t, i) => (
-                        <div key={i} className={`title-option ${selectedTitle === t ? 'selected' : ''}`}
+                        <div key={i}
+                            style={{
+                                display: 'flex', alignItems: 'center', gap: 10,
+                                padding: '10px 14px', borderRadius: 8,
+                                border: selectedTitle === t ? '1px solid var(--accent-coral)' : '1px solid var(--border-default)',
+                                background: selectedTitle === t ? 'var(--accent-coral-3)' : 'transparent',
+                                cursor: 'pointer', marginBottom: 8, transition: 'all .2s'
+                            }}
                             onClick={() => setSelectedTitle(t)}>
-                            <div className="radio" />
+                            <div style={{
+                                width: 16, height: 16, borderRadius: '50%',
+                                border: selectedTitle === t ? '2px solid var(--accent-coral)' : '2px solid var(--border-default)',
+                                display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0
+                            }}>
+                                {selectedTitle === t && <div style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--accent-coral)' }} />}
+                            </div>
                             <span style={{ fontSize: 14 }}>{t}</span>
                         </div>
                     ))}
-                    <div className="form-group mt-4">
-                        <label className="form-label">Descrição</label>
-                        <textarea className="input" value={description} onChange={e => setDescription(e.target.value)} rows={4} />
+                    <div style={{ marginBottom: 16, marginTop: 16 }}>
+                        <label className="vc-label">Descrição</label>
+                        <textarea className="vc-input" value={description} onChange={e => setDescription(e.target.value)} rows={4}
+                            style={{ resize: 'vertical', minHeight: 80 }} />
                     </div>
-                    <div className="form-group">
-                        <label className="form-label">Tags</label>
-                        <input className="input" value={tags} onChange={e => setTags(e.target.value)} placeholder="tag1, tag2, tag3" />
+                    <div style={{ marginBottom: 16 }}>
+                        <label className="vc-label">Tags</label>
+                        <input className="vc-input" value={tags} onChange={e => setTags(e.target.value)} placeholder="tag1, tag2, tag3" />
                     </div>
                 </div>
             )}
             {selectedTitle && onPipeline && (
-                <button className="btn btn-gradient mt-4" onClick={handlePipeline}>
+                <button className="vc-btn vc-btn-primary" style={{ marginTop: 16 }} onClick={handlePipeline}>
                     <Calendar size={13} /> Agendar no Pipeline
                 </button>
             )}
@@ -291,42 +322,70 @@ function PublicationChecklist() {
     const pct = Math.round((done / total) * 100);
 
     return (
-        <div className="card">
+        <div className="vc-card">
             <div style={{ display: 'flex', alignItems: 'center', gap: 24, marginBottom: 20 }}>
-                <div className="progress-ring" style={{ background: `conic-gradient(var(--teal) 0deg ${pct * 3.6}deg, var(--purple) ${pct * 3.6}deg 360deg)` }}>
-                    <svg width="100" height="100">
+                <div style={{
+                    width: 100, height: 100, borderRadius: '50%',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    position: 'relative',
+                    background: `conic-gradient(var(--accent-teal) 0deg ${pct * 3.6}deg, var(--border-default) ${pct * 3.6}deg 360deg)`
+                }}>
+                    <svg width="100" height="100" style={{ transform: 'rotate(-90deg)' }}>
                         <circle cx="50" cy="50" r="42" fill="none" stroke="transparent" strokeWidth="6" />
                     </svg>
-                    <div className="value gradient-text">{done}</div>
+                    <div style={{
+                        position: 'absolute', fontSize: 24, fontWeight: 800,
+                        background: 'linear-gradient(135deg, var(--accent-coral), var(--accent-amber))',
+                        WebkitBackgroundClip: 'text',
+                        WebkitTextFillColor: 'transparent',
+                        backgroundClip: 'text'
+                    }}>{done}</div>
                 </div>
                 <div>
                     <div style={{ fontSize: 14, fontWeight: 600 }}>{done} de {total} itens concluídos</div>
-                    <div style={{ fontSize: 12, color: 'var(--text2)', marginTop: 4 }}>
+                    <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 4 }}>
                         {pct === 100 ? 'Tudo pronto para publicar!' : pct >= 50 ? 'Bom progresso! Continue assim.' : 'Marque os itens conforme prepara o vídeo'}
                     </div>
-                    <div className="flex gap-2 mt-4" style={{ gap: 8 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, color: 'var(--text3)' }}>
-                            <span className="legend-dot" style={{ background: 'var(--teal)' }} /> Pronto
+                    <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, color: 'var(--text-muted)' }}>
+                            <span style={{ display: 'inline-block', width: 10, height: 10, borderRadius: '50%', background: 'var(--accent-teal)' }} /> Pronto
                         </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, color: 'var(--text3)' }}>
-                            <span className="legend-dot" style={{ background: 'var(--purple)' }} /> Pendente
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, color: 'var(--text-muted)' }}>
+                            <span style={{ display: 'inline-block', width: 10, height: 10, borderRadius: '50%', background: 'var(--border-default)' }} /> Pendente
                         </div>
                     </div>
                 </div>
-                {done > 0 && <button className="btn btn-ghost btn-sm" style={{ marginLeft: 'auto' }} onClick={() => setChecked({})}>Limpar</button>}
+                {done > 0 && <button className="vc-btn vc-btn-secondary vc-btn-sm" style={{ marginLeft: 'auto' }} onClick={() => setChecked({})}>Limpar</button>}
             </div>
-            <div className="form-group">
-                <input className="input" placeholder="Título do vídeo" />
+            <div style={{ marginBottom: 16 }}>
+                <input className="vc-input" placeholder="Título do vídeo" />
             </div>
             {categories.map(cat => (
-                <div key={cat} className="card mt-4">
-                    <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text3)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '.5px' }}>{cat}</div>
-                    {CHECKLIST_ITEMS.filter(i => i.category === cat).map(item => (
-                        <div key={item.id} className="checklist-item" onClick={() => toggle(item.id)}>
-                            <div className={`checkbox ${checked[item.id] ? 'checked' : ''}`}>
-                                {checked[item.id] && <i className="fas fa-check" />}
+                <div key={cat} className="vc-card" style={{ marginTop: 16 }}>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '.5px' }}>{cat}</div>
+                    {CHECKLIST_ITEMS.filter(i => i.category === cat).map((item, idx, arr) => (
+                        <div key={item.id}
+                            style={{
+                                display: 'flex', alignItems: 'center', gap: 12,
+                                padding: '10px 0',
+                                borderBottom: idx < arr.length - 1 ? '1px solid var(--border-subtle)' : 'none',
+                                cursor: 'pointer'
+                            }}
+                            onClick={() => toggle(item.id)}>
+                            <div style={{
+                                width: 20, height: 20, borderRadius: 5,
+                                border: checked[item.id] ? '2px solid var(--accent-teal)' : '2px solid var(--border-default)',
+                                cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                flexShrink: 0, transition: 'all .2s',
+                                background: checked[item.id] ? 'var(--accent-teal)' : 'transparent'
+                            }}>
+                                {checked[item.id] && <Check size={12} color="#fff" />}
                             </div>
-                            <span className={`text ${checked[item.id] ? 'done' : ''}`}>{item.text}</span>
+                            <span style={{
+                                fontSize: 14, flex: 1,
+                                textDecoration: checked[item.id] ? 'line-through' : 'none',
+                                color: checked[item.id] ? 'var(--text-muted)' : 'var(--text-primary)'
+                            }}>{item.text}</span>
                         </div>
                     ))}
                 </div>
@@ -387,40 +446,52 @@ function ThumbnailGenerator({ onPipeline }) {
     ];
 
     return (
-        <div className="card">
+        <div className="vc-card">
             <h3 style={{ fontSize: 16, fontWeight: 600, marginBottom: 16 }}>Gerador de Miniatura</h3>
-            <div className="form-group">
-                <label className="form-label">Descrição da thumbnail</label>
-                <textarea className="input" value={prompt} onChange={e => setPrompt(e.target.value)}
-                    placeholder="Ex: Bitcoin explodindo com fundo de fogo, seta verde apontando para cima..." rows={3} />
+            <div style={{ marginBottom: 16 }}>
+                <label className="vc-label">Descrição da thumbnail</label>
+                <textarea className="vc-input" value={prompt} onChange={e => setPrompt(e.target.value)}
+                    placeholder="Ex: Bitcoin explodindo com fundo de fogo, seta verde apontando para cima..." rows={3}
+                    style={{ resize: 'vertical', minHeight: 80 }} />
             </div>
-            <div className="form-group">
-                <label className="form-label">Aspect Ratio</label>
-                <div className="toggle-group">
-                    {ratios.map(r => (
+            <div style={{ marginBottom: 16 }}>
+                <label className="vc-label">Aspect Ratio</label>
+                <div style={{ display: 'flex', gap: 0, border: '1px solid var(--border-default)', borderRadius: 8, overflow: 'hidden' }}>
+                    {ratios.map((r, idx) => (
                         <button key={r.value}
-                            className={`toggle-btn ${aspectRatio === r.value ? 'active' : ''}`}
+                            style={{
+                                flex: 1, padding: '8px 20px', fontSize: 13, fontWeight: 500,
+                                border: 'none', fontFamily: 'var(--font-body)',
+                                borderRight: idx < ratios.length - 1 ? '1px solid var(--border-default)' : 'none',
+                                background: aspectRatio === r.value ? 'var(--accent-coral)' : 'transparent',
+                                color: aspectRatio === r.value ? '#fff' : 'var(--text-secondary)',
+                                cursor: 'pointer', transition: 'all .2s'
+                            }}
                             onClick={() => setAspectRatio(r.value)}>
                             {r.label}
                         </button>
                     ))}
                 </div>
             </div>
-            <button className="btn btn-gradient" onClick={generate} disabled={!prompt.trim()}>
+            <button className="vc-btn vc-btn-primary" onClick={generate} disabled={!prompt.trim()}>
                 <Image size={14} /> {loading ? 'Gerando thumbnail...' : 'Gerar Thumbnail'}
             </button>
             <ErrorBox error={error} />
             {status && !output && !error && (
-                <div className="card mt-4" style={{ textAlign: 'center', padding: 24 }}>
-                    <RefreshCw size={24} className="spinning" style={{ margin: '0 auto 8px', display: 'block', color: 'var(--coral)' }} />
-                    <p style={{ fontSize: 13, color: 'var(--text2)' }}>{status === 'starting' ? 'Iniciando geração...' : 'Gerando imagem...'}</p>
+                <div className="vc-card" style={{ marginTop: 16, textAlign: 'center', padding: 24 }}>
+                    <RefreshCw size={24} style={{
+                        margin: '0 auto 8px', display: 'block',
+                        color: 'var(--accent-coral)',
+                        animation: 'spin .8s linear infinite'
+                    }} />
+                    <p style={{ fontSize: 13, color: 'var(--text-secondary)' }}>{status === 'starting' ? 'Iniciando geração...' : 'Gerando imagem...'}</p>
                 </div>
             )}
             {output && !imgError && (
-                <div className="card mt-4" style={{ borderColor: 'rgba(124,58,237,.3)' }}>
+                <div className="vc-card" style={{ marginTop: 16, borderColor: 'rgba(232,65,42,.3)' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
                         <span style={{ fontWeight: 600 }}>Thumbnail gerada ✨</span>
-                        <a href={output} target="_blank" rel="noopener noreferrer" style={{ fontSize: 12, color: 'var(--text2)', textDecoration: 'none' }}>
+                        <a href={output} target="_blank" rel="noopener noreferrer" style={{ fontSize: 12, color: 'var(--text-secondary)', textDecoration: 'none' }}>
                             <ExternalLink size={13} /> Abrir original
                         </a>
                     </div>
@@ -429,7 +500,7 @@ function ThumbnailGenerator({ onPipeline }) {
                             style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                     </div>
                     {onPipeline && (
-                        <button className="btn btn-gradient btn-sm mt-4" style={{ marginLeft: 'auto' }}
+                        <button className="vc-btn vc-btn-primary vc-btn-sm" style={{ marginTop: 16, marginLeft: 'auto' }}
                             onClick={() => onPipeline({ thumbnailUrl: output })}>
                             <Calendar size={13} /> Agendar no Pipeline
                         </button>
@@ -469,15 +540,36 @@ export default function CreationPage() {
 
     return (
         <PageLayout maxWidth="4xl" spacing="standard">
-            <div className="section-intro">
-                <h2><Sparkles size={20} className="gradient-purple" /> Estúdio de Criação</h2>
-                <p>Ferramentas de IA para criar conteúdo de alto desempenho.</p>
+            <div style={{ marginBottom: 24 }}>
+                <h2 style={{ fontSize: 20, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <Sparkles size={20} style={{
+                        background: 'linear-gradient(135deg, var(--accent-coral), var(--accent-amber))',
+                        WebkitBackgroundClip: 'text',
+                        WebkitTextFillColor: 'transparent',
+                        backgroundClip: 'text'
+                    }} />
+                    Estúdio de Criação
+                </h2>
+                <p style={{ fontSize: 14, color: 'var(--text-secondary)', marginTop: 4 }}>Ferramentas de IA para criar conteúdo de alto desempenho.</p>
             </div>
 
-            <div className="tabs mb-6">
+            <div style={{
+                display: 'flex', gap: 4,
+                background: 'var(--bg-elevated)',
+                padding: 4, borderRadius: 10, overflowX: 'auto',
+                marginBottom: 24
+            }}>
                 {TABS.map(tab => (
                     <button key={tab.id}
-                        className={`tab ${activeTab === tab.id ? 'active' : ''}`}
+                        style={{
+                            padding: '8px 20px', borderRadius: 8, fontSize: 13,
+                            fontWeight: 500, cursor: 'pointer', border: 'none',
+                            background: activeTab === tab.id ? 'var(--accent-coral)' : 'transparent',
+                            color: activeTab === tab.id ? '#fff' : 'var(--text-primary)',
+                            opacity: activeTab === tab.id ? 1 : 0.65,
+                            fontFamily: 'var(--font-body)',
+                            transition: 'all .2s', whiteSpace: 'nowrap'
+                        }}
                         onClick={() => setActiveTab(tab.id)}>
                         {tab.label}
                     </button>

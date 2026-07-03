@@ -37,18 +37,18 @@ export default function ForgotPasswordPage() {
 
     if (success) {
         return (
-            <div className="auth-page">
-                <div className="auth-form">
-                    <div className="form-wrap">
+            <div style={{ display: "flex", minHeight: "100vh", background: "var(--bg-default)" }}>
+                <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", padding: 40 }}>
+                    <div style={{ width: "100%", maxWidth: 400 }}>
                         <div className="card" style={{ textAlign: "center", padding: 40 }}>
                             <div style={{ width: 48, height: 48, borderRadius: "var(--radius)", background: "var(--teal-3)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
                                 <Mail size={24} style={{ color: "var(--teal)" }} />
                             </div>
                             <h1 style={{ fontSize: 20, fontWeight: 700, marginBottom: 8 }}>Email Enviado!</h1>
-                            <p style={{ fontSize: 14, color: "var(--text2)", marginBottom: 16, lineHeight: 1.6 }}>
+                            <p style={{ fontSize: 14, color: "var(--text-secondary)", marginBottom: 16, lineHeight: 1.6 }}>
                                 Se o email <strong>{email}</strong> estiver cadastrado, você receberá instruções para resetar sua senha.
                             </p>
-                            <p style={{ fontSize: 12, color: "var(--text3)", marginBottom: 24 }}>Não recebeu o email? Verifique sua pasta de spam.</p>
+                            <p style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 24 }}>Não recebeu o email? Verifique sua pasta de spam.</p>
                             <Link to="/login"><Button className="w-full">Voltar para Login</Button></Link>
                         </div>
                     </div>
@@ -58,13 +58,14 @@ export default function ForgotPasswordPage() {
     }
 
     return (
-        <div className="auth-page">
-            <div className="auth-brand">
+        <div style={{ display: "flex", minHeight: "100vh", background: "var(--bg-default)" }}>
+            <div style={{ flex: "0 0 44%", background: "var(--bg-card)", position: "relative", overflow: "hidden", display: "flex", flexDirection: "column", justifyContent: "center", padding: "60px 48px" }}>
+                <div style={{ position: "absolute", top: "-50%", right: "-30%", width: 600, height: 600, borderRadius: "50%", background: "radial-gradient(circle, rgba(232,65,42,0.12), transparent 70%)", pointerEvents: "none" }} />
                 <Link to="/" style={{ textDecoration: "none" }}>
-                    <div className="logo">ViralCuts</div>
+                    <div style={{ fontSize: 32, fontWeight: 900, color: "var(--accent-coral)", marginBottom: 16 }}>ViralCuts</div>
                 </Link>
                 <h2>Esqueceu<br />sua senha?</h2>
-                <p style={{ fontSize: 14, color: "var(--text2)", lineHeight: 1.6, marginBottom: 24 }}>
+                <p style={{ fontSize: 14, color: "var(--text-secondary)", lineHeight: 1.6, marginBottom: 24 }}>
                     Sem problemas. Digite seu email e enviaremos instruções para criar uma nova senha.
                 </p>
                 <div className="features">
@@ -72,9 +73,9 @@ export default function ForgotPasswordPage() {
                     <div className="feature">Analytics detalhados do seu canal</div>
                 </div>
             </div>
-            <div className="auth-form">
-                <div className="form-wrap">
-                    <Link to="/login" style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 13, color: "var(--text3)", textDecoration: "none", marginBottom: 32 }}>
+            <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", padding: 40 }}>
+                <div style={{ width: "100%", maxWidth: 400 }}>
+                    <Link to="/login" style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 13, color: "var(--text-muted)", textDecoration: "none", marginBottom: 32 }}>
                         <ArrowLeft size={14} /> Voltar ao login
                     </Link>
                     <h1>Resetar senha</h1>

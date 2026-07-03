@@ -53,24 +53,55 @@ function QueueSidebar({ queue, onScheduleNow, loading, onRefresh }) {
 
     const items = tab === "upcoming" ? upcoming : posted;
 
+    const getStatusColor = (status) => {
+        if (["done","success","published","completed"].includes(status)) return 'var(--accent-teal)';
+        if (status === 'scheduled') return 'var(--accent-coral)';
+        return 'var(--accent-amber)';
+    };
+
     return (
-        <div className="queue-sidebar">
-            <div className="header">
-                <h3>Fila de uploads <span className="badge badge-coral" style={{ marginLeft: 6 }}>{queue.length}</span></h3>
-                <RefreshCw size={14} style={{ cursor: 'pointer', color: 'var(--text3)' }} onClick={onRefresh} />
+        <div className="vc-card" style={{ overflow: 'hidden' }}>
+            <div className="flex items-center justify-between px-5 py-4" style={{ borderBottom: '1px solid var(--border-subtle)' }}>
+                <h3 className="font-display font-semibold text-sm" style={{ color: 'var(--text-primary)' }}>
+                    Fila de uploads{' '}
+                    <span className="vc-badge vc-badge-coral" style={{ marginLeft: 6 }}>{queue.length}</span>
+                </h3>
+                <RefreshCw size={14} style={{ cursor: 'pointer', color: 'var(--text-muted)' }} onClick={onRefresh} />
             </div>
-            <div className="queue-tabs">
-                <button className={`queue-tab ${tab === 'upcoming' ? 'active' : ''}`} onClick={() => setTab('upcoming')}>Próximos</button>
-                <button className={`queue-tab ${tab === 'posted' ? 'active' : ''}`} onClick={() => setTab('posted')}>Postados</button>
+            <div className="flex" style={{ borderBottom: '1px solid var(--border-subtle)' }}>
+                <button
+                    className="font-display font-medium text-xs px-5 py-2.5 border-none cursor-pointer transition-all duration-150"
+                    style={{
+                        color: tab === 'upcoming' ? 'var(--accent-coral)' : 'var(--text-secondary)',
+                        borderBottom: `2px solid ${tab === 'upcoming' ? 'var(--accent-coral)' : 'transparent'}`,
+                        background: 'transparent',
+                    }}
+                    onClick={() => setTab('upcoming')}
+                >
+                    Próximos
+                </button>
+                <button
+                    className="font-display font-medium text-xs px-5 py-2.5 border-none cursor-pointer transition-all duration-150"
+                    style={{
+                        color: tab === 'posted' ? 'var(--accent-coral)' : 'var(--text-secondary)',
+                        borderBottom: `2px solid ${tab === 'posted' ? 'var(--accent-coral)' : 'transparent'}`,
+                        background: 'transparent',
+                    }}
+                    onClick={() => setTab('posted')}
+                >
+                    Postados
+                </button>
             </div>
             {items.slice(0, 8).map((item, i) => (
-                <div key={item.id || i} className="queue-item">
-                    <div className="thumb">
+                <div key={item.id || i} className="flex items-center gap-3 px-5 py-3 cursor-pointer transition-all duration-150 hover:bg-[rgba(255,255,255,0.04)]" style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+                    <div className="w-9 h-9 rounded-md flex items-center justify-center flex-shrink-0 text-sm" style={{ background: 'var(--bg-elevated)', color: 'var(--text-secondary)', border: '1px solid var(--border-subtle)' }}>
                         <PlatformIcon platform={item.platform} size={14} />
                     </div>
-                    <div className="info">
-                        <div className="title">{item.title || "Sem título"}</div>
-                        <div className="meta">
+                    <div className="flex-1 min-w-0">
+                        <div className="text-xs font-medium truncate" style={{ color: 'var(--text-primary)' }}>
+                            {item.title || "Sem título"}
+                        </div>
+                        <div className="text-[11px] mt-0.5 truncate" style={{ color: 'var(--text-secondary)', opacity: 0.65 }}>
                             {item.scheduledAt
                                 ? new Date(item.scheduledAt).toLocaleString("pt-BR", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })
                                 : item.publishedAt
@@ -78,11 +109,11 @@ function QueueSidebar({ queue, onScheduleNow, loading, onRefresh }) {
                                     : "—"}
                         </div>
                     </div>
-                    <div className={`status-dot status-${["done","success","published","completed"].includes(item.status) ? 'teal' : item.status === 'scheduled' ? 'coral' : 'amber'}`} />
+                    <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: getStatusColor(item.status) }} />
                 </div>
             ))}
             {items.length === 0 && (
-                <div style={{ padding: '24px 20px', textAlign: 'center', color: 'var(--text3)', fontSize: 13 }}>
+                <div style={{ padding: '24px 20px', textAlign: 'center', color: 'var(--text-muted)', fontSize: 13 }}>
                     {tab === "upcoming" ? "Nenhum vídeo agendado" : "Nenhum publicado ainda"}
                 </div>
             )}
@@ -556,55 +587,95 @@ export default function CalendarPage() {
     return (
         <PageLayout maxWidth="7xl" spacing="standard">
             {/* Header */}
-            <div className="section-header">
-                <div>
+            <div className="vc-page-header">
+                <div className="vc-page-header-text">
                     <h2>Pipeline</h2>
-                    <p className="subtitle">Agendamento e distribuição multicanal dos seus Shorts.</p>
+                    <p>Agendamento e distribuição multicanal dos seus Shorts.</p>
                 </div>
-                <button className="btn btn-primary" onClick={() => setScheduleModalOpen(true)}>
-                    <Plus size={15} />
-                    Novo upload
-                </button>
+                <div className="vc-page-actions">
+                    <button className="vc-btn vc-btn-primary" onClick={() => setScheduleModalOpen(true)}>
+                        <Plus size={15} />
+                        Novo upload
+                    </button>
+                </div>
             </div>
 
             {/* Stats */}
-            <div className="grid-4 mb-6">
-                <div className="stat-card card-top-coral">
-                    <div className="value">{isFirstLoad ? '—' : statsWeek}</div>
-                    <div className="label">Esta semana</div>
+            <div className="vc-grid-metrics" style={{ marginBottom: 'var(--spacing-md, 16px)' }}>
+                <div className="vc-metric-card metric-coral">
+                    <div className="vc-metric-label">Esta semana</div>
+                    <div className="vc-metric-value">{isFirstLoad ? '—' : statsWeek}</div>
                 </div>
-                <div className="stat-card card-top-amber">
-                    <div className="value">{isFirstLoad ? '—' : statsToday}</div>
-                    <div className="label">Hoje</div>
+                <div className="vc-metric-card metric-amber">
+                    <div className="vc-metric-label">Hoje</div>
+                    <div className="vc-metric-value">{isFirstLoad ? '—' : statsToday}</div>
                 </div>
-                <div className="stat-card">
-                    <div className="value">{isFirstLoad ? '—' : statsUpcoming}</div>
-                    <div className="label">Próximos</div>
+                <div className="vc-metric-card metric-neutral">
+                    <div className="vc-metric-label">Próximos</div>
+                    <div className="vc-metric-value">{isFirstLoad ? '—' : statsUpcoming}</div>
                 </div>
-                <div className="stat-card card-top-teal">
-                    <div className="value">{isFirstLoad ? '—' : statsPosted}</div>
-                    <div className="label">Publicados</div>
+                <div className="vc-metric-card metric-teal">
+                    <div className="vc-metric-label">Publicados</div>
+                    <div className="vc-metric-value">{isFirstLoad ? '—' : statsPosted}</div>
                 </div>
             </div>
 
-            {/* Pills filter */}
-            <div className="pills mb-4">
-                <button className={`pill ${activeFilter === 'all' ? 'active' : ''}`} onClick={() => setActiveFilter('all')}>
-                    <div className="avatar">VC</div>
+            {/* Channel filter */}
+            <div className="flex flex-wrap gap-2" style={{ marginBottom: 'var(--spacing-md, 16px)' }}>
+                <button
+                    onClick={() => setActiveFilter('all')}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold font-display border transition-all duration-150 cursor-pointer"
+                    style={{
+                        background: activeFilter === 'all' ? 'var(--accent-coral)' : 'var(--bg-elevated)',
+                        borderColor: activeFilter === 'all' ? 'var(--accent-coral)' : 'var(--border-subtle)',
+                        color: activeFilter === 'all' ? '#fff' : 'var(--text-secondary)',
+                        fontFamily: 'var(--font-display)',
+                    }}
+                >
+                    <div
+                        className="w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-bold flex-shrink-0"
+                        style={{
+                            background: activeFilter === 'all' ? 'rgba(255,255,255,0.2)' : 'var(--bg-secondary)',
+                            color: activeFilter === 'all' ? '#fff' : 'var(--text-muted)',
+                        }}
+                    >
+                        VC
+                    </div>
                     Todos
                 </button>
-                {channelFilter.map(ch => (
-                    <button key={ch.id} className={`pill ${activeFilter === ch.id ? 'active' : ''}`} onClick={() => setActiveFilter(ch.id)}>
-                        <div className="avatar">{ch.name.charAt(0).toUpperCase()}</div>
-                        {ch.name}
-                    </button>
-                ))}
+                {channelFilter.map(ch => {
+                    const isActive = activeFilter === ch.id;
+                    return (
+                        <button
+                            key={ch.id}
+                            onClick={() => setActiveFilter(isActive ? 'all' : ch.id)}
+                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold font-display border transition-all duration-150 cursor-pointer"
+                            style={{
+                                background: isActive ? 'var(--bg-elevated)' : 'var(--bg-tertiary)',
+                                borderColor: isActive ? 'var(--accent-coral)' : 'var(--border-subtle)',
+                                color: isActive ? 'var(--text-primary)' : 'var(--text-secondary)',
+                                fontFamily: 'var(--font-display)',
+                            }}
+                        >
+                            <div
+                                className="w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-bold flex-shrink-0"
+                                style={{
+                                    background: isActive ? 'var(--accent-coral-3)' : 'var(--bg-elevated)',
+                                    color: isActive ? 'var(--accent-coral)' : 'var(--text-muted)',
+                                }}
+                            >
+                                {ch.name.charAt(0).toUpperCase()}
+                            </div>
+                            {ch.name}
+                        </button>
+                    );
+                })}
             </div>
             {/* separador sutil entre filtros e calendário */}
-            <div style={{ height: 1, background: "var(--border)", marginBottom: 20, opacity: .4 }} />
+            <div style={{ height: 1, background: "var(--border-default)", marginBottom: 20, opacity: .4 }} />
 
             {/* Grid */}
-            <div className="grid-2" style={{ gridTemplateColumns: "1fr 320px" }}>
+            <div className="grid" style={{ gridTemplateColumns: "1fr 320px", gap: 24 }}>
                 <ModernCalendar
                     history={filteredHistory}
                     uploadQueue={combinedQueue}

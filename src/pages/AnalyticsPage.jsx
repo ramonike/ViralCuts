@@ -82,32 +82,32 @@ export default function AnalyticsPage() {
     })();
 
     const channelSummaryStats = [
-        { icon: <Eye size={20} style={{ color: "var(--coral)" }} />, label: "Total de views", value: fmt(totalViews) },
-        { icon: <Users size={20} style={{ color: "var(--blue)" }} />, label: "Inscritos", value: fmt(totalSubs) },
-        { icon: <TrendingUp size={20} style={{ color: "var(--teal)" }} />, label: "Vídeos publicados", value: fmt(totalVideos) },
-        { icon: <BarChart2 size={20} style={{ color: "var(--purple)" }} />, label: "Média por vídeo", value: totalVideos > 0 ? fmt(Math.round(totalViews / totalVideos)) : "—" },
+        { icon: <Eye size={20} style={{ color: "var(--accent-coral)" }} />, label: "Total de views", value: fmt(totalViews) },
+        { icon: <Users size={20} style={{ color: "var(--accent-amber)" }} />, label: "Inscritos", value: fmt(totalSubs) },
+        { icon: <TrendingUp size={20} style={{ color: "var(--accent-teal)" }} />, label: "Vídeos publicados", value: fmt(totalVideos) },
+        { icon: <BarChart2 size={20} style={{ color: "var(--accent-amber)" }} />, label: "Média por vídeo", value: totalVideos > 0 ? fmt(Math.round(totalViews / totalVideos)) : "—" },
     ];
 
     const periodStats = hasAnalyticsData ? [
-        { label: "Views", value: fmt(channelAnalytics.views), cardTop: "card-top-coral" },
-        { label: "Tempo de exibição", value: fmtMin(channelAnalytics.watchTimeMinutes), cardTop: "card-top-amber" },
-        { label: "Inscritos ganhos", value: `+${fmt(channelAnalytics.subscribersGained)}`, cardTop: "card-top-teal" },
-        { label: "CTR médio", value: `${channelAnalytics.impressionsCTR?.toFixed(1) ?? 0}%`, cardTop: "card-top-purple" },
+        { label: "Views", value: fmt(channelAnalytics.views), cardTop: "metric-coral" },
+        { label: "Tempo de exibição", value: fmtMin(channelAnalytics.watchTimeMinutes), cardTop: "metric-amber" },
+        { label: "Inscritos ganhos", value: `+${fmt(channelAnalytics.subscribersGained)}`, cardTop: "metric-teal" },
+        { label: "CTR médio", value: `${channelAnalytics.impressionsCTR?.toFixed(1) ?? 0}%`, cardTop: "metric-neutral" },
     ] : null;
 
-    const iconColors = ["var(--coral)", "var(--blue)", "var(--teal)", "var(--purple)"];
+    const iconColors = ["var(--accent-coral)", "var(--accent-amber)", "var(--accent-teal)", "var(--accent-amber)"];
 
     return (
         <PageLayout title="Analytics" subtitle="Acompanhe o crescimento do seu canal." maxWidth="7xl">
-            <div className="section-header">
-                {/* sem div vazio — margin-left:auto no container de botões faz o mesmo */}
-                <div style={{ display: "flex", gap: 8, alignItems: "center", marginLeft: "auto" }}>
-                    <select className="input" style={{ width: "auto", padding: "6px 12px", fontSize: 13 }}
+            <div className="vc-page-header">
+                <div className="vc-page-header-text" />
+                <div className="vc-page-actions">
+                    <select style={{ background: "var(--bg-elevated)", border: "1px solid var(--border-default)", borderRadius: "var(--radius-md)", color: "var(--text-primary)", fontFamily: "var(--font-body)", padding: "6px 12px", fontSize: 13, width: "auto", cursor: "pointer", outline: "none" }}
                         value={period} onChange={e => changePeriod(e.target.value)} disabled={loading}>
                         {DATE_RANGE_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
                     </select>
                     <ExportButton data={channelAnalytics} period={period} disabled={!channelAnalytics || loading} />
-                    <button className="btn btn-ghost btn-sm" onClick={handleRefresh} disabled={refreshing || loading}>
+                    <button className="vc-btn vc-btn-secondary btn-sm" onClick={handleRefresh} disabled={refreshing || loading}>
                         <RefreshCw size={12} className={refreshing ? "spinning" : ""} /> Atualizar
                     </button>
                 </div>
@@ -122,15 +122,13 @@ export default function AnalyticsPage() {
 
             {totalViews > 0 && (
                 <>
-                    <div className="section-intro">
-                        <h2>Totais do canal</h2>
-                    </div>
-                    <div className="grid-4 mb-6">
+                    <h2 style={{ fontSize: "1rem", fontWeight: 700, marginBottom: 14, color: "var(--text-primary)", letterSpacing: "-.03em" }}>Totais do canal</h2>
+                    <div className="vc-grid-metrics" style={{ marginBottom: "var(--spacing-md, 16px)" }}>
                         {channelSummaryStats.map((s, i) => (
-                            <div key={i} className="stat-card">
+                            <div key={i} className="vc-metric-card">
                                 {s.icon}
-                                <div className="value">{s.value}</div>
-                                <div className="label">{s.label}</div>
+                                <div className="vc-metric-value">{s.value}</div>
+                                <div className="vc-metric-label">{s.label}</div>
                             </div>
                         ))}
                     </div>
@@ -141,15 +139,12 @@ export default function AnalyticsPage() {
 
             {hasAnalyticsData && (
                 <>
-                    <div className="section-intro">
-                        <h2>Período selecionado</h2>
-                    </div>
-                    <div className="grid-4 mb-6">
+                    <h2 style={{ fontSize: "1rem", fontWeight: 700, marginBottom: 14, color: "var(--text-primary)", letterSpacing: "-.03em" }}>Período selecionado</h2>
+                    <div className="vc-grid-metrics" style={{ marginBottom: "var(--spacing-md, 16px)" }}>
                         {periodStats.map((s, i) => (
-                            <div key={i} className={`card ${s.cardTop}`} style={{ padding: "18px 20px" }}>
-                                {/* label: era 12px var(--text3) #6e7291, contraste insuficiente */}
-                                <div style={{ fontSize: 12, fontWeight: 600, color: "var(--text2)", marginBottom: 6, letterSpacing: ".02em" }}>{s.label}</div>
-                                <div style={{ fontSize: 24, fontWeight: 800, letterSpacing: "-.02em" }}>{s.value}</div>
+                            <div key={i} className={`vc-metric-card ${s.cardTop}`}>
+                                <div className="vc-metric-label">{s.label}</div>
+                                <div className="vc-metric-value">{s.value}</div>
                             </div>
                         ))}
                     </div>
@@ -157,30 +152,30 @@ export default function AnalyticsPage() {
             )}
 
             {loading && !channelAnalytics && (
-                <div className="grid-4 mb-6">
+                <div className="vc-grid-metrics" style={{ marginBottom: "var(--spacing-md, 16px)" }}>
                     {[1, 2, 3, 4].map(i => (
-                        <div key={i} className="stat-card">
-                            <div className="value">—</div>
-                            <div className="label">Carregando...</div>
+                        <div key={i} className="vc-metric-card">
+                            <div className="vc-metric-value">—</div>
+                            <div className="vc-metric-label">Carregando...</div>
                         </div>
                     ))}
                 </div>
             )}
 
-            <div className="grid-2 mb-6" style={{ gridTemplateColumns: "3fr 2fr", gap: 20 }}>
-                <div className="card">
+            <div style={{ display: "grid", gridTemplateColumns: "3fr 2fr", gap: 20, marginBottom: 24 }}>
+                <div className="vc-card" style={{ padding: 24 }}>
                     <h3 style={{ fontSize: 15, fontWeight: 600, marginBottom: 16 }}>
                         Desempenho ({period === "7days" ? "7 dias" : period === "30days" ? "30 dias" : "período"})
                     </h3>
                     <PerformanceChart data={chartData} period={period} loading={loading} />
                 </div>
-                <div className="card">
+                <div className="vc-card" style={{ padding: 24 }}>
                     <h3 style={{ fontSize: 15, fontWeight: 600, marginBottom: 16 }}>Top Vídeos</h3>
                     <TopVideosTable loading={loading} limit={5} />
                 </div>
             </div>
 
-            <div className="card mb-6">
+            <div className="vc-card" style={{ padding: 24, marginBottom: 24 }}>
                 <h3 style={{ fontSize: 15, fontWeight: 600, marginBottom: 12 }}>Mapa de Visualizações</h3>
                 <ViewingHeatmap loading={loading} />
             </div>
