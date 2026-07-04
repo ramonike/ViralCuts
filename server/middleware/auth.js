@@ -1,4 +1,5 @@
 import { auth } from "../auth.js";
+import { logServerError, createRequestId } from "../utils/http-error.js";
 
 /**
  * Authentication middleware for protected routes
@@ -21,7 +22,7 @@ export async function authMiddleware(c, next) {
 
     await next();
   } catch (error) {
-    console.error("Auth middleware error:", error.message);
+    logServerError("[Auth Middleware]", createRequestId(), error);
     return c.json({ error: "Unauthorized", message: "Authentication failed" }, 401);
   }
 }

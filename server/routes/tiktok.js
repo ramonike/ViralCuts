@@ -23,6 +23,10 @@ import { sendError } from "../utils/http-error.js";
 
 const tiktok = new Hono();
 
+function getPublicOAuthErrorMessage() {
+  return "Falha ao conectar conta TikTok";
+}
+
 // Helper to get valid access token (refreshes if needed)
 async function getValidAccessToken(userId, accountId = null) {
   if (!accountId) {
@@ -116,16 +120,16 @@ tiktok.get("/auth/callback", async (c) => {
 
     if (error) {
       console.error("[TikTok Auth] OAuth error:", error, errorDescription);
-      const errMsg = errorDescription || error;
+      const publicError = getPublicOAuthErrorMessage();
       c.res.headers.set('Content-Type', 'text/html; charset=utf-8');
       return c.html(`
 <!DOCTYPE html>
 <html><body><script>
   if (window.opener) {
-    window.opener.postMessage({ type: 'tiktok_error', error: '${errMsg.replace(/'/g, "\\'")}' }, '*');
+    window.opener.postMessage({ type: 'tiktok_error', error: '${publicError}' }, '*');
     setTimeout(function(){ window.close(); }, 200);
   } else {
-    window.location.href = '${frontendUrl}/dashboard/settings?tiktok_error=${encodeURIComponent(errMsg)}';
+    window.location.href = '${frontendUrl}/dashboard/settings?tiktok_error=${encodeURIComponent(publicError)}';
   }
 <\/script></body></html>
       `);
@@ -217,17 +221,18 @@ tiktok.get("/auth/callback", async (c) => {
     `);
   } catch (error) {
     const frontendUrl = process.env.FRONTEND_URL || "http://localhost:5173";
+    const publicError = getPublicOAuthErrorMessage();
     // Return HTML that posts error to parent and closes popup
     c.res.headers.set('Content-Type', 'text/html; charset=utf-8');
     return c.html(`
 <!DOCTYPE html>
 <html><body><script>
   if (window.opener) {
-    window.opener.postMessage({ type: 'tiktok_error', error: 'Falha ao conectar conta TikTok' }, '*');
+    window.opener.postMessage({ type: 'tiktok_error', error: '${publicError}' }, '*');
     setTimeout(function(){ window.close(); }, 200);
-    document.body.innerHTML = '<p style="font-family:sans-serif;text-align:center;padding:40px;color:#c00">Erro ao conectar conta TikTok</p>';
+    document.body.innerHTML = '<p style="font-family:sans-serif;text-align:center;padding:40px;color:#c00">${publicError}</p>';
   } else {
-    window.location.href = '${frontendUrl}/dashboard/settings?tiktok_error=${encodeURIComponent("Falha ao conectar conta TikTok")}';
+    window.location.href = '${frontendUrl}/dashboard/settings?tiktok_error=${encodeURIComponent(publicError)}';
   }
 <\/script></body></html>
     `);

@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import { prisma } from "../db/prisma.js";
 import { authMiddleware } from "../middleware/auth.js";
+import { sendError } from "../utils/http-error.js";
 
 const progress = new Hono();
 
@@ -33,8 +34,7 @@ progress.get("/", async (c) => {
 
     return c.json(userProgress);
   } catch (error) {
-    console.error("Error fetching progress:", error.message);
-    return c.json({ error: "Failed to fetch progress" }, 500);
+    return sendError(c, { scope: "[Progress] Get", error, message: "Failed to fetch progress" });
   }
 });
 
@@ -70,8 +70,7 @@ progress.post("/", async (c) => {
 
     return c.json(userProgress);
   } catch (error) {
-    console.error("Error updating progress:", error.message);
-    return c.json({ error: "Failed to update progress" }, 500);
+    return sendError(c, { scope: "[Progress] Update", error, message: "Failed to update progress" });
   }
 });
 
@@ -125,8 +124,7 @@ progress.post("/milestone", async (c) => {
 
     return c.json(updatedProgress);
   } catch (error) {
-    console.error("Error completing milestone:", error.message);
-    return c.json({ error: "Failed to complete milestone" }, 500);
+    return sendError(c, { scope: "[Progress] Milestone", error, message: "Failed to complete milestone" });
   }
 });
 

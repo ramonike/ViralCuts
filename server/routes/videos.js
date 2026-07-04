@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import { prisma } from "../db/prisma.js";
 import { authMiddleware } from "../middleware/auth.js";
+import { sendError } from "../utils/http-error.js";
 
 const videos = new Hono();
 
@@ -30,8 +31,7 @@ videos.get("/", async (c) => {
 
     return c.json(videoList);
   } catch (error) {
-    console.error("Error fetching videos:", error.message);
-    return c.json({ error: "Failed to fetch videos" }, 500);
+    return sendError(c, { scope: "[Videos] List", error, message: "Failed to fetch videos" });
   }
 });
 

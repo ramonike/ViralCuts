@@ -7,7 +7,7 @@ import { auth } from "./auth.js";
 import { prisma, connectWithRetry, isRetryableError } from "./db/prisma.js";
 import { rateLimiter, authRateLimiter } from "./middleware/rate-limit.js";
 import { isTrustedOrigin } from "./config/security.js";
-import { createRequestId } from "./utils/http-error.js";
+import { createRequestId, logServerError, sendError } from "./utils/http-error.js";
 import adminRoutes from "./routes/admin.js";
 
 // Import route modules
@@ -117,8 +117,6 @@ app.post("/api/auth/youtube/refresh", async (c) => {
       expires_at: expiresAt.toISOString(),
     });
   } catch (err) {
-    console.error("[YouTube Auth] Refresh error:", err);
-
     // If refresh fails, user needs to re-authenticate
     if (err.message.includes("invalid_grant") || err.message.includes("Token has been revoked")) {
       return c.json({
@@ -127,7 +125,7 @@ app.post("/api/auth/youtube/refresh", async (c) => {
       }, 401);
     }
 
-    return c.json({ error: err.message }, 500);
+    return sendError(c, { scope: "[YouTube Auth] Refresh", error: err, message: "Failed to refresh YouTube account" });
   }
 });
 
@@ -171,8 +169,8 @@ app.get("/api/health", async (c) => {
     await prisma.$queryRaw`SELECT 1`;
     return c.json({ status: "ok", database: "connected" });
   } catch (error) {
-    console.error("Database connection error:", error.message);
     const requestId = createRequestId();
+    logServerError("[Health Check]", requestId, error);
 
     const errorResponse = {
       status: "error",
@@ -195,7 +193,8 @@ async function initializeDatabase() {
     });
     return true;
   } catch (error) {
-    console.error("Failed to initialize database connection:", error.message);
+    const requestId = createRequestId();
+    logServerError("[Database Init]", requestId, error);
     // In production, you might want to exit the process
     // For development, we'll continue and let individual requests handle the error
     if (process.env.NODE_ENV === 'production') {

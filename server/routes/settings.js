@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import { prisma } from "../db/prisma.js";
 import { authMiddleware } from "../middleware/auth.js";
+import { sendError } from "../utils/http-error.js";
 
 const settings = new Hono();
 
@@ -30,8 +31,7 @@ settings.get("/", async (c) => {
 
     return c.json(userSettings);
   } catch (error) {
-    console.error("Error fetching settings:", error.message);
-    return c.json({ error: "Failed to fetch settings" }, 500);
+    return sendError(c, { scope: "[Settings] Get", error, message: "Failed to fetch settings" });
   }
 });
 
@@ -61,8 +61,7 @@ settings.put("/", async (c) => {
 
     return c.json(userSettings);
   } catch (error) {
-    console.error("Error updating settings:", error.message);
-    return c.json({ error: "Failed to update settings" }, 500);
+    return sendError(c, { scope: "[Settings] Update", error, message: "Failed to update settings" });
   }
 });
 

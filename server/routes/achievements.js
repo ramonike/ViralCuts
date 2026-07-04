@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import { prisma } from "../db/prisma.js";
 import { authMiddleware } from "../middleware/auth.js";
+import { sendError } from "../utils/http-error.js";
 
 const achievements = new Hono();
 
@@ -19,8 +20,7 @@ achievements.get("/", async (c) => {
 
     return c.json(achievementList);
   } catch (error) {
-    console.error("Error fetching achievements:", error.message);
-    return c.json({ error: "Failed to fetch achievements" }, 500);
+    return sendError(c, { scope: "[Achievements] List", error, message: "Failed to fetch achievements" });
   }
 });
 
@@ -63,8 +63,7 @@ achievements.post("/", async (c) => {
     if (error.code === "P2002") {
       return c.json({ error: "Achievement already unlocked" }, 400);
     }
-    console.error("Error unlocking achievement:", error.message);
-    return c.json({ error: "Failed to unlock achievement" }, 500);
+    return sendError(c, { scope: "[Achievements] Unlock", error, message: "Failed to unlock achievement" });
   }
 });
 

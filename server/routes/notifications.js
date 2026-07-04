@@ -7,6 +7,7 @@
 import { Hono } from "hono";
 import { prisma } from "../db/prisma.js";
 import { authMiddleware } from "../middleware/auth.js";
+import { sendError } from "../utils/http-error.js";
 
 const notifications = new Hono();
 
@@ -47,8 +48,7 @@ notifications.get("/", authMiddleware, async (c) => {
       unreadCount,
     });
   } catch (error) {
-    console.error("[Notifications] Error fetching notifications:", error);
-    return c.json({ error: error.message }, 500);
+    return sendError(c, { scope: "[Notifications] List", error, message: "Failed to fetch notifications" });
   }
 });
 
@@ -72,8 +72,7 @@ notifications.put("/:id/read", authMiddleware, async (c) => {
 
     return c.json({ success: true });
   } catch (error) {
-    console.error("[Notifications] Error marking notification as read:", error);
-    return c.json({ error: error.message }, 500);
+    return sendError(c, { scope: "[Notifications] Mark read", error, message: "Failed to update notification" });
   }
 });
 
@@ -92,8 +91,7 @@ notifications.put("/read-all", authMiddleware, async (c) => {
 
     return c.json({ success: true });
   } catch (error) {
-    console.error("[Notifications] Error marking all notifications as read:", error);
-    return c.json({ error: error.message }, 500);
+    return sendError(c, { scope: "[Notifications] Mark all read", error, message: "Failed to update notifications" });
   }
 });
 
@@ -116,8 +114,7 @@ notifications.delete("/:id", authMiddleware, async (c) => {
 
     return c.json({ success: true });
   } catch (error) {
-    console.error("[Notifications] Error deleting notification:", error);
-    return c.json({ error: error.message }, 500);
+    return sendError(c, { scope: "[Notifications] Delete one", error, message: "Failed to delete notification" });
   }
 });
 
@@ -135,8 +132,7 @@ notifications.delete("/", authMiddleware, async (c) => {
 
     return c.json({ success: true });
   } catch (error) {
-    console.error("[Notifications] Error deleting all notifications:", error);
-    return c.json({ error: error.message }, 500);
+    return sendError(c, { scope: "[Notifications] Delete all", error, message: "Failed to delete notifications" });
   }
 });
 

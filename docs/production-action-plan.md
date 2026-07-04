@@ -155,7 +155,7 @@ O projeto mistura `npm` com scripts `bun`, entao a padronizacao de runtime deve 
 
 - [x] Trocar respostas com `error.message` por mensagens genericas em rotas prioritarias de producao.
 - [x] Introduzir helper padrao de erro com `requestId`.
-- [ ] Deixar detalhes somente em `development`.
+- [x] Deixar detalhes somente em `development`.
 
 #### Arquivos impactados
 
@@ -170,9 +170,10 @@ O projeto mistura `npm` com scripts `bun`, entao a padronizacao de runtime deve 
 #### Status atual
 
 - `server/utils/http-error.js` centraliza `requestId`, log estruturado basico e resposta segura.
-- `server/routes/ai.js`, `server/routes/uploads.js`, `server/routes/subscription.js`, `server/routes/youtube.js` e `server/routes/tiktok.js` ja usam respostas padronizadas nas falhas mais sensiveis.
+- `server/routes/ai.js`, `server/routes/uploads.js`, `server/routes/subscription.js`, `server/routes/youtube.js`, `server/routes/tiktok.js`, `server/routes/notifications.js`, `server/routes/progress.js`, `server/routes/settings.js`, `server/routes/videos.js` e `server/routes/achievements.js` ja usam respostas padronizadas nas falhas mais sensiveis.
 - `server/index.js` e `api/[[...route]].js` nao expoem mais `error.message` cru no health check.
-- Ainda resta reduzir casos pontuais que inserem mensagens detalhadas em respostas HTML de callback e alinhar todos os detalhes apenas para `development`.
+- `server/routes/youtube.js` e `server/routes/tiktok.js` deixaram de repassar mensagens cruas de OAuth para o frontend em producao.
+- O detalhe tecnico agora fica restrito ao log server-side e ao campo `detail` apenas quando `NODE_ENV=development`.
 
 ### 6. Supabase server-side
 

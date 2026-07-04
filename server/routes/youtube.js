@@ -28,6 +28,10 @@ import {
 
 const youtube = new Hono();
 
+function getPublicOAuthErrorMessage() {
+  return "Falha ao conectar conta YouTube";
+}
+
 // Helper to get valid access token (refreshes if needed)
 async function getValidAccessToken(userId, accountId = null) {
   const whereClause = accountId
@@ -98,7 +102,8 @@ youtube.get("/auth/callback", async (c) => {
     if (error) {
       console.error("[YouTube Auth] OAuth error:", error);
       const frontendUrl = process.env.FRONTEND_URL || "http://localhost:5173";
-      return c.redirect(`${frontendUrl}/settings?youtube_error=${encodeURIComponent(error)}`);
+      const publicError = getPublicOAuthErrorMessage();
+      return c.redirect(`${frontendUrl}/settings?youtube_error=${encodeURIComponent(publicError)}`);
     }
 
     if (!code) {
@@ -172,8 +177,9 @@ youtube.get("/auth/callback", async (c) => {
     );
   } catch (error) {
     const frontendUrl = process.env.FRONTEND_URL || "http://localhost:5173";
+    const publicError = getPublicOAuthErrorMessage();
     return c.redirect(
-      `${frontendUrl}/settings?youtube_error=${encodeURIComponent("Falha ao conectar conta YouTube")}`
+      `${frontendUrl}/settings?youtube_error=${encodeURIComponent(publicError)}`
     );
   }
 });
