@@ -94,20 +94,42 @@ function ScriptGenerator({ onPipeline }) {
         if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
             const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
             recognitionRef.current = new SpeechRecognition();
-            recognitionRef.current.continuous = false;
-            recognitionRef.current.interimResults = false;
+            recognitionRef.current.continuous = true;
+            recognitionRef.current.interimResults = true;
             recognitionRef.current.lang = 'pt-BR';
+            recognitionRef.current.maxAlternatives = 3;
 
             recognitionRef.current.onresult = (event) => {
-                const transcript = event.results[0][0].transcript;
-                setTranscript(transcript);
-                setTema(transcript); // Update tema directly with transcript
-                setIsRecording(false);
+                let finalTranscript = '';
+                for (let i = event.resultIndex; i < event.results.length; i++) {
+                    if (event.results[i].isFinal) {
+                        finalTranscript += event.results[i][0].transcript;
+                    }
+                }
+                if (finalTranscript) {
+                    setTranscript(finalTranscript);
+                    setTema(finalTranscript); // Update tema directly with transcript
+                    setIsRecording(false);
+                }
             };
 
             recognitionRef.current.onerror = (event) => {
                 console.error('Speech recognition error:', event.error);
                 setIsRecording(false);
+                // Handle specific errors
+                if (event.error === 'no-speech') {
+                    // Don't show error for no-speech, it's normal when user stops talking
+                    // Just keep listening or stop gracefully
+                    return;
+                }
+                if (event.error === 'audio-capture') {
+                    setError('Microfone não detectado. Verifique as permissões.');
+                    return;
+                }
+                if (event.error === 'not-allowed') {
+                    setError('Permissão de microfone negada. Permita nas configurações do navegador.');
+                    return;
+                }
                 setError('Erro no reconhecimento de fala. Tente novamente.');
             };
 
@@ -268,20 +290,42 @@ function TitleGenerator({ onPipeline }) {
         if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
             const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
             recognitionRef.current = new SpeechRecognition();
-            recognitionRef.current.continuous = false;
-            recognitionRef.current.interimResults = false;
+            recognitionRef.current.continuous = true;
+            recognitionRef.current.interimResults = true;
             recognitionRef.current.lang = 'pt-BR';
+            recognitionRef.current.maxAlternatives = 3;
 
             recognitionRef.current.onresult = (event) => {
-                const transcript = event.results[0][0].transcript;
-                setTranscript(transcript);
-                setAssunto(transcript); // Update assunto directly with transcript
-                setIsRecording(false);
+                let finalTranscript = '';
+                for (let i = event.resultIndex; i < event.results.length; i++) {
+                    if (event.results[i].isFinal) {
+                        finalTranscript += event.results[i][0].transcript;
+                    }
+                }
+                if (finalTranscript) {
+                    setTranscript(finalTranscript);
+                    setAssunto(finalTranscript); // Update assunto directly with transcript
+                    setIsRecording(false);
+                }
             };
 
             recognitionRef.current.onerror = (event) => {
                 console.error('Speech recognition error:', event.error);
                 setIsRecording(false);
+                // Handle specific errors
+                if (event.error === 'no-speech') {
+                    // Don't show error for no-speech, it's normal when user stops talking
+                    // Just keep listening or stop gracefully
+                    return;
+                }
+                if (event.error === 'audio-capture') {
+                    setError('Microfone não detectado. Verifique as permissões.');
+                    return;
+                }
+                if (event.error === 'not-allowed') {
+                    setError('Permissão de microfone negada. Permita nas configurações do navegador.');
+                    return;
+                }
                 setError('Erro no reconhecimento de fala. Tente novamente.');
             };
 
