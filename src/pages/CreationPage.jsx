@@ -114,14 +114,14 @@ function ScriptGenerator({ onPipeline }) {
             };
 
             recognitionRef.current.onerror = (event) => {
-                console.error('Speech recognition error:', event.error);
-                setIsRecording(false);
-                // Handle specific errors
+                // Handle specific errors first - no-speech is normal, don't log
                 if (event.error === 'no-speech') {
                     // Don't show error for no-speech, it's normal when user stops talking
-                    // Just keep listening or stop gracefully
+                    // With continuous=true, it should keep listening
                     return;
                 }
+                console.error('Speech recognition error:', event.error);
+                setIsRecording(false);
                 if (event.error === 'audio-capture') {
                     setError('Microfone não detectado. Verifique as permissões.');
                     return;
@@ -310,14 +310,14 @@ function TitleGenerator({ onPipeline }) {
             };
 
             recognitionRef.current.onerror = (event) => {
-                console.error('Speech recognition error:', event.error);
-                setIsRecording(false);
-                // Handle specific errors
+                // Handle specific errors first - no-speech is normal, don't log
                 if (event.error === 'no-speech') {
                     // Don't show error for no-speech, it's normal when user stops talking
-                    // Just keep listening or stop gracefully
+                    // With continuous=true, it should keep listening
                     return;
                 }
+                console.error('Speech recognition error:', event.error);
+                setIsRecording(false);
                 if (event.error === 'audio-capture') {
                     setError('Microfone não detectado. Verifique as permissões.');
                     return;
