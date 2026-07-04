@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import { prisma } from "../db/prisma.js";
 import { authMiddleware } from "../middleware/auth.js";
+import { sendError } from "../utils/http-error.js";
 
 const uploads = new Hono();
 
@@ -125,9 +126,13 @@ uploads.put("/:id", async (c) => {
       updateData.platform = platforms[0];
     }
 
-    const upload = await prisma.upload.update({
-      where: { id: uploadId },
+    await prisma.upload.updateMany({
+      where: { id: uploadId, userId },
       data: updateData,
+    });
+
+    const upload = await prisma.upload.findFirst({
+      where: { id: uploadId, userId },
       include: {
         video: {
           select: {
@@ -139,6 +144,10 @@ uploads.put("/:id", async (c) => {
         platformStatuses: true,
       },
     });
+
+    if (!upload) {
+      return c.json({ error: "Upload not found" }, 404);
+    }
 
     return c.json(serializeUpload(upload));
   } catch (error) {
@@ -221,8 +230,8 @@ uploads.put("/:id/platform/:platform", async (c) => {
       overallStatus = 'processing';
     }
 
-    await prisma.upload.update({
-      where: { id: uploadId },
+    await prisma.upload.updateMany({
+      where: { id: uploadId, userId },
       data: { status: overallStatus },
     });
 
@@ -248,8 +257,8 @@ uploads.delete("/:id", async (c) => {
       return c.json({ error: "Upload not found" }, 404);
     }
 
-    await prisma.upload.delete({
-      where: { id: uploadId },
+    await prisma.upload.deleteMany({
+      where: { id: uploadId, userId },
     });
 
     return c.json({ success: true });
@@ -289,8 +298,11 @@ uploads.post("/store-video", async (c) => {
 
     return c.json({ success: true, fileUrl });
   } catch (error) {
-    console.error("Error storing video:", error.message);
-    return c.json({ error: "Failed to store video" }, 500);
+    return sendError(c, {
+      scope: "[Uploads] Store video",
+      error,
+      message: "Failed to store video",
+    });
   }
 });
 

@@ -13,6 +13,7 @@ import {
   revokeToken,
 } from "../services/youtube-auth.js";
 import { consumeOAuthState, issueOAuthState } from "../services/oauth-state.js";
+import { sendError } from "../utils/http-error.js";
 import {
   initiateUpload,
   uploadChunk,
@@ -79,8 +80,7 @@ youtube.get("/auth/url", authMiddleware, async (c) => {
 
     return c.json({ url: authUrl });
   } catch (error) {
-    console.error("[YouTube Auth] Error generating auth URL:", error);
-    return c.json({ error: error.message }, 500);
+    return sendError(c, { scope: "[YouTube Auth] URL", error, message: "Failed to generate auth URL" });
   }
 });
 
@@ -171,10 +171,9 @@ youtube.get("/auth/callback", async (c) => {
       `${frontendUrl}/settings?youtube_connected=true&channel=${encodeURIComponent(channel.snippet.title)}`
     );
   } catch (error) {
-    console.error("[YouTube Auth] Callback error:", error);
     const frontendUrl = process.env.FRONTEND_URL || "http://localhost:5173";
     return c.redirect(
-      `${frontendUrl}/settings?youtube_error=${encodeURIComponent(error.message)}`
+      `${frontendUrl}/settings?youtube_error=${encodeURIComponent("Falha ao conectar conta YouTube")}`
     );
   }
 });
@@ -236,7 +235,7 @@ youtube.post("/auth/refresh", authMiddleware, async (c) => {
       }, 401);
     }
 
-    return c.json({ error: error.message }, 500);
+    return sendError(c, { scope: "[YouTube Auth] Refresh", error, message: "Failed to refresh YouTube account" });
   }
 });
 
@@ -272,8 +271,7 @@ youtube.get("/accounts", authMiddleware, async (c) => {
 
     return c.json({ accounts: accountsWithStatus });
   } catch (error) {
-    console.error("[YouTube Auth] Error fetching accounts:", error);
-    return c.json({ error: error.message }, 500);
+    return sendError(c, { scope: "[YouTube Auth] Accounts", error, message: "Failed to fetch YouTube accounts" });
   }
 });
 
@@ -309,14 +307,13 @@ youtube.delete("/accounts/:accountId", authMiddleware, async (c) => {
     }
 
     // Delete the account
-    await prisma.account.delete({
-      where: { id: account.id },
+    await prisma.account.deleteMany({
+      where: { id: account.id, userId: user.id, providerId: "youtube" },
     });
 
     return c.json({ success: true });
   } catch (error) {
-    console.error("[YouTube Auth] Error disconnecting account:", error);
-    return c.json({ error: error.message }, 500);
+    return sendError(c, { scope: "[YouTube Auth] Disconnect", error, message: "Failed to disconnect YouTube account" });
   }
 });
 
@@ -400,8 +397,7 @@ youtube.post("/upload/initiate", authMiddleware, async (c) => {
       totalBytes: session.totalBytes,
     });
   } catch (error) {
-    console.error("[YouTube Upload] Initiate error:", error);
-    return c.json({ error: error.message }, 500);
+    return sendError(c, { scope: "[YouTube Upload] Initiate", error, message: "Failed to initiate upload" });
   }
 });
 
@@ -469,8 +465,8 @@ youtube.post("/upload/chunk", authMiddleware, async (c) => {
 
     // Update upload record if we have an uploadId
     if (uploadId) {
-      await prisma.upload.update({
-        where: { id: uploadId },
+      await prisma.upload.updateMany({
+        where: { id: uploadId, userId: user.id, platform: "youtube" },
         data: {
           bytesUploaded: BigInt(progress.bytesUploaded),
           status: progress.status,
@@ -491,18 +487,16 @@ youtube.post("/upload/chunk", authMiddleware, async (c) => {
       retryAttempts,
     });
   } catch (error) {
-    console.error("[YouTube Upload] Chunk error:", error);
-
     // Check if error is retryable (for client-side retry)
     if (isRetryableError(error)) {
       return c.json({
-        error: error.message,
+        error: "Upload chunk failed",
         retryable: true,
         status: error.status
       }, error.status || 500);
     }
 
-    return c.json({ error: error.message }, 500);
+    return sendError(c, { scope: "[YouTube Upload] Chunk", error, message: "Failed to upload video chunk" });
   }
 });
 
@@ -533,8 +527,8 @@ youtube.post("/upload/resume", authMiddleware, async (c) => {
 
     // Update upload record if we have an uploadId
     if (uploadId) {
-      await prisma.upload.update({
-        where: { id: uploadId },
+      await prisma.upload.updateMany({
+        where: { id: uploadId, userId: user.id, platform: "youtube" },
         data: {
           bytesUploaded: BigInt(progress.bytesUploaded),
           status: progress.status,
@@ -556,8 +550,7 @@ youtube.post("/upload/resume", authMiddleware, async (c) => {
       error: progress.error,
     });
   } catch (error) {
-    console.error("[YouTube Upload] Resume error:", error);
-    return c.json({ error: error.message }, 500);
+    return sendError(c, { scope: "[YouTube Upload] Resume", error, message: "Failed to resume upload" });
   }
 });
 
@@ -576,8 +569,7 @@ youtube.get("/categories", authMiddleware, async (c) => {
 
     return c.json({ categories });
   } catch (error) {
-    console.error("[YouTube] Error getting categories:", error);
-    return c.json({ error: error.message }, 500);
+    return sendError(c, { scope: "[YouTube] Categories", error, message: "Failed to fetch video categories" });
   }
 });
 
@@ -595,8 +587,7 @@ youtube.get("/playlists", authMiddleware, async (c) => {
 
     return c.json({ playlists });
   } catch (error) {
-    console.error("[YouTube] Error getting playlists:", error);
-    return c.json({ error: error.message }, 500);
+    return sendError(c, { scope: "[YouTube] Playlists", error, message: "Failed to fetch playlists" });
   }
 });
 
@@ -626,8 +617,7 @@ youtube.post("/thumbnail", authMiddleware, async (c) => {
 
     return c.json(result);
   } catch (error) {
-    console.error("[YouTube] Error uploading thumbnail:", error);
-    return c.json({ error: error.message }, 500);
+    return sendError(c, { scope: "[YouTube] Thumbnail", error, message: "Failed to upload thumbnail" });
   }
 });
 
@@ -654,8 +644,7 @@ youtube.post("/playlist/add", authMiddleware, async (c) => {
 
     return c.json(result);
   } catch (error) {
-    console.error("[YouTube] Error adding to playlist:", error);
-    return c.json({ error: error.message }, 500);
+    return sendError(c, { scope: "[YouTube] Playlist add", error, message: "Failed to add video to playlist" });
   }
 });
 
@@ -695,8 +684,7 @@ youtube.get("/scheduled", authMiddleware, async (c) => {
 
     return c.json({ uploads: serializedUploads });
   } catch (error) {
-    console.error("[YouTube] Error getting scheduled uploads:", error);
-    return c.json({ error: error.message }, 500);
+    return sendError(c, { scope: "[YouTube] Scheduled uploads", error, message: "Failed to fetch scheduled uploads" });
   }
 });
 
@@ -736,14 +724,22 @@ youtube.post("/schedule", authMiddleware, async (c) => {
     }
 
     // Update upload with scheduled time
-    const updatedUpload = await prisma.upload.update({
-      where: { id: uploadId },
+    await prisma.upload.updateMany({
+      where: { id: uploadId, userId: user.id, platform: "youtube" },
       data: {
         status: "scheduled",
         scheduledAt: scheduledDate,
         updatedAt: new Date(),
       },
     });
+
+    const updatedUpload = await prisma.upload.findFirst({
+      where: { id: uploadId, userId: user.id, platform: "youtube" },
+    });
+
+    if (!updatedUpload) {
+      return c.json({ error: "Upload not found" }, 404);
+    }
 
     return c.json({
       success: true,
@@ -754,8 +750,7 @@ youtube.post("/schedule", authMiddleware, async (c) => {
       },
     });
   } catch (error) {
-    console.error("[YouTube] Error scheduling upload:", error);
-    return c.json({ error: error.message }, 500);
+    return sendError(c, { scope: "[YouTube] Schedule", error, message: "Failed to schedule upload" });
   }
 });
 
@@ -796,14 +791,22 @@ youtube.put("/schedule/:uploadId", authMiddleware, async (c) => {
     }
 
     // Update scheduled time
-    const updatedUpload = await prisma.upload.update({
-      where: { id: uploadId },
+    await prisma.upload.updateMany({
+      where: { id: uploadId, userId: user.id, platform: "youtube" },
       data: {
         scheduledAt: scheduledDate,
         status: "scheduled",
         updatedAt: new Date(),
       },
     });
+
+    const updatedUpload = await prisma.upload.findFirst({
+      where: { id: uploadId, userId: user.id, platform: "youtube" },
+    });
+
+    if (!updatedUpload) {
+      return c.json({ error: "Scheduled upload not found" }, 404);
+    }
 
     return c.json({
       success: true,
@@ -814,8 +817,7 @@ youtube.put("/schedule/:uploadId", authMiddleware, async (c) => {
       },
     });
   } catch (error) {
-    console.error("[YouTube] Error rescheduling upload:", error);
-    return c.json({ error: error.message }, 500);
+    return sendError(c, { scope: "[YouTube] Reschedule", error, message: "Failed to reschedule upload" });
   }
 });
 
@@ -839,8 +841,8 @@ youtube.delete("/schedule/:uploadId", authMiddleware, async (c) => {
     }
 
     // Update status to cancelled
-    await prisma.upload.update({
-      where: { id: uploadId },
+    await prisma.upload.updateMany({
+      where: { id: uploadId, userId: user.id, platform: "youtube" },
       data: {
         status: "cancelled",
         scheduledAt: null,
@@ -850,8 +852,7 @@ youtube.delete("/schedule/:uploadId", authMiddleware, async (c) => {
 
     return c.json({ success: true });
   } catch (error) {
-    console.error("[YouTube] Error cancelling scheduled upload:", error);
-    return c.json({ error: error.message }, 500);
+    return sendError(c, { scope: "[YouTube] Cancel schedule", error, message: "Failed to cancel scheduled upload" });
   }
 });
 
@@ -931,8 +932,7 @@ youtube.post("/upload-init", authMiddleware, async (c) => {
 
     return c.json({ uploadUrl, uploadId });
   } catch (error) {
-    console.error("[YouTube Upload Init] Erro:", error);
-    return c.json({ error: error.message }, 500);
+    return sendError(c, { scope: "[YouTube Upload] Legacy init", error, message: "Failed to initialize legacy upload" });
   }
 });
 
@@ -962,8 +962,8 @@ youtube.post("/upload-complete", authMiddleware, async (c) => {
       return c.json({ error: "Upload not found" }, 404);
     }
 
-    const updated = await prisma.upload.update({
-      where: { id: uploadId },
+    await prisma.upload.updateMany({
+      where: { id: uploadId, userId: user.id, platform: "youtube" },
       data: {
         youtubeVideoId,
         status: "scheduled",
@@ -981,6 +981,14 @@ youtube.post("/upload-complete", authMiddleware, async (c) => {
       },
     });
 
+    const updated = await prisma.upload.findFirst({
+      where: { id: uploadId, userId: user.id, platform: "youtube" },
+    });
+
+    if (!updated) {
+      return c.json({ error: "Upload not found" }, 404);
+    }
+
     console.log(`[YouTube Upload Complete] uploadId=${uploadId} youtubeVideoId=${youtubeVideoId}`);
 
     return c.json({
@@ -991,8 +999,7 @@ youtube.post("/upload-complete", authMiddleware, async (c) => {
       upload: { ...updated, fileSize: updated.fileSize ? Number(updated.fileSize) : null, bytesUploaded: updated.bytesUploaded ? Number(updated.bytesUploaded) : 0 },
     });
   } catch (error) {
-    console.error("[YouTube Upload Complete] Erro:", error);
-    return c.json({ error: error.message }, 500);
+    return sendError(c, { scope: "[YouTube Upload] Complete", error, message: "Failed to finalize upload" });
   }
 });
 export default youtube;

@@ -61,19 +61,14 @@ notifications.put("/:id/read", authMiddleware, async (c) => {
     const user = c.get("user");
     const notificationId = c.req.param("id");
 
-    // Verify notification belongs to user
-    const notification = await prisma.notification.findFirst({
+    const result = await prisma.notification.updateMany({
       where: { id: notificationId, userId: user.id },
-    });
-
-    if (!notification) {
-      return c.json({ error: "Notification not found" }, 404);
-    }
-
-    await prisma.notification.update({
-      where: { id: notificationId },
       data: { read: true },
     });
+
+    if (result.count === 0) {
+      return c.json({ error: "Notification not found" }, 404);
+    }
 
     return c.json({ success: true });
   } catch (error) {
@@ -111,18 +106,13 @@ notifications.delete("/:id", authMiddleware, async (c) => {
     const user = c.get("user");
     const notificationId = c.req.param("id");
 
-    // Verify notification belongs to user
-    const notification = await prisma.notification.findFirst({
+    const result = await prisma.notification.deleteMany({
       where: { id: notificationId, userId: user.id },
     });
 
-    if (!notification) {
+    if (result.count === 0) {
       return c.json({ error: "Notification not found" }, 404);
     }
-
-    await prisma.notification.delete({
-      where: { id: notificationId },
-    });
 
     return c.json({ success: true });
   } catch (error) {

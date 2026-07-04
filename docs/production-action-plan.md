@@ -128,7 +128,7 @@ O projeto mistura `npm` com scripts `bun`, entao a padronizacao de runtime deve 
 - [x] Passar `userId` para `updateTaskProgress` e `completeTask`.
 - [x] Atualizar queries para `where: { id, userId }` ou equivalente com `updateMany`.
 - [x] Retornar `404` ou `403` quando o recurso nao pertencer ao usuario autenticado.
-- [ ] Revisar todas as rotas que atualizam por `id` simples.
+- [x] Revisar todas as rotas que atualizam por `id` simples.
 
 #### Arquivos impactados
 
@@ -142,12 +142,19 @@ O projeto mistura `npm` com scripts `bun`, entao a padronizacao de runtime deve 
 - `server/routes/commandCenter.js` usa `taskId` sem vinculo com `user.id`.
 - `server/services/commandCenterService.js` atualiza `dailyTask` apenas por `id`.
 
+#### Status atual
+
+- `server/routes/notifications.js` agora marca e remove notificacoes com filtro simultaneo por `id` e `userId`.
+- `server/routes/uploads.js` agora aplica `updateMany` e `deleteMany` amarrados ao `userId` nas rotas de fila e status por plataforma.
+- `server/routes/youtube.js` agora restringe atualizacoes de progresso, agendamento, cancelamento e `upload-complete` ao `userId` autenticado.
+- `server/routes/tiktok.js` agora restringe desconexao de conta, reconciliacao de status e exclusao de upload ao `userId` autenticado.
+
 ### 5. Mensagens de erro e segredos
 
 #### Acao
 
-- [ ] Trocar respostas com `error.message` por mensagens genericas em producao.
-- [ ] Introduzir helper padrao de erro com `requestId`.
+- [x] Trocar respostas com `error.message` por mensagens genericas em rotas prioritarias de producao.
+- [x] Introduzir helper padrao de erro com `requestId`.
 - [ ] Deixar detalhes somente em `development`.
 
 #### Arquivos impactados
@@ -157,6 +164,15 @@ O projeto mistura `npm` com scripts `bun`, entao a padronizacao de runtime deve 
 - `server/routes/uploads.js`
 - `server/routes/subscription.js`
 - `server/routes/ai.js`
+- `server/utils/http-error.js`
+- `api/[[...route]].js`
+
+#### Status atual
+
+- `server/utils/http-error.js` centraliza `requestId`, log estruturado basico e resposta segura.
+- `server/routes/ai.js`, `server/routes/uploads.js`, `server/routes/subscription.js`, `server/routes/youtube.js` e `server/routes/tiktok.js` ja usam respostas padronizadas nas falhas mais sensiveis.
+- `server/index.js` e `api/[[...route]].js` nao expoem mais `error.message` cru no health check.
+- Ainda resta reduzir casos pontuais que inserem mensagens detalhadas em respostas HTML de callback e alinhar todos os detalhes apenas para `development`.
 
 ### 6. Supabase server-side
 

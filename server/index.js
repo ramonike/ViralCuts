@@ -7,6 +7,7 @@ import { auth } from "./auth.js";
 import { prisma, connectWithRetry, isRetryableError } from "./db/prisma.js";
 import { rateLimiter, authRateLimiter } from "./middleware/rate-limit.js";
 import { isTrustedOrigin } from "./config/security.js";
+import { createRequestId } from "./utils/http-error.js";
 import adminRoutes from "./routes/admin.js";
 
 // Import route modules
@@ -171,13 +172,13 @@ app.get("/api/health", async (c) => {
     return c.json({ status: "ok", database: "connected" });
   } catch (error) {
     console.error("Database connection error:", error.message);
+    const requestId = createRequestId();
 
     const errorResponse = {
       status: "error",
       database: "disconnected",
-      error: error.message,
-      code: error.code || 'UNKNOWN',
-      retryable: isRetryableError(error),
+      error: "Health check failed",
+      requestId,
     };
 
     return c.json(errorResponse, 500);

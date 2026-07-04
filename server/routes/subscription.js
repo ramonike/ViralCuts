@@ -15,6 +15,7 @@ import { Hono } from 'hono';
 import Stripe from 'stripe';
 import { authMiddleware } from '../middleware/auth.js';
 import { prisma } from '../db/prisma.js';
+import { sendError } from '../utils/http-error.js';
 
 const router = new Hono();
 
@@ -124,8 +125,11 @@ router.post('/checkout', authMiddleware, async (c) => {
 
         return c.json({ url: session.url });
     } catch (err) {
-        console.error('[Subscription] Checkout error:', err);
-        return c.json({ error: err.message || 'Erro ao criar checkout' }, 500);
+        return sendError(c, {
+            scope: '[Subscription] Checkout',
+            error: err,
+            message: 'Erro ao criar checkout',
+        });
     }
 });
 
@@ -162,8 +166,11 @@ router.post('/webhook', async (c) => {
     const secret = process.env.STRIPE_WEBHOOK_SECRET;
 
     if (!secret) {
-        console.error('[Webhook] STRIPE_WEBHOOK_SECRET not set');
-        return c.json({ error: 'Webhook secret not configured' }, 500);
+        return sendError(c, {
+            scope: '[Webhook] Stripe config',
+            error: new Error('STRIPE_WEBHOOK_SECRET not set'),
+            message: 'Webhook not configured',
+        });
     }
 
     let event;

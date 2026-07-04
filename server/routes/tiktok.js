@@ -19,6 +19,7 @@ import {
   validateVideoMetadata,
 } from "../services/platforms/tiktok.js";
 import { consumeOAuthState, issueOAuthState, updateOAuthState } from "../services/oauth-state.js";
+import { sendError } from "../utils/http-error.js";
 
 const tiktok = new Hono();
 
@@ -95,8 +96,7 @@ tiktok.get("/auth/url", authMiddleware, async (c) => {
 
     return c.json({ url });
   } catch (error) {
-    console.error("[TikTok Auth] Error generating auth URL:", error);
-    return c.json({ error: error.message }, 500);
+    return sendError(c, { scope: "[TikTok Auth] URL", error, message: "Failed to generate auth URL" });
   }
 });
 
@@ -216,7 +216,6 @@ tiktok.get("/auth/callback", async (c) => {
 <\/script></body></html>
     `);
   } catch (error) {
-    console.error("[TikTok Auth] Callback error:", error);
     const frontendUrl = process.env.FRONTEND_URL || "http://localhost:5173";
     // Return HTML that posts error to parent and closes popup
     c.res.headers.set('Content-Type', 'text/html; charset=utf-8');
@@ -224,11 +223,11 @@ tiktok.get("/auth/callback", async (c) => {
 <!DOCTYPE html>
 <html><body><script>
   if (window.opener) {
-    window.opener.postMessage({ type: 'tiktok_error', error: '${(error.message || '').replace(/'/g, "\\'")}' }, '*');
+    window.opener.postMessage({ type: 'tiktok_error', error: 'Falha ao conectar conta TikTok' }, '*');
     setTimeout(function(){ window.close(); }, 200);
-    document.body.innerHTML = '<p style="font-family:sans-serif;text-align:center;padding:40px;color:#c00">Erro: ${(error.message || '').replace(/'/g, "\\'")}</p>';
+    document.body.innerHTML = '<p style="font-family:sans-serif;text-align:center;padding:40px;color:#c00">Erro ao conectar conta TikTok</p>';
   } else {
-    window.location.href = '${frontendUrl}/dashboard/settings?tiktok_error=${encodeURIComponent(error.message)}';
+    window.location.href = '${frontendUrl}/dashboard/settings?tiktok_error=${encodeURIComponent("Falha ao conectar conta TikTok")}';
   }
 <\/script></body></html>
     `);
@@ -299,7 +298,7 @@ tiktok.post("/auth/refresh", authMiddleware, async (c) => {
       }, 401);
     }
 
-    return c.json({ error: error.message }, 500);
+    return sendError(c, { scope: "[TikTok Auth] Refresh", error, message: "Failed to refresh TikTok account" });
   }
 });
 
@@ -347,8 +346,7 @@ tiktok.get("/accounts", authMiddleware, async (c) => {
 
     return c.json({ accounts: accountsWithStatus });
   } catch (error) {
-    console.error("[TikTok Auth] Error fetching accounts:", error);
-    return c.json({ error: error.message }, 500);
+    return sendError(c, { scope: "[TikTok Auth] Accounts", error, message: "Failed to fetch TikTok accounts" });
   }
 });
 
@@ -384,14 +382,13 @@ tiktok.delete("/accounts/:accountId", authMiddleware, async (c) => {
     }
 
     // Delete the account
-    await prisma.account.delete({
-      where: { id: account.id },
+    await prisma.account.deleteMany({
+      where: { id: account.id, userId: user.id, providerId: "tiktok" },
     });
 
     return c.json({ success: true });
   } catch (error) {
-    console.error("[TikTok Auth] Error disconnecting account:", error);
-    return c.json({ error: error.message }, 500);
+    return sendError(c, { scope: "[TikTok Auth] Disconnect", error, message: "Failed to disconnect TikTok account" });
   }
 });
 
@@ -410,8 +407,7 @@ tiktok.get("/creator-info", authMiddleware, async (c) => {
 
     return c.json({ creatorInfo });
   } catch (error) {
-    console.error("[TikTok] Error getting creator info:", error);
-    return c.json({ error: error.message }, 500);
+    return sendError(c, { scope: "[TikTok] Creator info", error, message: "Failed to fetch creator info" });
   }
 });
 
@@ -474,8 +470,8 @@ tiktok.post("/upload", authMiddleware, async (c) => {
     const result = await uploadVideo(videoData, metadata, accessToken, {
       onProgress: async (bytesUploaded, totalBytes, status) => {
         // Update upload record with progress
-        await prisma.upload.update({
-          where: { id: uploadRecord.id },
+        await prisma.upload.updateMany({
+          where: { id: uploadRecord.id, userId: user.id, platform: "tiktok" },
           data: {
             bytesUploaded: BigInt(bytesUploaded),
             status: status === "processing" ? "processing" : "uploading",
@@ -486,8 +482,8 @@ tiktok.post("/upload", authMiddleware, async (c) => {
     });
 
     // Update upload record with publish ID
-    await prisma.upload.update({
-      where: { id: uploadRecord.id },
+    await prisma.upload.updateMany({
+      where: { id: uploadRecord.id, userId: user.id, platform: "tiktok" },
       data: {
         status: "processing",
         metadata: {
@@ -507,8 +503,7 @@ tiktok.post("/upload", authMiddleware, async (c) => {
       message: result.message,
     });
   } catch (error) {
-    console.error("[TikTok Upload] Error:", error);
-    return c.json({ error: error.message }, 500);
+    return sendError(c, { scope: "[TikTok Upload]", error, message: "Failed to upload video to TikTok" });
   }
 });
 
@@ -556,8 +551,8 @@ tiktok.get("/status/:publishId", authMiddleware, async (c) => {
         uploadStatus = "pending";
       }
 
-      await prisma.upload.update({
-        where: { id: upload.id },
+      await prisma.upload.updateMany({
+        where: { id: upload.id, userId: user.id, platform: "tiktok" },
         data: {
           status: uploadStatus,
           publishedAt: status.status === "published" ? new Date() : null,
@@ -582,8 +577,7 @@ tiktok.get("/status/:publishId", authMiddleware, async (c) => {
       uploadedBytes: status.uploadedBytes,
     });
   } catch (error) {
-    console.error("[TikTok Status] Error:", error);
-    return c.json({ error: error.message }, 500);
+    return sendError(c, { scope: "[TikTok Status]", error, message: "Failed to fetch TikTok publish status" });
   }
 });
 
@@ -628,8 +622,8 @@ tiktok.post("/status/:publishId/wait", authMiddleware, async (c) => {
     });
 
     if (upload) {
-      await prisma.upload.update({
-        where: { id: upload.id },
+      await prisma.upload.updateMany({
+        where: { id: upload.id, userId: user.id, platform: "tiktok" },
         data: {
           status: "complete",
           publishedAt: new Date(),
@@ -650,8 +644,7 @@ tiktok.post("/status/:publishId/wait", authMiddleware, async (c) => {
       videoUrl: status.videoUrl,
     });
   } catch (error) {
-    console.error("[TikTok Status] Wait error:", error);
-    return c.json({ error: error.message }, 500);
+    return sendError(c, { scope: "[TikTok Status] Wait", error, message: "Failed while waiting for TikTok publish status" });
   }
 });
 
@@ -689,8 +682,7 @@ tiktok.get("/uploads", authMiddleware, async (c) => {
 
     return c.json({ uploads: serializedUploads });
   } catch (error) {
-    console.error("[TikTok] Error getting uploads:", error);
-    return c.json({ error: error.message }, 500);
+    return sendError(c, { scope: "[TikTok] Uploads", error, message: "Failed to fetch TikTok uploads" });
   }
 });
 
@@ -720,14 +712,13 @@ tiktok.delete("/uploads/:uploadId", authMiddleware, async (c) => {
       return c.json({ error: "Cannot delete published uploads" }, 400);
     }
 
-    await prisma.upload.delete({
-      where: { id: uploadId },
+    await prisma.upload.deleteMany({
+      where: { id: uploadId, userId: user.id, platform: "tiktok" },
     });
 
     return c.json({ success: true });
   } catch (error) {
-    console.error("[TikTok] Error deleting upload:", error);
-    return c.json({ error: error.message }, 500);
+    return sendError(c, { scope: "[TikTok] Delete upload", error, message: "Failed to delete TikTok upload" });
   }
 });
 

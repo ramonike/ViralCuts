@@ -3,6 +3,7 @@ import { authMiddleware } from "../middleware/auth.js";
 import { startVideoGeneration, getGenerationStatus, generateImage, getPrediction } from "../services/replicate.js";
 import { generateWithGroq, testGroqKey } from "../services/groq.js";
 import { generateWithGemini, testGeminiKey, listModels } from "../services/gemini.js";
+import { sendError } from "../utils/http-error.js";
 
 const ai = new Hono();
 
@@ -35,7 +36,7 @@ ai.post("/generate-video", async (c) => {
             createdAt: prediction.created_at
         });
     } catch (error) {
-        return c.json({ error: error.message }, 500);
+        return sendError(c, { scope: "[AI] Generate video", error, message: "Failed to start video generation" });
     }
 });
 
@@ -51,7 +52,7 @@ ai.get("/status/:id", async (c) => {
             progress: prediction.logs ? "Processing..." : "Queued"
         });
     } catch (error) {
-        return c.json({ error: error.message }, 500);
+        return sendError(c, { scope: "[AI] Status", error, message: "Failed to fetch generation status" });
     }
 });
 
@@ -75,8 +76,7 @@ ai.post("/generate-thumbnail", async (c) => {
             createdAt: prediction.created_at,
         });
     } catch (error) {
-        console.error("[AI Route] Thumbnail error:", error.message);
-        return c.json({ error: error.message }, 500);
+        return sendError(c, { scope: "[AI] Thumbnail", error, message: "Failed to generate thumbnail" });
     }
 });
 
@@ -91,7 +91,7 @@ ai.get("/thumbnail-status/:id", async (c) => {
             error: prediction.error,
         });
     } catch (error) {
-        return c.json({ error: error.message }, 500);
+        return sendError(c, { scope: "[AI] Thumbnail status", error, message: "Failed to fetch thumbnail status" });
     }
 });
 
@@ -107,12 +107,13 @@ ai.post("/generate", async (c) => {
         const text = await generateText(body.system, body.prompt);
         return c.json({ text });
     } catch (error) {
-        console.error("[AI Route] Generate error:", error.message);
-        console.error("[AI Route] Stack:", error.stack);
-        return c.json({
-            error: `${process.env.AI_PROVIDER || "groq"} error: ${error.message}`,
-            detail: process.env.NODE_ENV === 'development' ? error.stack : undefined
-        }, 500);
+        return sendError(c, {
+            scope: "[AI] Text generate",
+            error,
+            message: "Failed to generate text",
+            exposeDetails: true,
+            details: { provider: process.env.AI_PROVIDER || "groq" },
+        });
     }
 });
 

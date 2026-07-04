@@ -5,6 +5,7 @@ import { auth } from "../server/auth.js";
 import { prisma, connectWithRetry, isRetryableError } from "../server/db/prisma.js";
 import { authRateLimiter } from "../server/middleware/rate-limit.js";
 import { isTrustedOrigin } from "../server/config/security.js";
+import { createRequestId } from "../server/utils/http-error.js";
 
 export const config = {
   runtime: "nodejs",
@@ -29,13 +30,13 @@ app.get("/health", async (c) => {
     return c.json({ status: "ok", database: "connected" });
   } catch (error) {
     console.error("Database connection error:", error.message);
+    const requestId = createRequestId();
     
     return c.json({
       status: "error",
       database: "disconnected",
-      error: error.message,
-      code: error.code || 'UNKNOWN',
-      retryable: isRetryableError(error),
+      error: "Health check failed",
+      requestId,
     }, 500);
   }
 });
