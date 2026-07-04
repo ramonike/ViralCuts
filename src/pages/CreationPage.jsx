@@ -371,21 +371,33 @@ function TitleGenerator({ onPipeline }) {
     }
 
     const generate = async () => {
-        if (!assunto.trim()) return;
-        setLoading(true); setError(''); setTitles([]); setSelectedTitle(''); setDescription(''); setTags('');
-        try {
-            const text = await callClaude(
-                `Você é um especialista em SEO e marketing de conteúdo para criadores brasileiros. Cria títulos que maximizam CTR e descrições otimizadas para algoritmo.`,
-                `Crie títulos e descrição completa para ${plataforma} sobre o seguinte assunto:\n\n"${assunto}"\n\nEntregue:\n\n## 5 OPÇÕES DE TÍTULO\n(variações com diferentes ângulos: curiosidade, benefício, número, urgência, polêmica)\n\n## DESCRIÇÃO COMPLETA\n(300-500 palavras, com palavras-chave naturais, parágrafos curtos, links placeholder)\n\n## 20 HASHTAGS\n(mix de populares + nichadas, em ordem de relevância)\n\n## TAGS YOUTUBE\n(15 tags separadas por vírgula, sem #)\n\nTudo em português do Brasil.`
-            );
-            const parsed = parseResult(text);
-            setTitles(parsed.titles);
-            setSelectedTitle(parsed.titles[0] || '');
-            setDescription(parsed.description);
-            setTags(parsed.tags);
-        } catch (e) { setError(e.message); }
-        finally { setLoading(false); }
-    };
+            if (!assunto.trim()) return;
+            setLoading(true); setError(''); setTitles([]); setSelectedTitle(''); setDescription(''); setTags('');
+            try {
+                console.log('[TitleGenerator] Enviando para API:', { assunto: assunto.trim(), plataforma });
+                const text = await callClaude(
+                    `Você é um especialista em SEO e marketing de conteúdo para criadores brasileiros. Cria títulos que maximizam CTR e descrições otimizadas para algoritmo.`,
+                    `Crie títulos e descrição completa para ${plataforma} sobre o seguinte assunto:\n\n"${assunto}"\n\nEntregue:\n\n## 5 OPÇÕES DE TÍTULO\n(variações com diferentes ângulos: curiosidade, benefício, número, urgência, polêmica)\n\n## DESCRIÇÃO COMPLETA\n(300-500 palavras, com palavras-chave naturais, parágrafos curtos, links placeholder)\n\n## 20 HASHTAGS\n(mix de populares + nichadas, em ordem de relevância)\n\n## TAGS YOUTUBE\n(15 tags separadas por vírgula, sem #)\n\nTudo em português do Brasil.`
+                );
+                console.log('[TitleGenerator] Resposta bruta da API:', text);
+                if (!text || !text.trim()) {
+                    throw new Error('API retornou resposta vazia. Verifique o backend.');
+                }
+                const parsed = parseResult(text);
+                console.log('[TitleGenerator] Parseado:', parsed);
+                if (!parsed.titles || parsed.titles.length === 0) {
+                    throw new Error('Não foi possível extrair títulos da resposta. Formato inesperado.');
+                }
+                setTitles(parsed.titles);
+                setSelectedTitle(parsed.titles[0] || '');
+                setDescription(parsed.description);
+                setTags(parsed.tags);
+            } catch (e) {
+                console.error('[TitleGenerator] Erro:', e);
+                setError(e.message);
+            }
+            finally { setLoading(false); }
+        };
 
     const handlePipeline = () => { if (onPipeline) onPipeline({ title: selectedTitle, description, tags }); };
 
