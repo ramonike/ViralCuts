@@ -77,7 +77,7 @@ function ErrorBox({ error }) {
     );
 }
 
-function ScriptGenerator({ onPipeline }) {
+function ScriptGenerator({ onPipeline, onThemeChange }) {
     const [tema, setTema] = useState('');
     const [formato, setFormato] = useState('shorts');
     const [duracao, setDuracao] = useState('60');
@@ -158,6 +158,7 @@ function ScriptGenerator({ onPipeline }) {
     const generate = async () => {
         if (!tema.trim()) return;
         setLoading(true); setError(''); setResult('');
+        if (onThemeChange) onThemeChange(tema);
         try {
             const text = await callClaude(
                 `Você é um roteirista especialista em conteúdo viral para redes sociais brasileiras. Crie roteiros otimizados para engajamento, com ganchos fortes, linguagem direta e CTAs eficientes.`,
@@ -272,7 +273,7 @@ function ScriptGenerator({ onPipeline }) {
 }
 
 
-function TitleGenerator({ onPipeline }) {
+function TitleGenerator({ onPipeline, onThemeChange }) {
     const [assunto, setAssunto] = useState('');
     const [plataforma, setPlataforma] = useState('youtube');
     const [loading, setLoading] = useState(false);
@@ -352,7 +353,7 @@ function TitleGenerator({ onPipeline }) {
     };
 
     function parseResult(text) {
-        const lines = text.split('\\n');
+        const lines = text.split('\n');
         const parsedTitles = [];
         let parsedDesc = '';
         let parsedTags = '';
@@ -373,6 +374,7 @@ function TitleGenerator({ onPipeline }) {
     const generate = async () => {
             if (!assunto.trim()) return;
             setLoading(true); setError(''); setTitles([]); setSelectedTitle(''); setDescription(''); setTags('');
+            if (onThemeChange) onThemeChange(assunto);
             try {
                 console.log('[TitleGenerator] Enviando para API:', { assunto: assunto.trim(), plataforma });
                 const text = await callClaude(
@@ -624,15 +626,18 @@ function PublicationChecklist() {
     );
 }
 
-function ThumbnailGenerator({ onPipeline }) {
+function ThumbnailGenerator({ onPipeline, defaultPrompt }) {
     const [prompt, setPrompt] = useState('');
     const [aspectRatio, setAspectRatio] = useState('16:9');
     const [loading, setLoading] = useState(false);
+    const [promptLoading, setPromptLoading] = useState(false);
     const [predictionId, setPredictionId] = useState(null);
     const [status, setStatus] = useState(null);
     const [output, setOutput] = useState(null);
+    const [outputs, setOutputs] = useState([]);
     const [error, setError] = useState('');
     const [imgError, setImgError] = useState(false);
+    const [userEdited, setUserEdited] = useState(false);
 
     const pollStatus = useCallback(async (id) => {
         try {
@@ -643,14 +648,55 @@ function ThumbnailGenerator({ onPipeline }) {
             if (data.status === 'succeeded') {
                 const url = Array.isArray(data.output) ? data.output[0] : data.output?.url?.() || data.output?.url || data.output;
                 if (!url || typeof url !== 'string') { console.error("[Thumbnail] Invalid output:", data.output); throw new Error('Resposta inválida do gerador de imagem'); }
-                setOutput(url); setLoading(false); return;
+                setOutput(url); setOutputs(prev => [...prev, { url, aspectRatio }]); setLoading(false); return;
             }
             if (data.status === 'failed') throw new Error(data.error || 'Falha ao gerar thumbnail');
             if (data.status === 'processing' || data.status === 'starting') setTimeout(() => pollStatus(id), 2000);
         } catch (e) { setError(e.message); setLoading(false); }
-    }, []);
+    }, [aspectRatio]);
 
     useEffect(() => { return () => setPredictionId(null); }, []);
+
+    useEffect(() => {
+        if (defaultPrompt && !userEdited && !prompt && !promptLoading) {
+            generateIdealPrompt(defaultPrompt);
+        }
+    }, [defaultPrompt]);
+
+    const generateIdealPrompt = async (theme) => {
+        setPromptLoading(true);
+        try {
+            const ideal = await callClaude(
+                `Você é um engenheiro de prompts especializado em criar descrições para geradores de imagem (Imagen, Midjourney, DALL-E). Crie prompts detalhados e prontos para uso.`,
+                `Crie UM prompt detalhado em português para gerar uma thumbnail de YouTube sobre: "${theme}".
+
+O prompt deve incluir:
+- Estilo visual dramático e chamativo (próprio para thumbnail)
+- Cores vibrantes e contraste alto
+- Composição com espaço para texto
+- Elementos visuais específicos relacionados ao tema
+- Iluminação profissional
+- Fundo temático
+- Menção explícita: "imagem livre de direitos autorais, estilo foto-realista, adequado para thumbnail do YouTube"
+- Mínimo 40 palavras
+
+Retorne APENAS o prompt, sem explicações, sem numeração, sem aspas.`
+            );
+            if (ideal && ideal.trim()) {
+                setPrompt(ideal.trim());
+                setUserEdited(false);
+            }
+        } catch (e) {
+            setPrompt(theme ? `Thumbnail sobre: ${theme}. Imagem livre de direitos autorais, estilo dramático, cores vibrantes, composição para thumbnail YouTube.` : '');
+        } finally {
+            setPromptLoading(false);
+        }
+    };
+
+    const handlePromptChange = (e) => {
+        setUserEdited(true);
+        setPrompt(e.target.value);
+    };
 
     const generate = async () => {
         if (!prompt.trim()) return;
@@ -663,9 +709,46 @@ function ThumbnailGenerator({ onPipeline }) {
             const data = await res.json();
             if (!res.ok) throw new Error(data.error);
             setPredictionId(data.id); setStatus(data.status);
-            if (data.status === 'succeeded' && data.urls?.get) { setOutput(data.urls.get); setLoading(false); }
+            if (data.status === 'succeeded' && data.urls?.get) { setOutput(data.urls.get); setOutputs(prev => [...prev, { url: data.urls.get, aspectRatio }]); setLoading(false); }
             else pollStatus(data.id);
         } catch (e) { setError(e.message); setLoading(false); }
+    };
+
+    const generateBoth = async () => {
+        if (!prompt.trim()) return;
+        setLoading(true); setError(''); setImgError(false);
+        const ratios = aspectRatio === '9:16' ? ['9:16', '16:9'] : ['16:9', '9:16'];
+        for (const ar of ratios) {
+            setStatus('starting');
+            try {
+                const res = await fetch(`${VITE_API_URL}/api/ai/generate-thumbnail`, {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include', body: JSON.stringify({ prompt: prompt.trim(), aspectRatio: ar }),
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error);
+                if (data.status === 'succeeded' && data.urls?.get) {
+                    setOutput(data.urls.get);
+                    setOutputs(prev => [...prev, { url: data.urls.get, aspectRatio: ar }]);
+                }
+            } catch (e) { setError(e.message); }
+        }
+        setLoading(false);
+    };
+
+    const downloadImage = async (url, filename = 'thumbnail.jpg') => {
+        try {
+            const res = await fetch(url);
+            const blob = await res.blob();
+            const blobUrl = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = blobUrl; a.download = filename;
+            document.body.appendChild(a); a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(blobUrl);
+        } catch {
+            window.open(url, '_blank');
+        }
     };
 
     const ratios = [
@@ -678,12 +761,29 @@ function ThumbnailGenerator({ onPipeline }) {
     return (
         <div className="vc-card">
             <h3 style={{ fontSize: 16, fontWeight: 600, marginBottom: 16 }}>Gerador de Miniatura</h3>
+
+            {defaultPrompt && !userEdited && !prompt && promptLoading && (
+                <div className="vc-card" style={{ marginBottom: 16, textAlign: 'center', padding: 16 }}>
+                    <RefreshCw size={20} style={{ margin: '0 auto 8px', display: 'block', color: 'var(--accent-coral)', animation: 'spin .8s linear infinite' }} />
+                    <p style={{ fontSize: 13, color: 'var(--text-secondary)' }}>Criando prompt ideal com IA...</p>
+                </div>
+            )}
+
             <div style={{ marginBottom: 16 }}>
-                <label className="vc-label">Descrição da thumbnail</label>
-                <textarea className="vc-input" value={prompt} onChange={e => setPrompt(e.target.value)}
-                    placeholder="Ex: Bitcoin explodindo com fundo de fogo, seta verde apontando para cima..." rows={3}
-                    style={{ resize: 'vertical', minHeight: 80 }} />
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+                    <label className="vc-label">Prompt para geração</label>
+                    {defaultPrompt && (
+                        <button onClick={() => { setUserEdited(false); generateIdealPrompt(defaultPrompt); }}
+                            style={{ fontSize: 12, color: 'var(--accent-coral)', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'var(--font-body)', padding: 0 }}>
+                            <RefreshCw size={12} style={{ marginRight: 4 }} />Regenerar prompt ideal
+                        </button>
+                    )}
+                </div>
+                <textarea className="vc-input" value={prompt} onChange={handlePromptChange}
+                    placeholder={promptLoading ? 'Gerando prompt...' : 'Descreva a thumbnail ou use um tema das abas anteriores'}
+                    rows={3} style={{ resize: 'vertical', minHeight: 80 }} />
             </div>
+
             <div style={{ marginBottom: 16 }}>
                 <label className="vc-label">Aspect Ratio</label>
                 <div style={{ display: 'flex', gap: 0, border: '1px solid var(--border-default)', borderRadius: 8, overflow: 'hidden' }}>
@@ -703,10 +803,21 @@ function ThumbnailGenerator({ onPipeline }) {
                     ))}
                 </div>
             </div>
-            <button className="vc-btn vc-btn-primary" onClick={generate} disabled={!prompt.trim()}>
-                <Image size={14} /> {loading ? 'Gerando thumbnail...' : 'Gerar Thumbnail'}
-            </button>
+
+            <div style={{ display: 'flex', gap: 8 }}>
+                <button className="vc-btn vc-btn-primary" onClick={generate} disabled={!prompt.trim() || loading}>
+                    <Image size={14} /> {loading ? 'Gerando thumbnail...' : 'Gerar Thumbnail'}
+                </button>
+                {aspectRatio !== '1:1' && aspectRatio !== '4:3' && (
+                    <button className="vc-btn" onClick={generateBoth} disabled={!prompt.trim() || loading}
+                        style={{ fontSize: 13 }}>
+                        Gerar 16:9 + 9:16
+                    </button>
+                )}
+            </div>
+
             <ErrorBox error={error} />
+
             {status && !output && !error && (
                 <div className="vc-card" style={{ marginTop: 16, textAlign: 'center', padding: 24 }}>
                     <RefreshCw size={24} style={{
@@ -717,26 +828,34 @@ function ThumbnailGenerator({ onPipeline }) {
                     <p style={{ fontSize: 13, color: 'var(--text-secondary)' }}>{status === 'starting' ? 'Iniciando geração...' : 'Gerando imagem...'}</p>
                 </div>
             )}
-            {output && !imgError && (
-                <div className="vc-card" style={{ marginTop: 16, borderColor: 'rgba(232,65,42,.3)' }}>
+
+            {outputs.length > 0 && !imgError && outputs.map((item, idx) => (
+                <div key={idx} className="vc-card" style={{ marginTop: 16, borderColor: 'rgba(232,65,42,.3)' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                        <span style={{ fontWeight: 600 }}>Thumbnail gerada ✨</span>
-                        <a href={output} target="_blank" rel="noopener noreferrer" style={{ fontSize: 12, color: 'var(--text-secondary)', textDecoration: 'none' }}>
-                            <ExternalLink size={13} /> Abrir original
-                        </a>
+                        <span style={{ fontWeight: 600 }}>Thumbnail {item.aspectRatio} ✨</span>
+                        <div style={{ display: 'flex', gap: 8 }}>
+                            <button onClick={() => downloadImage(item.url, `thumbnail-${item.aspectRatio}.jpg`)}
+                                style={{ fontSize: 12, color: 'var(--text-secondary)', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'var(--font-body)', display: 'flex', alignItems: 'center', gap: 4, padding: 0 }}>
+                                <ExternalLink size={13} /> Download
+                            </button>
+                            <a href={item.url} target="_blank" rel="noopener noreferrer" style={{ fontSize: 12, color: 'var(--text-secondary)', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 4 }}>
+                                <ExternalLink size={13} /> Original
+                            </a>
+                        </div>
                     </div>
-                    <div style={{ width: '100%', aspectRatio: aspectRatio === '9:16' ? '9/16' : '16/9', borderRadius: 8, overflow: 'hidden' }}>
-                        <img src={output} alt="Thumbnail" onError={() => setImgError(true)}
+                    <div style={{ width: '100%', aspectRatio: item.aspectRatio === '9:16' ? '9/16' : '16/9', borderRadius: 8, overflow: 'hidden' }}>
+                        <img src={item.url} alt={`Thumbnail ${item.aspectRatio}`} onError={() => setImgError(true)}
                             style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                     </div>
                     {onPipeline && (
-                        <button className="vc-btn vc-btn-primary vc-btn-sm" style={{ marginTop: 16, marginLeft: 'auto' }}
-                            onClick={() => onPipeline({ thumbnailUrl: output })}>
+                        <button className="vc-btn vc-btn-primary vc-btn-sm" style={{ marginTop: 16 }}
+                            onClick={() => onPipeline({ thumbnailUrl: item.url })}>
                             <Calendar size={13} /> Agendar no Pipeline
                         </button>
                     )}
                 </div>
-            )}
+            ))}
+
             {imgError && <ErrorBox error={`Falha ao carregar imagem. URL retornada: ${output}`} />}
         </div>
     );
@@ -754,6 +873,7 @@ export default function CreationPage() {
     const [activeTab, setActiveTab] = useState('script');
     const [pipelineModalOpen, setPipelineModalOpen] = useState(false);
     const [pipelineData, setPipelineData] = useState(null);
+    const [scriptTheme, setScriptTheme] = useState('');
 
     const handlePipeline = (data) => {
         setPipelineData(prev => {
@@ -806,9 +926,9 @@ export default function CreationPage() {
                 ))}
             </div>
 
-            {activeTab === 'script' && <ScriptGenerator onPipeline={handlePipeline} />}
-            {activeTab === 'titles' && <TitleGenerator onPipeline={handlePipeline} />}
-            {activeTab === 'thumbnail' && <ThumbnailGenerator onPipeline={handlePipeline} />}
+            {activeTab === 'script' && <ScriptGenerator onPipeline={handlePipeline} onThemeChange={setScriptTheme} />}
+            {activeTab === 'titles' && <TitleGenerator onPipeline={handlePipeline} onThemeChange={setScriptTheme} />}
+            {activeTab === 'thumbnail' && <ThumbnailGenerator onPipeline={handlePipeline} defaultPrompt={scriptTheme} />}
             {activeTab === 'checklist' && <PublicationChecklist />}
 
             <ScheduleVideoModal
