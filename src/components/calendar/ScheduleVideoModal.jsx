@@ -576,16 +576,20 @@ export function ScheduleVideoModal({ isOpen, onClose, selectedDate, onSchedule, 
             ));
         }
         setSubmitting(false);
-                // Check if all items are processed to close modal
-                queueMicrotask(() => {
-                  // Read current state directly to avoid reference issues with setItems
-                  const allDoneNow = items.length > 0 && items.every(i => i.status === 'done' || i.status === 'scheduled');
-                  const allFinished = items.every(i => i.status === 'done' || i.status === 'scheduled' || i.status === 'error');
-                  if (allFinished && allDoneNow) {
+        // Usar queueMicrotask para garantir que rode após todas as atualizações de estado do lote
+        queueMicrotask(() => {
+            setItems(prev => {
+                // Lê o estado via callback do setState para garantir os status mais recentes
+                // (o 'items' fechado no início do handleSubmit fica desatualizado durante o loop)
+                const allDoneNow = prev.length > 0 && prev.every(i => i.status === 'done' || i.status === 'scheduled');
+                const allFinished = prev.every(i => i.status === 'done' || i.status === 'scheduled' || i.status === 'error');
+                if (allFinished && allDoneNow) {
                     // Fechar imediatamente após confirmação de conclusão
                     onAllDone ? onAllDone() : onClose();
-                  }
-                });
+                }
+                return prev;
+            });
+        });
     };
 
     return (

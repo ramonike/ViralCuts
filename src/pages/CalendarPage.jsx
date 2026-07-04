@@ -55,7 +55,7 @@ function QueueSidebar({ queue, onScheduleNow, loading, onRefresh }) {
     const items = tab === "upcoming" ? upcoming : posted;
 
     const getStatusColor = (status) => {
-        if (["done","success","published","completed"].includes(status)) return 'var(--accent-teal)';
+        if (["done", "success", "published", "completed"].includes(status)) return 'var(--accent-teal)';
         if (status === 'scheduled') return 'var(--accent-coral)';
         return 'var(--accent-amber)';
     };
@@ -324,46 +324,45 @@ export default function CalendarPage() {
         });
 
         // Mescla uploads agendados/publicados do banco (tabela Upload)
-            // FILTRA pelo activeAccountId
-            const uploadItems = (supabase.user ? supabase.uploadQueue || [] : []);
-            uploadItems.forEach(upload => {
-                const uploadAccountId = upload.metadata?.accountId || upload.channelId;
-                if (uploadAccountId && uploadAccountId !== activeAccountId) return;
+        // FILTRA pelo activeAccountId
+        const uploadItems = (supabase.user ? supabase.uploadQueue || [] : []);
+        uploadItems.forEach(upload => {
+            const uploadAccountId = upload.metadata?.accountId || upload.channelId;
+            if (uploadAccountId && uploadAccountId !== activeAccountId) return;
 
-                const dateRef = upload.scheduledAt || upload.publishedAt || upload.publishAt;
-                if (!dateRef) return;
-                const dateStr = new Date(dateRef).toLocaleDateString('en-CA');
-                const item = {
-                    id: upload.id,
-                    title: upload.metadata?.title || upload.title || upload.fileName || 'Sem título',
-                    type: `${upload.platform || 'youtube'}_video`,
-                    platform: upload.platform || 'youtube',
-                    channelId: upload.metadata?.accountId || upload.channelId || null,
-                    status: upload.status,
-                    thumbnail: upload.metadata?.thumbnail || null,
-                    scheduledAt: upload.scheduledAt,
-                    publishedAt: upload.publishedAt,
-                    publishAt: upload.publishAt,
+            const dateRef = upload.scheduledAt || upload.publishedAt || upload.publishAt;
+            if (!dateRef) return;
+            const dateStr = new Date(dateRef).toLocaleDateString('en-CA');
+            const item = {
+                id: upload.id,
+                title: upload.metadata?.title || upload.title || upload.fileName || 'Sem título',
+                type: `${upload.platform || 'youtube'}_video`,
+                platform: upload.platform || 'youtube',
+                channelId: upload.metadata?.accountId || upload.channelId || null,
+                status: upload.status,
+                thumbnail: upload.metadata?.thumbnail || null,
+                scheduledAt: upload.scheduledAt,
+                publishedAt: upload.publishedAt,
+                publishAt: upload.publishAt,
+            };
+            // Only consider as completed if actually published (not just scheduled)
+            const isPublishedStatus = ['done', 'success', 'published', 'completed'].includes(upload.status);
+            if (!merged[dateStr]) {
+                merged[dateStr] = {
+                    completedItems: isPublishedStatus ? [item] : [],
+                    uploads: isPublishedStatus ? 1 : 0
                 };
-                // Only consider as completed if actually published (not just scheduled)
-                const isPublishedStatus = ['done', 'success', 'published', 'completed'].includes(upload.status);
-                if (!merged[dateStr]) {
-                    merged[dateStr] = { 
-                        ...day, 
-                        completedItems: isPublishedStatus ? [item] : [], 
-                        uploads: isPublishedStatus ? 1 : 0 
+            } else {
+                const existingIds = new Set((merged[dateStr].completedItems || []).map(i => i.id));
+                if (!existingIds.has(item.id) && isPublishedStatus) {
+                    merged[dateStr] = {
+                        ...merged[dateStr],
+                        completedItems: [...(merged[dateStr].completedItems || []), item],
+                        uploads: (merged[dateStr].uploads || 0) + 1
                     };
-                } else {
-                    const existingIds = new Set((merged[dateStr].completedItems || []).map(i => i.id));
-                    if (!existingIds.has(item.id) && isPublishedStatus) {
-                        merged[dateStr] = {
-                            ...merged[dateStr],
-                            completedItems: [...(merged[dateStr].completedItems || []), item],
-                            uploads: (merged[dateStr].uploads || 0) + 1
-                        };
-                    }
                 }
-            });
+            }
+        });
 
         if (activeFilter === 'all') return merged;
 
