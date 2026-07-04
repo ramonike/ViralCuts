@@ -353,20 +353,39 @@ function TitleGenerator({ onPipeline, onThemeChange }) {
     };
 
     function parseResult(text) {
-        const lines = text.split('\n');
+        const normalized = text.includes('\\n') ? text.replace(/\\n/g, '\n') : text;
+        const lines = normalized.split('\n');
         const parsedTitles = [];
         let parsedDesc = '';
         let parsedTags = '';
         let section = null;
         for (const line of lines) {
             const trimmed = line.trim();
-            if (/##\\s*5?.*?(?:OP[ÇC][ÕO]ES?\\s*DE\\s*)?T[ÍI]TULO/i.test(trimmed) || /##\\s*OP[ÇC][ÕO]ES?\\s*DE\\s*T[ÍI]TULO/i.test(trimmed)) { section = 'titles'; continue; }
-            if (/##\\s*DESCRI[ÇC][ÃA]O/i.test(trimmed)) { section = 'desc'; continue; }
-            if (/##\\s*(?:20\\s*)?HASHTAGS/i.test(trimmed)) { section = 'tags'; continue; }
-            if (/##\\s*TAGS/i.test(trimmed)) { section = 'tags'; continue; }
-            if (section === 'titles') { const m = trimmed.match(/^\\d+[\\.\\)]\\s*(.+)/); if (m) parsedTitles.push(m[1].replace(/\\*\\*/g, '').trim()); }
-            else if (section === 'desc') { if (parsedDesc) parsedDesc += '\\n'; parsedDesc += trimmed; }
-            else if (section === 'tags') { if (trimmed && !trimmed.startsWith('#')) { if (parsedTags) parsedTags += ', '; parsedTags += trimmed.replace(/^#/, '').trim(); } }
+            if (!trimmed) continue;
+            if (/^##\s*5?\s*OP[ÇC][ÕO]ES?\s*DE\s*T[ÍI]TULO/i.test(trimmed) || /^##\s*T[ÍI]TULO/i.test(trimmed)) { section = 'titles'; continue; }
+            if (/^##\s*DESCRI[ÇC][ÃA]O/i.test(trimmed)) { section = 'desc'; continue; }
+            if (/^##\s*(?:20\s*)?HASHTAGS/i.test(trimmed)) { section = 'tags'; continue; }
+            if (/^##\s*TAGS/i.test(trimmed)) { section = 'tags'; continue; }
+            if (section === 'titles') { const m = trimmed.match(/^\d+[\.\)]\s*(.+)/); if (m) parsedTitles.push(m[1].replace(/\*\*/g, '').trim()); }
+            else if (section === 'desc') { parsedDesc += (parsedDesc ? '\n' : '') + trimmed; }
+            else if (section === 'tags') { const clean = trimmed.replace(/^\d+[\.\)]\s*/, ''); if (clean && !clean.startsWith('#')) { if (parsedTags) parsedTags += ', '; parsedTags += clean.replace(/^#/, '').trim(); } }
+        }
+        if (parsedTitles.length === 0) {
+            const fallback = normalized.match(/##\s*5?\s*OP[ÇC][ÕO]ES?\s*DE\s*T[ÍI]TULO[^]*?(?=##\s*DESCRI[ÇC][ÃA]O|$)/i);
+            if (fallback) {
+                for (const t of fallback[0].match(/\d+[\.\)]\s*\*\*(.+?)\*\*/g) || []) {
+                    const clean = t.replace(/^\d+[\.\)]\s*\*\*/, '').replace(/\*\*$/, '').trim();
+                    if (clean) parsedTitles.push(clean);
+                }
+            }
+        }
+        if (!parsedDesc) {
+            const fallback = normalized.match(/##\s*DESCRI[ÇC][ÃA]O[^]*?(?=##\s*(?:\d+\s*)?HASHTAGS|##\s*TAGS|$)/i);
+            if (fallback) parsedDesc = fallback[0].replace(/^##\s*DESCRI[ÇC][ÃA]O[\s\S]*?\n/i, '').trim();
+        }
+        if (!parsedTags) {
+            const fallback = normalized.match(/##\s*TAGS[^]*$/i);
+            if (fallback) parsedTags = fallback[0].replace(/^##\s*TAGS[^]*?\n/i, '').trim().replace(/^\d+[\.\)]\s*/gm, '').split(',').map(s => s.trim().replace(/^#/, '')).filter(Boolean).join(', ');
         }
         return { titles: parsedTitles, description: parsedDesc.trim(), tags: parsedTags };
     }
