@@ -6,6 +6,7 @@ import { secureHeaders } from "hono/secure-headers";
 import { auth } from "./auth.js";
 import { prisma, connectWithRetry, isRetryableError } from "./db/prisma.js";
 import { rateLimiter, authRateLimiter } from "./middleware/rate-limit.js";
+import { isTrustedOrigin } from "./config/security.js";
 import adminRoutes from "./routes/admin.js";
 
 // Import route modules
@@ -17,7 +18,6 @@ import videosRoutes from "./routes/videos.js";
 import youtubeRoutes from "./routes/youtube.js";
 import notificationsRoutes from "./routes/notifications.js";
 import tiktokRoutes from "./routes/tiktok.js";
-import commandCenterRoutes from "./routes/commandCenter.js";
 import aiRoutes from "./routes/ai.js";
 import betaRoutes from "./routes/beta.js";
 import subscriptionRoutes from "./routes/subscription.js";
@@ -32,14 +32,7 @@ app.use("/*", secureHeaders());
 
 // CORS middleware
 app.use("/*", cors({
-  origin: (origin) => {
-    const allowed = [
-      "https://viral-cuts-20.vercel.app",
-      "https://viral-cuts-20-git-main-ramons-projects-9aa5c4f1.vercel.app",
-      "http://localhost:5173",
-    ];
-    return allowed.includes(origin) ? origin : null;
-  },
+  origin: (origin) => isTrustedOrigin(origin),
   credentials: true,
 }));
 
@@ -52,106 +45,19 @@ app.use("/api/videos/*", rateLimiter());
 app.use("/api/youtube/*", rateLimiter());
 app.use("/api/tiktok/*", rateLimiter());
 app.use("/api/notifications/*", rateLimiter());
-app.use("/api/command-center/*", rateLimiter());
 app.use("/api/health", rateLimiter());
 
 // YouTube OAuth callback - must be BEFORE the generic auth handler
 // This route is handled separately because it's not part of Better Auth
 app.get("/api/auth/youtube/callback", async (c) => {
-  // Import and call the callback handler directly
-  const { exchangeCode } = await import("./services/youtube-auth.js");
-
-  try {
-    const code = c.req.query("code");
-    const state = c.req.query("state");
-    const error = c.req.query("error");
-
-    if (error) {
-      console.error("[YouTube Auth] OAuth error:", error);
-      const frontendUrl = process.env.FRONTEND_URL || "http://localhost:5173";
-      return c.redirect(`${frontendUrl}/settings?youtube_error=${encodeURIComponent(error)}`);
-    }
-
-    if (!code) {
-      return c.json({ error: "Missing authorization code" }, 400);
-    }
-
-    // Decode state to get user ID
-    let userId;
-    try {
-      const stateData = JSON.parse(Buffer.from(state, "base64").toString());
-      userId = stateData.userId;
-    } catch {
-      return c.json({ error: "Invalid state parameter" }, 400);
-    }
-
-    if (!userId) {
-      return c.json({ error: "Missing user ID in state" }, 400);
-    }
-
-    // Exchange code for tokens
-    const tokens = await exchangeCode(code);
-
-    // Get YouTube channel info to use as accountId
-    const channelResponse = await fetch(
-      "https://www.googleapis.com/youtube/v3/channels?part=snippet&mine=true",
-      {
-        headers: {
-          Authorization: `Bearer ${tokens.access_token}`,
-        },
-      }
-    );
-
-    if (!channelResponse.ok) {
-      throw new Error("Failed to fetch YouTube channel info");
-    }
-
-    const channelData = await channelResponse.json();
-    const channel = channelData.items?.[0];
-
-    if (!channel) {
-      throw new Error("No YouTube channel found for this account");
-    }
-
-    const accountId = channel.id;
-    const expiresAt = new Date(Date.now() + tokens.expires_in * 1000);
-
-    // Upsert account - update if exists, create if not
-    await prisma.account.upsert({
-      where: {
-        id: `youtube_${userId}_${accountId}`,
-      },
-      update: {
-        accessToken: tokens.access_token,
-        refreshToken: tokens.refresh_token,
-        accessTokenExpiresAt: expiresAt,
-        scope: tokens.scope,
-        updatedAt: new Date(),
-      },
-      create: {
-        id: `youtube_${userId}_${accountId}`,
-        accountId: accountId,
-        providerId: "youtube",
-        userId: userId,
-        accessToken: tokens.access_token,
-        refreshToken: tokens.refresh_token,
-        accessTokenExpiresAt: expiresAt,
-        scope: tokens.scope,
-      },
-    });
-
-    // Redirect to frontend with success
-    const frontendUrl = process.env.FRONTEND_URL || "http://localhost:5173";
-    return c.redirect(
-      `${frontendUrl}/settings?youtube_connected=true&channel=${encodeURIComponent(channel.snippet.title)}`
-    );
-  } catch (err) {
-    console.error("[YouTube Auth] Callback error:", err);
-    const frontendUrl = process.env.FRONTEND_URL || "http://localhost:5173";
-    return c.redirect(
-      `${frontendUrl}/settings?youtube_error=${encodeURIComponent(err.message)}`
-    );
-  }
+  const youtubeModule = await import("./routes/youtube.js");
+  return youtubeModule.default.fetch(
+    new Request(c.req.url.replace("/api/auth/youtube/callback", "/auth/callback"), {
+      method: c.req.method,
+      headers: c.req.raw.headers,
+    }),
+    c.env
+  );
 });
 
 // YouTube OAuth refresh - must be BEFORE the generic auth handler
@@ -206,8 +112,7 @@ app.post("/api/auth/youtube/refresh", async (c) => {
     });
 
     return c.json({
-      access_token: tokens.access_token,
-      expires_in: tokens.expires_in,
+      success: true,
       expires_at: expiresAt.toISOString(),
     });
   } catch (err) {
@@ -242,6 +147,7 @@ app.get("/api/auth/tiktok/callback", async (c) => {
 });
 
 // Auth routes - handle all Better Auth endpoints
+app.use("/api/auth/*", authRateLimiter());
 app.on(["POST", "GET"], "/api/auth/*", (c) => auth.handler(c.req.raw));
 
 // Mount API routes
@@ -254,7 +160,6 @@ app.route("/api/videos", videosRoutes);
 app.route("/api/youtube", youtubeRoutes);
 app.route("/api/tiktok", tiktokRoutes);
 app.route("/api/notifications", notificationsRoutes);
-app.route("/api/command-center", commandCenterRoutes);
 app.route("/api/ai", aiRoutes);
 app.route("/api/beta", betaRoutes);
 app.route("/api/subscription", subscriptionRoutes);

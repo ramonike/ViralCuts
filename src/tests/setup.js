@@ -1,4 +1,7 @@
 import '@testing-library/jest-dom';
+import { vi } from 'vitest';
+
+global.jest = vi;
 
 // MSW server is available but not auto-started
 // Tests that need MSW should import and start it manually:

@@ -3,6 +3,8 @@ import { handle } from "hono/vercel";
 import { cors } from "hono/cors";
 import { auth } from "../server/auth.js";
 import { prisma, connectWithRetry, isRetryableError } from "../server/db/prisma.js";
+import { authRateLimiter } from "../server/middleware/rate-limit.js";
+import { isTrustedOrigin } from "../server/config/security.js";
 
 export const config = {
   runtime: "nodejs",
@@ -12,11 +14,12 @@ const app = new Hono().basePath("/api");
 
 // CORS middleware
 app.use("/*", cors({
-  origin: process.env.FRONTEND_URL || "http://localhost:5173",
+  origin: (origin) => isTrustedOrigin(origin),
   credentials: true,
 }));
 
 // Auth routes - handle all Better Auth endpoints
+app.use("/auth/*", authRateLimiter());
 app.on(["POST", "GET"], "/auth/*", (c) => auth.handler(c.req.raw));
 
 // Health check with database connection test

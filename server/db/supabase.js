@@ -5,13 +5,23 @@
 import { createClient } from '@supabase/supabase-js';
 
 const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
-const supabaseKey = process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY;
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_KEY;
 
-if (!supabaseUrl || !supabaseKey) {
+if (!supabaseUrl || !supabaseServiceKey) {
     console.warn('[Supabase Storage] Missing SUPABASE_URL or SUPABASE_SERVICE_KEY env vars');
 }
 
-export const supabase = createClient(supabaseUrl || '', supabaseKey || '');
+export function isSupabaseStorageConfigured() {
+    return Boolean(supabaseUrl && supabaseServiceKey);
+}
+
+export function getSupabaseStorageClient() {
+    if (!isSupabaseStorageConfigured()) {
+        throw new Error('Supabase Storage is not configured on the server.');
+    }
+
+    return createClient(supabaseUrl, supabaseServiceKey);
+}
 
 /**
  * Upload a video buffer to Supabase Storage
@@ -22,6 +32,7 @@ export const supabase = createClient(supabaseUrl || '', supabaseKey || '');
  * @returns {Promise<string>} Public URL of the uploaded file
  */
 export async function uploadVideoToStorage(buffer, userId, uploadId, mimeType = 'video/mp4') {
+    const supabase = getSupabaseStorageClient();
     const ext = mimeType.split('/')[1] || 'mp4';
     const path = `${userId}/${uploadId}.${ext}`;
 
@@ -48,8 +59,9 @@ export async function uploadVideoToStorage(buffer, userId, uploadId, mimeType = 
  * @param {string} ext - File extension
  */
 export async function deleteVideoFromStorage(userId, uploadId, ext = 'mp4') {
+    const supabase = getSupabaseStorageClient();
     const path = `${userId}/${uploadId}.${ext}`;
     await supabase.storage.from('scheduled-videos').remove([path]);
 }
 
-export default supabase;
+export default getSupabaseStorageClient;

@@ -508,7 +508,7 @@ export function ScheduleVideoModal({ isOpen, onClose, selectedDate, onSchedule, 
             for (let i = 0; i < youtubeAccounts.length; i++) {
                 if (youtubeFailed) break;
                 const account = youtubeAccounts[i];
-                console.log(`[Modal] YouTube[${i}]: id=${account.id} name=${account.name} hasToken=${!!account.token} expired=${account.tokenExpired}`);
+                console.log(`[Modal] YouTube[${i}]: id=${account.id} name=${account.name} expired=${account.tokenExpired}`);
                 try {
                     const [y, m, dd] = item.scheduledDate.split('-').map(Number);
                     const [h, mn] = item.scheduledTime.split(':').map(Number);
@@ -529,7 +529,6 @@ export function ScheduleVideoModal({ isOpen, onClose, selectedDate, onSchedule, 
                         publishNow: item.publishNow,
                         source: item.publishNow ? 'immediate' : 'scheduled',
                         _onProgress: i === 0 ? onProgress : null,
-                        _accessToken: account.token,
                     });
                 } catch (err) {
                     console.error(`[Modal] Failed for youtube/${account.id}:`, err);

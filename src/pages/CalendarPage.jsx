@@ -9,6 +9,7 @@ import { PageLayout } from "../components/layout/PageLayout";
 import { useNotification } from "../contexts/NotificationContext";
 import { useTheme } from "../contexts/ThemeContext";
 import { rescheduleUpload, cancelScheduledUpload } from "../api/youtube";
+import { API_URL } from "../config/api";
 import { RefreshCw, Plus } from "lucide-react";
 import { PlatformIcon } from "../components/shared/PlatformIcon";
 
@@ -460,23 +461,21 @@ export default function CalendarPage() {
         const platform = (videoData.platform || 'youtube').toLowerCase();
 
         // ── YouTube: upload client-side direto ao Google ──────────────────
-        if (platform === 'youtube' && videoData.file && videoData._accessToken) {
+        if (platform === 'youtube' && videoData.file) {
             try {
                 const ctrl = new AbortController();
                 const timer = setTimeout(() => ctrl.abort(), 45000);
                 let uploadUrl;
                 try {
                     const initRes = await fetch(
-                        'https://www.googleapis.com/upload/youtube/v3/videos?uploadType=resumable&part=snippet,status',
+                        `${API_URL}/api/youtube/upload/initiate`,
                         {
                             signal: ctrl.signal,
                             method: 'POST',
                             headers: {
-                                Authorization: `Bearer ${videoData._accessToken}`,
                                 'Content-Type': 'application/json',
-                                'X-Upload-Content-Length': String(videoData.file.size),
-                                'X-Upload-Content-Type': videoData.file.type || 'video/mp4',
                             },
+                            credentials: 'include',
                             body: JSON.stringify({
                                 snippet: {
                                     title: videoData.title || '',
@@ -499,7 +498,8 @@ export default function CalendarPage() {
                         const errData = await initRes.json().catch(() => ({}));
                         throw new Error(errData.error?.message || `HTTP ${initRes.status}`);
                     }
-                    uploadUrl = initRes.headers.get('Location');
+                    const initData = await initRes.json();
+                    uploadUrl = initData.sessionUri;
                     if (!uploadUrl) throw new Error('YouTube não retornou URL de upload');
                 } finally {
                     clearTimeout(timer);
@@ -532,7 +532,7 @@ export default function CalendarPage() {
 
                 // Awaita upload-complete para garantir DB atualizado
                 try {
-                    const completeRes = await fetch('/api/youtube/upload-complete', {
+                    const completeRes = await fetch(`${API_URL}/api/youtube/upload-complete`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         credentials: 'include',

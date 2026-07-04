@@ -18,11 +18,9 @@ import {
   waitForPublish,
   validateVideoMetadata,
 } from "../services/platforms/tiktok.js";
+import { consumeOAuthState, issueOAuthState, updateOAuthState } from "../services/oauth-state.js";
 
 const tiktok = new Hono();
-
-// In-memory store for PKCE code verifiers (in production, use Redis or database)
-const codeVerifierStore = new Map();
 
 // Helper to get valid access token (refreshes if needed)
 async function getValidAccessToken(userId, accountId = null) {
@@ -90,26 +88,10 @@ async function getTokenWithRefresh(account) {
 tiktok.get("/auth/url", authMiddleware, async (c) => {
   try {
     const user = c.get("user");
-    // Use user ID as state for CSRF protection
-    const state = Buffer.from(JSON.stringify({ userId: user.id })).toString("base64");
+    const state = issueOAuthState(c, "tiktok", { userId: user.id });
 
     const { url, codeVerifier } = await getAuthUrl(state);
-
-    // Store code verifier for later use during token exchange
-    // Key is the state parameter for lookup during callback
-    codeVerifierStore.set(state, {
-      codeVerifier,
-      userId: user.id,
-      createdAt: Date.now(),
-    });
-
-    // Clean up old entries (older than 10 minutes)
-    const tenMinutesAgo = Date.now() - 10 * 60 * 1000;
-    for (const [key, value] of codeVerifierStore.entries()) {
-      if (value.createdAt < tenMinutesAgo) {
-        codeVerifierStore.delete(key);
-      }
-    }
+    updateOAuthState(state, { codeVerifier });
 
     return c.json({ url });
   } catch (error) {
@@ -157,16 +139,12 @@ tiktok.get("/auth/callback", async (c) => {
       return c.json({ error: "Missing state parameter" }, 400);
     }
 
-    // Retrieve code verifier from store
-    const storedData = codeVerifierStore.get(state);
+    const storedData = consumeOAuthState(c, "tiktok", state);
     if (!storedData) {
       return c.json({ error: "Invalid or expired state parameter. Please try again." }, 400);
     }
 
     const { codeVerifier, userId } = storedData;
-
-    // Remove used code verifier
-    codeVerifierStore.delete(state);
 
     // Exchange code for tokens
     const tokens = await exchangeCode(code, codeVerifier);
@@ -306,9 +284,9 @@ tiktok.post("/auth/refresh", authMiddleware, async (c) => {
     });
 
     return c.json({
-      access_token: tokens.access_token,
-      expires_in: tokens.expires_in,
+      success: true,
       expires_at: expiresAt.toISOString(),
+      refresh_expires_at: refreshExpiresAt?.toISOString() || null,
     });
   } catch (error) {
     console.error("[TikTok Auth] Refresh error:", error);

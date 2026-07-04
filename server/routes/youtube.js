@@ -12,6 +12,7 @@ import {
   refreshToken as refreshYouTubeToken,
   revokeToken,
 } from "../services/youtube-auth.js";
+import { consumeOAuthState, issueOAuthState } from "../services/oauth-state.js";
 import {
   initiateUpload,
   uploadChunk,
@@ -73,8 +74,7 @@ async function getValidAccessToken(userId, accountId = null) {
 youtube.get("/auth/url", authMiddleware, async (c) => {
   try {
     const user = c.get("user");
-    // Use user ID as state for CSRF protection
-    const state = Buffer.from(JSON.stringify({ userId: user.id })).toString("base64");
+    const state = issueOAuthState(c, "youtube", { userId: user.id });
     const authUrl = getAuthUrl(state);
 
     return c.json({ url: authUrl });
@@ -105,17 +105,11 @@ youtube.get("/auth/callback", async (c) => {
       return c.json({ error: "Missing authorization code" }, 400);
     }
 
-    // Decode state to get user ID
-    let userId;
-    try {
-      const stateData = JSON.parse(Buffer.from(state, "base64").toString());
-      userId = stateData.userId;
-    } catch {
-      return c.json({ error: "Invalid state parameter" }, 400);
-    }
+    const stateData = consumeOAuthState(c, "youtube", state);
+    const userId = stateData?.userId;
 
     if (!userId) {
-      return c.json({ error: "Missing user ID in state" }, 400);
+      return c.json({ error: "Invalid or expired state parameter" }, 400);
     }
 
     // Exchange code for tokens
@@ -228,8 +222,7 @@ youtube.post("/auth/refresh", authMiddleware, async (c) => {
     });
 
     return c.json({
-      access_token: tokens.access_token,
-      expires_in: tokens.expires_in,
+      success: true,
       expires_at: expiresAt.toISOString(),
     });
   } catch (error) {
@@ -332,59 +325,10 @@ youtube.delete("/accounts/:accountId", authMiddleware, async (c) => {
  * Get current access token (refreshes if expired)
  */
 youtube.get("/token", authMiddleware, async (c) => {
-  try {
-    const user = c.get("user");
-    const accountId = c.req.query("accountId");
-
-    const whereClause = accountId
-      ? { id: `youtube_${user.id}_${accountId}` }
-      : { userId: user.id, providerId: "youtube" };
-
-    const account = await prisma.account.findFirst({
-      where: whereClause,
-    });
-
-    if (!account) {
-      return c.json({ error: "YouTube account not found" }, 404);
-    }
-
-    // Check if token is expired or about to expire (within 5 minutes)
-    const isExpired = account.accessTokenExpiresAt
-      ? new Date(account.accessTokenExpiresAt) < new Date(Date.now() + 5 * 60 * 1000)
-      : true;
-
-    if (isExpired && account.refreshToken) {
-      // Refresh the token
-      const tokens = await refreshYouTubeToken(account.refreshToken);
-      const expiresAt = new Date(Date.now() + tokens.expires_in * 1000);
-
-      await prisma.account.update({
-        where: { id: account.id },
-        data: {
-          accessToken: tokens.access_token,
-          accessTokenExpiresAt: expiresAt,
-          updatedAt: new Date(),
-        },
-      });
-
-      return c.json({
-        access_token: tokens.access_token,
-        expires_at: expiresAt.toISOString(),
-      });
-    }
-
-    if (!account.accessToken) {
-      return c.json({ error: "No access token available" }, 401);
-    }
-
-    return c.json({
-      access_token: account.accessToken,
-      expires_at: account.accessTokenExpiresAt?.toISOString(),
-    });
-  } catch (error) {
-    console.error("[YouTube Auth] Error getting token:", error);
-    return c.json({ error: error.message }, 500);
-  }
+  return c.json({
+    error: "This endpoint is deprecated and no longer returns OAuth access tokens.",
+    requiresReauth: false,
+  }, 410);
 });
 
 /**
@@ -999,10 +943,23 @@ youtube.post("/upload-init", authMiddleware, async (c) => {
  */
 youtube.post("/upload-complete", authMiddleware, async (c) => {
   try {
+    const user = c.get("user");
     const { uploadId, youtubeVideoId, scheduledAt, title, description, tags = [], privacyStatus } = await c.req.json();
 
     if (!uploadId || !youtubeVideoId) {
       return c.json({ error: "uploadId e youtubeVideoId são obrigatórios" }, 400);
+    }
+
+    const upload = await prisma.upload.findFirst({
+      where: {
+        id: uploadId,
+        userId: user.id,
+        platform: "youtube",
+      },
+    });
+
+    if (!upload) {
+      return c.json({ error: "Upload not found" }, 404);
     }
 
     const updated = await prisma.upload.update({
@@ -1012,7 +969,15 @@ youtube.post("/upload-complete", authMiddleware, async (c) => {
         status: "scheduled",
         scheduledAt: scheduledAt ? new Date(scheduledAt) : null,
         updatedAt: new Date(),
-        metadata: { title, description, tags, privacyStatus, youtubeVideoId, uploadedAt: new Date().toISOString() },
+        metadata: {
+          ...(upload.metadata || {}),
+          title,
+          description,
+          tags,
+          privacyStatus,
+          youtubeVideoId,
+          uploadedAt: new Date().toISOString(),
+        },
       },
     });
 

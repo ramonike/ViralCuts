@@ -276,7 +276,12 @@ uploads.post("/store-video", async (c) => {
     const existing = await prisma.upload.findFirst({ where: { id: uploadId, userId } });
     if (!existing) return c.json({ error: "Upload não encontrado" }, 404);
 
-    const { uploadVideoToStorage } = await import("../db/supabase.js");
+    const { isSupabaseStorageConfigured, uploadVideoToStorage } = await import("../db/supabase.js");
+
+    if (!isSupabaseStorageConfigured()) {
+      return c.json({ error: "Storage service unavailable" }, 503);
+    }
+
     const buffer = Buffer.from(await file.arrayBuffer());
     const mimeType = file.type || "video/mp4";
 
@@ -285,7 +290,7 @@ uploads.post("/store-video", async (c) => {
     return c.json({ success: true, fileUrl });
   } catch (error) {
     console.error("Error storing video:", error.message);
-    return c.json({ error: error.message || "Failed to store video" }, 500);
+    return c.json({ error: "Failed to store video" }, 500);
   }
 });
 
