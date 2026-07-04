@@ -77,7 +77,7 @@ function ErrorBox({ error }) {
     );
 }
 
-function ScriptGenerator({ onPipeline, onThemeChange }) {
+function ScriptGenerator({ onPipeline, onThemeChange, onContentChange }) {
     const [tema, setTema] = useState('');
     const [formato, setFormato] = useState('shorts');
     const [duracao, setDuracao] = useState('60');
@@ -165,6 +165,7 @@ function ScriptGenerator({ onPipeline, onThemeChange }) {
                 `Crie um roteiro completo para um vídeo de ${duracao} segundos no formato ${formato}, tom ${tom}.\n\nTema: ${tema}\n\nO roteiro deve tener:\n1. GANCHO (primeiros 3 segundos) — frase que para o scroll\n2. PROBLEMA ou PROMESSA — por que o espectador deve continuar assistindo\n3. DESENVOLVIMENTO — conteúdo principal dividido em blocos curtos\n4. CTA FINAL — chamada para ação clara (curtir, seguir, comentar)\n\nFormate com emojis e deixe claro o tempo de cada parte. Escreva em português do Brasil, linguagem natural e direta.`
             );
             setResult(text);
+            if (onContentChange) onContentChange({ tema, script: text });
         } catch (e) { setError(e.message); }
         finally { setLoading(false); }
     };
@@ -273,9 +274,10 @@ function ScriptGenerator({ onPipeline, onThemeChange }) {
 }
 
 
-function TitleGenerator({ onPipeline, onThemeChange }) {
+function TitleGenerator({ onPipeline, onThemeChange, scriptContext }) {
     const [assunto, setAssunto] = useState('');
     const [plataforma, setPlataforma] = useState('youtube');
+    const [assuntoUserEdited, setAssuntoUserEdited] = useState(false);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const [titles, setTitles] = useState([]);
@@ -335,6 +337,14 @@ function TitleGenerator({ onPipeline, onThemeChange }) {
             };
         }
     }, []);
+
+    useEffect(() => {
+        if (scriptContext?.script && !assuntoUserEdited) {
+            const { tema, script } = scriptContext;
+            const preview = script.length > 500 ? script.slice(0, 500) + '...' : script;
+            setAssunto(`O roteiro é sobre "${tema}". Aqui está o conteúdo do roteiro para referência:\n\n${preview}\n\nCom base neste roteiro, gere títulos, descrição completa e tags SEO otimizadas para YouTube.`);
+        }
+    }, [scriptContext]);
 
     const toggleRecording = () => {
         if (!recognitionRef.current) {
@@ -431,7 +441,7 @@ function TitleGenerator({ onPipeline, onThemeChange }) {
                     <textarea 
                         className="vc-input" 
                         value={assunto} 
-                        onChange={e => setAssunto(e.target.value)}
+                        onChange={e => { setAssunto(e.target.value); setAssuntoUserEdited(true); }}
                         placeholder="Descreva o assunto do vídeo..."
                         rows={3}
                         style={{ resize: 'vertical', minHeight: 80, flex: 1 }}
@@ -893,6 +903,7 @@ export default function CreationPage() {
     const [pipelineModalOpen, setPipelineModalOpen] = useState(false);
     const [pipelineData, setPipelineData] = useState(null);
     const [scriptTheme, setScriptTheme] = useState('');
+    const [scriptContent, setScriptContent] = useState(null);
 
     const handlePipeline = (data) => {
         setPipelineData(prev => {
@@ -945,10 +956,10 @@ export default function CreationPage() {
                 ))}
             </div>
 
-            {activeTab === 'script' && <ScriptGenerator onPipeline={handlePipeline} onThemeChange={setScriptTheme} />}
-            {activeTab === 'titles' && <TitleGenerator onPipeline={handlePipeline} onThemeChange={setScriptTheme} />}
-            {activeTab === 'thumbnail' && <ThumbnailGenerator onPipeline={handlePipeline} defaultPrompt={scriptTheme} />}
-            {activeTab === 'checklist' && <PublicationChecklist />}
+            <div style={{ display: activeTab !== 'script' ? 'none' : undefined }}><ScriptGenerator onPipeline={handlePipeline} onThemeChange={setScriptTheme} onContentChange={setScriptContent} /></div>
+            <div style={{ display: activeTab !== 'titles' ? 'none' : undefined }}><TitleGenerator onPipeline={handlePipeline} onThemeChange={setScriptTheme} scriptContext={scriptContent} /></div>
+            <div style={{ display: activeTab !== 'thumbnail' ? 'none' : undefined }}><ThumbnailGenerator onPipeline={handlePipeline} defaultPrompt={scriptTheme} /></div>
+            <div style={{ display: activeTab !== 'checklist' ? 'none' : undefined }}><PublicationChecklist /></div>
 
             <ScheduleVideoModal
                 isOpen={pipelineModalOpen}
