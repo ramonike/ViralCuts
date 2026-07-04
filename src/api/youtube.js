@@ -1,9 +1,10 @@
 import { fetchAPI } from '../lib/api-client';
+import { shouldUseMockToken } from '../config/features';
 
 export async function fetchChannelDetails(token) {
     console.log("[YouTube API] fetchChannelDetails called with token:", token ? "EXISTS" : "NULL");
 
-    if (!token || token.startsWith("MOCK_TOKEN")) {
+    if (shouldUseMockToken(token)) {
         console.log("[YouTube API] Using MOCK data for token:", token);
         const isSecondary = token.includes("2") || token.length > 20;
         return {
@@ -90,7 +91,7 @@ export async function fetchChannelDetails(token) {
 export async function fetchChannelVideos(token, maxResults = 50) {
     console.log("[YouTube API] fetchChannelVideos called, maxResults:", maxResults);
 
-    if (!token || token.startsWith("MOCK_TOKEN")) {
+    if (shouldUseMockToken(token)) {
         console.log("[YouTube API] Using MOCK videos");
         // Retornar vídeos mock para desenvolvimento
         return [
@@ -232,7 +233,7 @@ export async function fetchChannelVideos(token, maxResults = 50) {
 export async function fetchChannelAnalytics(token) {
     console.log("[YouTube API] fetchChannelAnalytics called");
 
-    if (!token || token.startsWith("MOCK_TOKEN")) {
+    if (shouldUseMockToken(token)) {
         console.log("[YouTube API] Using MOCK analytics");
         // Generate dynamic mock data for the last 7 days
         const mockData = [];
@@ -242,7 +243,7 @@ export async function fetchChannelAnalytics(token) {
             date.setDate(today.getDate() - i);
             mockData.push({
                 name: date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }),
-                views: Math.floor(Math.random() * 500) + 100 // Random views between 100 and 600
+                views: 100 + (i * 73) // deterministic mock views
             });
         }
         return mockData;
@@ -302,7 +303,7 @@ export async function fetchChannelAnalytics(token) {
 export async function searchVideos(token, query = "ciência curiosidades podcast") {
     console.log("[YouTube API] searchVideos called with query:", query);
 
-    if (!token || token.startsWith("MOCK_TOKEN")) {
+    if (shouldUseMockToken(token)) {
         console.log("[YouTube API] Using MOCK search results");
         return [
             {

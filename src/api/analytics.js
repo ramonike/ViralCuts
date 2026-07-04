@@ -4,12 +4,21 @@
  * Requirements: 1.2, 1.3, 1.4, 1.5
  */
 
+import { isMockModeEnabled, shouldUseMockToken } from '../config/features';
+
 const YOUTUBE_ANALYTICS_API = 'https://youtubeanalytics.googleapis.com/v2/reports';
 const YOUTUBE_DATA_API = 'https://www.googleapis.com/youtube/v3';
 
 // Cache configuration
 const CACHE_TTL = 60 * 60 * 1000; // 1 hour in milliseconds
 const analyticsCache = new Map();
+
+function maybeReturnMock(mockData, reason) {
+  if (isMockModeEnabled()) {
+    return mockData;
+  }
+  throw new Error(reason);
+}
 
 /**
  * Format date to YYYY-MM-DD for API requests
@@ -141,7 +150,7 @@ export async function fetchChannelAnalytics(token, period = '30d') {
   if (cached) return cached;
   
   // Return mock data if no token or mock token
-  if (!token || token.startsWith('MOCK_TOKEN')) {
+  if (shouldUseMockToken(token)) {
     console.log('[Analytics API] Using MOCK channel analytics');
     return MOCK_CHANNEL_ANALYTICS;
   }
@@ -164,7 +173,7 @@ export async function fetchChannelAnalytics(token, period = '30d') {
       
       if (errorText.includes('quotaExceeded')) {
         console.warn('[Analytics API] Quota exceeded, using mock data');
-        return MOCK_CHANNEL_ANALYTICS;
+        return maybeReturnMock(MOCK_CHANNEL_ANALYTICS, 'YouTube Analytics quota exceeded');
       }
       
       throw new Error(`Analytics API Error: ${response.statusText}`);
@@ -212,13 +221,13 @@ export async function fetchChannelAnalytics(token, period = '30d') {
       return result;
     }
     
-    return MOCK_CHANNEL_ANALYTICS;
+    return maybeReturnMock(MOCK_CHANNEL_ANALYTICS, 'Channel analytics unavailable');
   } catch (error) {
     console.error('[Analytics API] Failed to fetch channel analytics:', error);
     
     // Return mock data on error
     if (error.message?.includes('quota')) {
-      return MOCK_CHANNEL_ANALYTICS;
+      return maybeReturnMock(MOCK_CHANNEL_ANALYTICS, 'YouTube Analytics quota exceeded');
     }
     
     throw error;
@@ -241,7 +250,7 @@ export async function fetchVideoAnalytics(token, videoId) {
   if (cached) return cached;
   
   // Return mock data if no token or mock token
-  if (!token || token.startsWith('MOCK_TOKEN')) {
+  if (shouldUseMockToken(token)) {
     console.log('[Analytics API] Using MOCK video analytics');
     return { ...MOCK_VIDEO_ANALYTICS, videoId };
   }
@@ -263,7 +272,7 @@ export async function fetchVideoAnalytics(token, videoId) {
       console.error('[Analytics API] Video analytics error:', errorText);
       
       if (errorText.includes('quotaExceeded')) {
-        return { ...MOCK_VIDEO_ANALYTICS, videoId };
+        return maybeReturnMock({ ...MOCK_VIDEO_ANALYTICS, videoId }, 'YouTube Analytics quota exceeded');
       }
       
       throw new Error(`Video Analytics API Error: ${response.statusText}`);
@@ -290,12 +299,12 @@ export async function fetchVideoAnalytics(token, videoId) {
       return result;
     }
     
-    return { ...MOCK_VIDEO_ANALYTICS, videoId };
+    return maybeReturnMock({ ...MOCK_VIDEO_ANALYTICS, videoId }, 'Video analytics unavailable');
   } catch (error) {
     console.error('[Analytics API] Failed to fetch video analytics:', error);
     
     if (error.message?.includes('quota')) {
-      return { ...MOCK_VIDEO_ANALYTICS, videoId };
+      return maybeReturnMock({ ...MOCK_VIDEO_ANALYTICS, videoId }, 'YouTube Analytics quota exceeded');
     }
     
     throw error;
@@ -343,7 +352,7 @@ export async function fetchAudienceRetention(token, videoId) {
   };
   
   // Return mock data if no token or mock token
-  if (!token || token.startsWith('MOCK_TOKEN')) {
+  if (shouldUseMockToken(token)) {
     console.log('[Analytics API] Using MOCK retention data');
     return mockRetention;
   }
@@ -367,7 +376,7 @@ export async function fetchAudienceRetention(token, videoId) {
       console.error('[Analytics API] Retention error:', errorText);
       
       if (errorText.includes('quotaExceeded')) {
-        return mockRetention;
+        return maybeReturnMock(mockRetention, 'YouTube Analytics quota exceeded');
       }
       
       throw new Error(`Retention API Error: ${response.statusText}`);
@@ -416,12 +425,12 @@ export async function fetchAudienceRetention(token, videoId) {
       return result;
     }
     
-    return mockRetention;
+    return maybeReturnMock(mockRetention, 'Retention analytics unavailable');
   } catch (error) {
     console.error('[Analytics API] Failed to fetch retention:', error);
     
     if (error.message?.includes('quota')) {
-      return mockRetention;
+      return maybeReturnMock(mockRetention, 'YouTube Analytics quota exceeded');
     }
     
     throw error;
@@ -453,7 +462,7 @@ export async function fetchTrafficSources(token, period = '30d') {
     { source: 'Direct', views: 1234, percentage: 9.6 }
   ];
   
-  if (!token || token.startsWith('MOCK_TOKEN')) {
+  if (shouldUseMockToken(token)) {
     console.log('[Analytics API] Using MOCK traffic data');
     return mockTraffic;
   }
@@ -471,7 +480,7 @@ export async function fetchTrafficSources(token, period = '30d') {
     if (!response.ok) {
       const errorText = await response.text();
       if (errorText.includes('quotaExceeded')) {
-        return mockTraffic;
+        return maybeReturnMock(mockTraffic, 'YouTube Analytics quota exceeded');
       }
       throw new Error(`Traffic API Error: ${response.statusText}`);
     }
@@ -491,11 +500,11 @@ export async function fetchTrafficSources(token, period = '30d') {
       return result;
     }
     
-    return mockTraffic;
+    return maybeReturnMock(mockTraffic, 'Traffic analytics unavailable');
   } catch (error) {
     console.error('[Analytics API] Failed to fetch traffic sources:', error);
     if (error.message?.includes('quota')) {
-      return mockTraffic;
+      return maybeReturnMock(mockTraffic, 'YouTube Analytics quota exceeded');
     }
     throw error;
   }
@@ -540,7 +549,7 @@ export async function fetchDemographics(token, period = '30d') {
     ]
   };
   
-  if (!token || token.startsWith('MOCK_TOKEN')) {
+  if (shouldUseMockToken(token)) {
     console.log('[Analytics API] Using MOCK demographics data');
     return mockDemographics;
   }
@@ -559,7 +568,7 @@ export async function fetchDemographics(token, period = '30d') {
     if (!response.ok) {
       const errorText = await response.text();
       if (errorText.includes('quotaExceeded')) {
-        return mockDemographics;
+        return maybeReturnMock(mockDemographics, 'YouTube Analytics quota exceeded');
       }
       throw new Error(`Demographics API Error: ${response.statusText}`);
     }
@@ -624,7 +633,9 @@ export async function fetchDemographics(token, period = '30d') {
       }
     } catch (e) {
       console.warn('[Analytics API] Could not fetch country data:', e);
-      result.topCountries = mockDemographics.topCountries;
+      if (isMockModeEnabled()) {
+        result.topCountries = mockDemographics.topCountries;
+      }
     }
     
     setCacheData(cacheKey, result);
@@ -632,7 +643,7 @@ export async function fetchDemographics(token, period = '30d') {
   } catch (error) {
     console.error('[Analytics API] Failed to fetch demographics:', error);
     if (error.message?.includes('quota')) {
-      return mockDemographics;
+      return maybeReturnMock(mockDemographics, 'YouTube Analytics quota exceeded');
     }
     throw error;
   }
@@ -669,7 +680,7 @@ export async function calculateAudienceRetention(token, videoId, period = '30d')
     period: { startDate, endDate }
   };
   
-  if (!token || token.startsWith('MOCK_TOKEN')) {
+  if (shouldUseMockToken(token)) {
     console.log('[Analytics API] Using MOCK retention calculation data');
     return mockRetention;
   }
@@ -715,7 +726,7 @@ export async function calculateAudienceRetention(token, videoId, period = '30d')
       console.error('[Analytics API] Retention calculation error:', errorText);
       
       if (errorText.includes('quotaExceeded')) {
-        return mockRetention;
+        return maybeReturnMock(mockRetention, 'YouTube Analytics quota exceeded');
       }
       
       throw new Error(`Retention Calculation API Error: ${response.statusText}`);
@@ -748,12 +759,12 @@ export async function calculateAudienceRetention(token, videoId, period = '30d')
       return result;
     }
     
-    return mockRetention;
+    return maybeReturnMock(mockRetention, 'Retention calculation unavailable');
   } catch (error) {
     console.error('[Analytics API] Failed to calculate retention:', error);
     
     if (error.message?.includes('quota')) {
-      return mockRetention;
+      return maybeReturnMock(mockRetention, 'YouTube Analytics quota exceeded');
     }
     
     throw error;
@@ -855,7 +866,7 @@ export async function analyzeBestPublishingTimes(token, period = '30d') {
     period: { startDate, endDate }
   };
   
-  if (!token || token.startsWith('MOCK_TOKEN')) {
+  if (shouldUseMockToken(token)) {
     console.log('[Analytics API] Using MOCK best times data');
     return mockBestTimes;
   }
@@ -878,7 +889,7 @@ export async function analyzeBestPublishingTimes(token, period = '30d') {
       console.error('[Analytics API] Best times error:', errorText);
       
       if (errorText.includes('quotaExceeded')) {
-        return mockBestTimes;
+        return maybeReturnMock(mockBestTimes, 'YouTube Analytics quota exceeded');
       }
       
       throw new Error(`Best Times API Error: ${response.statusText}`);
@@ -920,12 +931,12 @@ export async function analyzeBestPublishingTimes(token, period = '30d') {
       return result;
     }
     
-    return mockBestTimes;
+    return maybeReturnMock(mockBestTimes, 'Best times analytics unavailable');
   } catch (error) {
     console.error('[Analytics API] Failed to analyze best times:', error);
     
     if (error.message?.includes('quota')) {
-      return mockBestTimes;
+      return maybeReturnMock(mockBestTimes, 'YouTube Analytics quota exceeded');
     }
     
     throw error;
@@ -947,7 +958,7 @@ function generateMockHourlyData() {
     
     hours.push({
       hour: i,
-      views: Math.round(baseViews + Math.random() * 200)
+      views: baseViews + ((i * 37) % 200)
     });
   }
   return hours;
@@ -1026,7 +1037,7 @@ export async function trackSubscriberGrowth(token, period = '30d') {
     period: { startDate, endDate }
   };
   
-  if (!token || token.startsWith('MOCK_TOKEN')) {
+  if (shouldUseMockToken(token)) {
     console.log('[Analytics API] Using MOCK subscriber growth data');
     return mockGrowth;
   }
@@ -1049,7 +1060,7 @@ export async function trackSubscriberGrowth(token, period = '30d') {
       console.error('[Analytics API] Subscriber growth error:', errorText);
       
       if (errorText.includes('quotaExceeded')) {
-        return mockGrowth;
+        return maybeReturnMock(mockGrowth, 'YouTube Analytics quota exceeded');
       }
       
       throw new Error(`Subscriber Growth API Error: ${response.statusText}`);
@@ -1100,12 +1111,12 @@ export async function trackSubscriberGrowth(token, period = '30d') {
       return result;
     }
     
-    return mockGrowth;
+    return maybeReturnMock(mockGrowth, 'Subscriber growth unavailable');
   } catch (error) {
     console.error('[Analytics API] Failed to track subscriber growth:', error);
     
     if (error.message?.includes('quota')) {
-      return mockGrowth;
+      return maybeReturnMock(mockGrowth, 'YouTube Analytics quota exceeded');
     }
     
     throw error;
@@ -1126,8 +1137,9 @@ function generateMockDailyGrowth(startDate, endDate) {
   
   for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
     const dateStr = formatDate(new Date(d));
-    const gained = Math.floor(Math.random() * 15) + 5; // 5-20 gained per day
-    const lost = Math.floor(Math.random() * 3); // 0-3 lost per day
+    const dayOfMonth = d.getDate();
+    const gained = 5 + ((dayOfMonth * 7) % 15); // 5-19 gained per day
+    const lost = (dayOfMonth * 2) % 3; // 0-2 lost per day
     const netChange = gained - lost;
     cumulativeNet += netChange;
     
@@ -1170,7 +1182,7 @@ export async function calculateVideoCTR(token, videoId, period = '30d') {
     period: { startDate, endDate }
   };
   
-  if (!token || token.startsWith('MOCK_TOKEN')) {
+  if (shouldUseMockToken(token)) {
     console.log('[Analytics API] Using MOCK CTR data');
     return mockCTR;
   }
@@ -1192,7 +1204,7 @@ export async function calculateVideoCTR(token, videoId, period = '30d') {
       console.error('[Analytics API] CTR error:', errorText);
       
       if (errorText.includes('quotaExceeded')) {
-        return mockCTR;
+        return maybeReturnMock(mockCTR, 'YouTube Analytics quota exceeded');
       }
       
       throw new Error(`CTR API Error: ${response.statusText}`);
@@ -1219,12 +1231,12 @@ export async function calculateVideoCTR(token, videoId, period = '30d') {
       return result;
     }
     
-    return mockCTR;
+    return maybeReturnMock(mockCTR, 'CTR analytics unavailable');
   } catch (error) {
     console.error('[Analytics API] Failed to calculate CTR:', error);
     
     if (error.message?.includes('quota')) {
-      return mockCTR;
+      return maybeReturnMock(mockCTR, 'YouTube Analytics quota exceeded');
     }
     
     throw error;
@@ -1258,7 +1270,7 @@ export async function calculateChannelCTR(token, period = '30d', maxResults = 10
     { videoId: 'video5', title: 'Video 5', impressions: 6543, clicks: 289, ctr: 4.42 }
   ];
   
-  if (!token || token.startsWith('MOCK_TOKEN')) {
+  if (shouldUseMockToken(token)) {
     console.log('[Analytics API] Using MOCK channel CTR data');
     return mockChannelCTR;
   }
@@ -1280,7 +1292,7 @@ export async function calculateChannelCTR(token, period = '30d', maxResults = 10
       console.error('[Analytics API] Channel CTR error:', errorText);
       
       if (errorText.includes('quotaExceeded')) {
-        return mockChannelCTR;
+        return maybeReturnMock(mockChannelCTR, 'YouTube Analytics quota exceeded');
       }
       
       throw new Error(`Channel CTR API Error: ${response.statusText}`);
@@ -1306,12 +1318,12 @@ export async function calculateChannelCTR(token, period = '30d', maxResults = 10
       return result;
     }
     
-    return mockChannelCTR;
+    return maybeReturnMock(mockChannelCTR, 'Channel CTR unavailable');
   } catch (error) {
     console.error('[Analytics API] Failed to calculate channel CTR:', error);
     
     if (error.message?.includes('quota')) {
-      return mockChannelCTR;
+      return maybeReturnMock(mockChannelCTR, 'YouTube Analytics quota exceeded');
     }
     
     throw error;

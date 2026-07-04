@@ -360,15 +360,23 @@ Status atual: frente descontinuada. O pacote legado `command-center` foi removid
 
 #### Acao
 
-- [ ] Colocar mocks sob `VITE_USE_MOCKS=true`.
-- [ ] Falhar de forma honesta em producao quando a integracao real nao existir.
-- [ ] Eliminar `Math.random()` para URLs, views e metricas em caminhos ativos.
+- [x] Colocar mocks sob `VITE_USE_MOCKS=true`.
+- [x] Falhar de forma honesta em producao quando a integracao real nao existir.
+- [x] Eliminar `Math.random()` para URLs, views e metricas em caminhos ativos.
 
 #### Arquivos impactados
 
 - `src/api/upload.js`
 - `src/api/analytics.js`
 - `src/api/youtube.js`
+
+#### Status atual
+
+- `src/config/features.js` centraliza `VITE_USE_MOCKS`.
+- `src/api/upload.js`, `src/api/youtube.js` e `src/api/analytics.js` so retornam simulacoes quando `VITE_USE_MOCKS=true`.
+- Fallbacks de quota/erro em analytics agora falham em producao em vez de retornar metricas falsas.
+- `Math.random()` foi removido dos dados/URLs simulados destes caminhos.
+- `npm run build` passa apos a mudanca.
 
 ## Fase 4 - Hardening e escala
 
