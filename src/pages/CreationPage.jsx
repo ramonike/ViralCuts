@@ -1,8 +1,8 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
     Sparkles, FileText, Type, CheckSquare, Image,
     Send, Copy, Check, RefreshCw,
-    Youtube, Calendar, Wand2, AlertCircle, ExternalLink
+    Youtube, Calendar, Wand2, AlertCircle, ExternalLink, Mic, Stop
 } from 'lucide-react';
 import { PageLayout } from '../components/layout/PageLayout';
 import { useTheme } from '../contexts/ThemeContext';
@@ -85,6 +85,53 @@ function ScriptGenerator({ onPipeline }) {
     const [loading, setLoading] = useState(false);
     const [result, setResult] = useState('');
     const [error, setError] = useState('');
+    const [isRecording, setIsRecording] = useState(false);
+    const [transcript, setTranscript] = useState('');
+    const recognitionRef = useRef(null);
+
+    useEffect(() => {
+        // Initialize SpeechRecognition if supported
+        if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            recognitionRef.current = new SpeechRecognition();
+            recognitionRef.current.continuous = false;
+            recognitionRef.current.interimResults = false;
+            recognitionRef.current.lang = 'pt-BR';
+
+            recognitionRef.current.onresult = (event) => {
+                const transcript = event.results[0][0].transcript;
+                setTranscript(transcript);
+                setTema(transcript); // Update tema directly with transcript
+                setIsRecording(false);
+            };
+
+            recognitionRef.current.onerror = (event) => {
+                console.error('Speech recognition error:', event.error);
+                setIsRecording(false);
+                setError('Erro no reconhecimento de fala. Tente novamente.');
+            };
+
+            recognitionRef.current.onend = () => {
+                setIsRecording(false);
+            };
+        }
+    }, []);
+
+    const toggleRecording = () => {
+        if (!recognitionRef.current) {
+            setError('Seu navegador não suporta reconhecimento de fala. Use Chrome ou Edge.');
+            return;
+        }
+
+        if (isRecording) {
+            recognitionRef.current.stop();
+        } else {
+            setTranscript('');
+            setError('');
+            recognitionRef.current.start();
+            setIsRecording(true);
+        }
+    };
 
     const generate = async () => {
         if (!tema.trim()) return;
@@ -92,6 +139,115 @@ function ScriptGenerator({ onPipeline }) {
         try {
             const text = await callClaude(
                 `Você é um roteirista especialista em conteúdo viral para redes sociais brasileiras. Crie roteiros otimizados para engajamento, com ganchos fortes, linguagem direta e CTAs eficientes.`,
+                `Crie um roteiro completo para um vídeo de ${duracao} segundos no formato ${formato}, tom ${tom}.\n\nTema: ${tema}\n\nO roteiro deve tener:\n1. GANCHO (primeiros 3 segundos) — frase que para o scroll\n2. PROBLEMA ou PROMESSA — por que o espectador deve continuar assistindo\n3. DESENVOLVIMENTO — conteúdo principal dividido em blocos curtos\n4. CTA FINAL — chamada para ação clara (curtir, seguir, comentar)\n\nFormate com emojis e deixe claro o tempo de cada parte. Escreva em português do Brasil, linguagem natural e direta.`
+            );
+            setResult(text);
+        } catch (e) { setError(e.message); }
+        finally { setLoading(false); }
+    };
+
+    return (
+        <div className="vc-card">
+            <h3 style={{ fontSize: 16, fontWeight: 600, marginBottom: 16 }}>Gerador de Roteiro</h3>
+            <div style={{ marginBottom: 16, display: 'flex', gap: 8, alignItems: 'end' }}>
+                <label className="vc-label">Tema ou ideia do vídeo</label>
+                <div style={{ flex: 1, display: 'flex', gap: 8 }}>
+                    <textarea 
+                        className="vc-input" 
+                        value={tema} 
+                        onChange={e => setTema(e.target.value)}
+                        placeholder="Ex: Bitcoin atingiu novo recorde histórico em 2026 e especialistas preveem..."
+                        rows={3}
+                        style={{ resize: 'vertical', minHeight: 80, flex: 1 }}
+                    />
+                    <button
+                        onClick={toggleRecording}
+                        disabled={loading}
+                        style={{
+                            padding: '8px 16px', 
+                            borderRadius: 8, 
+                            fontSize: 14, 
+                            fontWeight: 500,
+                            border: 'none', 
+                            cursor: isRecording ? 'not-allowed' : 'pointer',
+                            background: isRecording ? 'var(--bg-elevated)' : 'var(--accent-coral)',
+                            color: isRecording ? 'var(--text-muted)' : '#fff',
+                            transition: 'all .2s',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 4
+                        }}
+                    >
+                        {isRecording ? (
+                            <>
+                                <Stop size={18} style={{ animation: 'pulse 1.5s infinite' }} />
+                                <span>Parar</span>
+                            </>
+                        ) : (
+                            <>
+                                <Mic size={18} />
+                                <span>Gravar</span>
+                            </>
+                        )}
+                    </button>
+                </div>
+            </div>
+            {isRecording && !loading && (
+                <div style={{ marginBottom: 12, padding: '10px 14px', background: 'var(--accent-coral-3)', borderRadius: 8, border: '1px solid var(--accent-coral)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <Mic size={16} style={{ color: 'var(--accent-coral)', animation: 'pulse 1.5s infinite' }} />
+                        <span style={{ fontSize: 14, color: 'var(--accent-coral)' }}>Ouvindo... Fale claramente</span>
+                    </div>
+                </div>
+            )}
+            {transcript && !isRecording && !loading && (
+                <div style={{ marginBottom: 12, padding: '10px 14px', background: 'var(--bg-elevated)', borderRadius: 8, border: '1px solid var(--border-default)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: 'var(--text-secondary)' }}>
+                        <Check size={14} style={{ color: 'var(--accent-teal)' }} />
+                        <span>Transcrito: "{transcript}"</span>
+                    </div>
+                </div>
+            )}
+            <div className="vc-grid-3">
+                <div style={{ marginBottom: 16 }}>
+                    <label className="vc-label">Formato</label>
+                    <select className="vc-input" value={formato} onChange={e => setFormato(e.target.value)} style={{ cursor: 'pointer' }}>
+                        <option value="shorts">Shorts/TikTok</option>
+                        <option value="longo">Longo</option>
+                        <option value="reel">Reel</option>
+                    </select>
+                </div>
+                <div style={{ marginBottom: 16 }}>
+                    <label className="vc-label">Duração</label>
+                    <select className="vc-input" value={duracao} onChange={e => setDuracao(e.target.value)} style={{ cursor: 'pointer' }}>
+                        {['30', '60', '90', '180', '300', '600'].map(d => (
+                            <option key={d} value={d}>{d}s{d >= 60 ? ` (${d / 60}min)` : ''}</option>
+                        ))}
+                    </select>
+                </div>
+                <div style={{ marginBottom: 16 }}>
+                    <label className="vc-label">Tom</label>
+                    <select className="vc-input" value={tom} onChange={e => setTom(e.target.value)} style={{ cursor: 'pointer' }}>
+                        <option value="educativo">Educativo</option>
+                        <option value="entretenimento">Entretenimento</option>
+                        <option value="motivacional">Motivacional</option>
+                        <option value="informativo">Informativo</option>
+                    </select>
+                </div>
+            </div>
+            <button className="vc-btn vc-btn-primary" onClick={generate} disabled={!tema.trim() || isRecording || loading}>
+                <Wand2 size={14} /> {loading ? 'Gerando roteiro...' : 'Gerar Roteiro'}
+            </button>
+            <ErrorBox error={error} />
+            <ResultBox content={result} />
+            {result && onPipeline && (
+                <button className="vc-btn vc-btn-primary" style={{ marginTop: 16 }} onClick={() => onPipeline({ script: result })}>
+                    <Calendar size={13} /> Agendar no Pipeline
+                </button>
+            )}
+        </div>
+    );
+}
                 `Crie um roteiro completo para um vídeo de ${duracao} segundos no formato ${formato}, tom ${tom}.
 
 Tema: ${tema}
@@ -168,21 +324,68 @@ function TitleGenerator({ onPipeline }) {
     const [selectedTitle, setSelectedTitle] = useState('');
     const [description, setDescription] = useState('');
     const [tags, setTags] = useState('');
+    const [isRecording, setIsRecording] = useState(false);
+    const [transcript, setTranscript] = useState('');
+    const recognitionRef = useRef(null);
+
+    useEffect(() => {
+        // Initialize SpeechRecognition if supported
+        if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            recognitionRef.current = new SpeechRecognition();
+            recognitionRef.current.continuous = false;
+            recognitionRef.current.interimResults = false;
+            recognitionRef.current.lang = 'pt-BR';
+
+            recognitionRef.current.onresult = (event) => {
+                const transcript = event.results[0][0].transcript;
+                setTranscript(transcript);
+                setAssunto(transcript); // Update assunto directly with transcript
+                setIsRecording(false);
+            };
+
+            recognitionRef.current.onerror = (event) => {
+                console.error('Speech recognition error:', event.error);
+                setIsRecording(false);
+                setError('Erro no reconhecimento de fala. Tente novamente.');
+            };
+
+            recognitionRef.current.onend = () => {
+                setIsRecording(false);
+            };
+        }
+    }, []);
+
+    const toggleRecording = () => {
+        if (!recognitionRef.current) {
+            setError('Seu navegador não suporta reconhecimento de fala. Use Chrome ou Edge.');
+            return;
+        }
+
+        if (isRecording) {
+            recognitionRef.current.stop();
+        } else {
+            setTranscript('');
+            setError('');
+            recognitionRef.current.start();
+            setIsRecording(true);
+        }
+    };
 
     function parseResult(text) {
-        const lines = text.split('\n');
+        const lines = text.split('\\n');
         const parsedTitles = [];
         let parsedDesc = '';
         let parsedTags = '';
         let section = null;
         for (const line of lines) {
             const trimmed = line.trim();
-            if (/##\s*5?.*?(?:OP[ÇC][ÕO]ES?\s*DE\s*)?T[ÍI]TULO/i.test(trimmed) || /##\s*OP[ÇC][ÕO]ES?\s*DE\s*T[ÍI]TULO/i.test(trimmed)) { section = 'titles'; continue; }
-            if (/##\s*DESCRI[ÇC][ÃA]O/i.test(trimmed)) { section = 'desc'; continue; }
-            if (/##\s*(?:20\s*)?HASHTAGS/i.test(trimmed)) { section = 'tags'; continue; }
-            if (/##\s*TAGS/i.test(trimmed)) { section = 'tags'; continue; }
-            if (section === 'titles') { const m = trimmed.match(/^\d+[\.\)]\s*(.+)/); if (m) parsedTitles.push(m[1].replace(/\*\*/g, '').trim()); }
-            else if (section === 'desc') { if (parsedDesc) parsedDesc += '\n'; parsedDesc += trimmed; }
+            if (/##\\s*5?.*?(?:OP[ÇC][ÕO]ES?\\s*DE\\s*)?T[ÍI]TULO/i.test(trimmed) || /##\\s*OP[ÇC][ÕO]ES?\\s*DE\\s*T[ÍI]TULO/i.test(trimmed)) { section = 'titles'; continue; }
+            if (/##\\s*DESCRI[ÇC][ÃA]O/i.test(trimmed)) { section = 'desc'; continue; }
+            if (/##\\s*(?:20\\s*)?HASHTAGS/i.test(trimmed)) { section = 'tags'; continue; }
+            if (/##\\s*TAGS/i.test(trimmed)) { section = 'tags'; continue; }
+            if (section === 'titles') { const m = trimmed.match(/^\\d+[\\.\\)]\\s*(.+)/); if (m) parsedTitles.push(m[1].replace(/\\*\\*/g, '').trim()); }
+            else if (section === 'desc') { if (parsedDesc) parsedDesc += '\\n'; parsedDesc += trimmed; }
             else if (section === 'tags') { if (trimmed && !trimmed.startsWith('#')) { if (parsedTags) parsedTags += ', '; parsedTags += trimmed.replace(/^#/, '').trim(); } }
         }
         return { titles: parsedTitles, description: parsedDesc.trim(), tags: parsedTags };
@@ -194,6 +397,146 @@ function TitleGenerator({ onPipeline }) {
         try {
             const text = await callClaude(
                 `Você é um especialista em SEO e marketing de conteúdo para criadores brasileiros. Cria títulos que maximizam CTR e descrições otimizadas para algoritmo.`,
+                `Crie títulos e descrição completa para ${plataforma} sobre o seguinte assunto:\n\n"${assunto}"\n\nEntregue:\n\n## 5 OPÇÕES DE TÍTULO\n(variações com diferentes ângulos: curiosidade, benefício, número, urgência, polêmica)\n\n## DESCRIÇÃO COMPLETA\n(300-500 palavras, com palavras-chave naturais, parágrafos curtos, links placeholder)\n\n## 20 HASHTAGS\n(mix de populares + nichadas, em ordem de relevância)\n\n## TAGS YOUTUBE\n(15 tags separadas por vírgula, sem #)\n\nTudo em português do Brasil.`
+            );
+            const parsed = parseResult(text);
+            setTitles(parsed.titles);
+            setSelectedTitle(parsed.titles[0] || '');
+            setDescription(parsed.description);
+            setTags(parsed.tags);
+        } catch (e) { setError(e.message); }
+        finally { setLoading(false); }
+    };
+
+    const handlePipeline = () => { if (onPipeline) onPipeline({ title: selectedTitle, description, tags }); };
+
+    return (
+        <div className="vc-card">
+            <h3 style={{ fontSize: 16, fontWeight: 600, marginBottom: 16 }}>Gerador de Títulos e Descrição</h3>
+            <div style={{ marginBottom: 16, display: 'flex', gap: 8, alignItems: 'end' }}>
+                <label className="vc-label">Assunto ou resumo do vídeo</label>
+                <div style={{ flex: 1, display: 'flex', gap: 8 }}>
+                    <textarea 
+                        className="vc-input" 
+                        value={assunto} 
+                        onChange={e => setAssunto(e.target.value)}
+                        placeholder="Descreva o assunto do vídeo..."
+                        rows={3}
+                        style={{ resize: 'vertical', minHeight: 80, flex: 1 }}
+                    />
+                    <button
+                        onClick={toggleRecording}
+                        disabled={loading}
+                        style={{
+                            padding: '8px 16px', 
+                            borderRadius: 8, 
+                            fontSize: 14, 
+                            fontWeight: 500,
+                            border: 'none', 
+                            cursor: isRecording ? 'not-allowed' : 'pointer',
+                            background: isRecording ? 'var(--bg-elevated)' : 'var(--accent-coral)',
+                            color: isRecording ? 'var(--text-muted)' : '#fff',
+                            transition: 'all .2s',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 4
+                        }}
+                    >
+                        {isRecording ? (
+                            <>
+                                <Stop size={18} style={{ animation: 'pulse 1.5s infinite' }} />
+                                <span>Parar</span>
+                            </>
+                        ) : (
+                            <>
+                                <Mic size={18} />
+                                <span>Gravar</span>
+                            </>
+                        )}
+                    </button>
+                </div>
+            </div>
+            {isRecording && !loading && (
+                <div style={{ marginBottom: 12, padding: '10px 14px', background: 'var(--accent-coral-3)', borderRadius: 8, border: '1px solid var(--accent-coral)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <Mic size={16} style={{ color: 'var(--accent-coral)', animation: 'pulse 1.5s infinite' }} />
+                        <span style={{ fontSize: 14, color: 'var(--accent-coral)' }}>Ouvindo... Fale claramente</span>
+                    </div>
+                </div>
+            )}
+            {transcript && !isRecording && !loading && (
+                <div style={{ marginBottom: 12, padding: '10px 14px', background: 'var(--bg-elevated)', borderRadius: 8, border: '1px solid var(--border-default)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: 'var(--text-secondary)' }}>
+                        <Check size={14} style={{ color: 'var(--accent-teal)' }} />
+                        <span>Transcrito: "{transcript}"</span>
+                    </div>
+                </div>
+            )}
+            <div style={{ marginBottom: 16 }}>
+                <label className="vc-label">Plataforma</label>
+                <div style={{ display: 'flex', gap: 0, border: '1px solid var(--border-default)', borderRadius: 8, overflow: 'hidden' }}>
+                    {['youtube', 'tiktok', 'instagram'].map((p, idx) => (
+                        <button key={p}
+                            style={{
+                                flex: 1, padding: '8px 20px', fontSize: 13, fontWeight: 500,
+                                border: 'none', fontFamily: 'var(--font-body)',
+                                borderRight: idx < 2 ? '1px solid var(--border-default)' : 'none',
+                                background: plataforma === p ? 'var(--accent-coral)' : 'transparent',
+                                color: plataforma === p ? '#fff' : 'var(--text-secondary)',
+                                cursor: 'pointer', transition: 'all .2s'
+                            }}
+                            onClick={() => setPlataforma(p)}>
+                            {p === 'youtube' ? 'YouTube' : p === 'tiktok' ? 'TikTok' : 'Instagram'}
+                        </button>
+                    ))}
+                </div>
+            </div>
+            <button className="vc-btn vc-btn-primary" onClick={generate} disabled={!assunto.trim() || isRecording || loading}>
+                <Wand2 size={14} /> {loading ? 'Gerando títulos...' : 'Gerar Títulos e Descrição'}
+            </button>
+            <ErrorBox error={error} />
+            {titles.length > 0 && (
+                <div style={{ marginTop: 16 }}>
+                    <label className="vc-label">Títulos sugeridos ✨</label>
+                    {titles.map((t, i) => (
+                        <div key={i}
+                            style={{
+                                display: 'flex', alignItems: 'center', gap: 10,
+                                padding: '10px 14px', borderRadius: 8,
+                                border: selectedTitle === t ? '1px solid var(--accent-coral)' : '1px solid var(--border-default)',
+                                background: selectedTitle === t ? 'var(--accent-coral-3)' : 'transparent',
+                                cursor: 'pointer', marginBottom: 8, transition: 'all .2s'
+                            }}
+                            onClick={() => setSelectedTitle(t)}>
+                            <div style={{
+                                width: 16, height: 16, borderRadius: '50%',
+                                border: selectedTitle === t ? '2px solid var(--accent-coral)' : '2px solid var(--border-default)',
+                                display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0
+                            }}>
+                                {selectedTitle === t && <div style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--accent-coral)' }} />}
+                            </div>
+                            <span style={{ fontSize: 14 }}>{t}</span>
+                        </div>
+                    ))}
+                    <div style={{ marginBottom: 16, marginTop: 16 }}>
+                        <label className="vc-label">Descrição</label>
+                        <textarea className="vc-input" value={description} onChange={e => setDescription(e.target.value)} rows={4}
+                            style={{ resize: 'vertical', minHeight: 80 }} />
+                    </div>
+                    <div style={{ marginBottom: 16 }}>
+                        <label className="vc-label">Tags</label>
+                        <input className="vc-input" value={tags} onChange={e => setTags(e.target.value)} placeholder="tag1, tag2, tag3" />
+                    </div>
+                </div>
+            )}
+            {selectedTitle && onPipeline && (
+                <button className="vc-btn vc-btn-primary" style={{ marginTop: 16 }} onClick={handlePipeline}>
+                    <Calendar size={13} /> Agendar no Pipeline
+                </button>
+            )}
+        </div>
+    );
+}
                 `Crie títulos e descrição completa para ${plataforma} sobre o seguinte assunto:
 
 "${assunto}"
