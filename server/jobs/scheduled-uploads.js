@@ -271,6 +271,10 @@ async function processScheduledUpload(upload) {
 
     // Plataforma desconhecida
     console.warn(`[Scheduled Uploads] Plataforma não suportada: ${upload.platform}`);
+    await prisma.upload.update({
+      where: { id: upload.id },
+      data: { status: "failed", updatedAt: new Date() },
+    });
     return { success: false, error: `Plataforma não suportada: ${upload.platform}` };
 
   } catch (error) {
@@ -350,9 +354,34 @@ async function checkScheduledUploads() {
 
     console.log(`[Scheduled Uploads] Found ${dueUploads.length} uploads due for publishing`);
 
-    // Process each upload
+    const lockedUploads = [];
+    for (const upload of dueUploads) {
+      const lock = await prisma.upload.updateMany({
+        where: {
+          id: upload.id,
+          status: "scheduled",
+        },
+        data: {
+          status: "processing",
+          updatedAt: new Date(),
+        },
+      });
+
+      if (lock.count === 1) {
+        lockedUploads.push({ ...upload, status: "processing" });
+      }
+    }
+
+    if (lockedUploads.length === 0) {
+      console.log("[Scheduled Uploads] No uploads acquired for processing");
+      return;
+    }
+
+    console.log(`[Scheduled Uploads] Acquired ${lockedUploads.length} upload locks`);
+
+    // Process each locked upload
     const results = await Promise.allSettled(
-      dueUploads.map((upload) => processScheduledUpload(upload))
+      lockedUploads.map((upload) => processScheduledUpload(upload))
     );
 
     // Log results

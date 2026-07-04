@@ -1,3 +1,5 @@
+import { fetchAPI } from '../lib/api-client';
+
 export async function fetchChannelDetails(token) {
     console.log("[YouTube API] fetchChannelDetails called with token:", token ? "EXISTS" : "NULL");
 
@@ -418,17 +420,7 @@ export async function fetchScheduledUploads(includeAll = false, limit = 50) {
     try {
         // Usa /api/uploads em vez de /api/youtube/scheduled para suportar
         // múltiplas plataformas (YouTube, TikTok) e todos os status relevantes
-        const response = await fetch(`/api/uploads`, {
-            credentials: 'include',
-
-        });
-
-        if (!response.ok) {
-            const error = await response.json().catch(() => ({ error: 'Unknown error' }));
-            throw new Error(error.error || 'Failed to fetch uploads');
-        }
-
-        const data = await response.json();
+        const data = await fetchAPI('/uploads');
         // /api/uploads retorna array direto
         return Array.isArray(data) ? data : (data.uploads || []);
     } catch (error) {
@@ -447,21 +439,10 @@ export async function scheduleUpload(uploadId, scheduledAt) {
     console.log("[YouTube API] scheduleUpload called for:", uploadId);
 
     try {
-        const response = await fetch('/api/youtube/schedule', {
+        return fetchAPI('/youtube/schedule', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            credentials: 'include',
             body: JSON.stringify({ uploadId, scheduledAt }),
         });
-
-        if (!response.ok) {
-            const error = await response.json().catch(() => ({ error: 'Unknown error' }));
-            throw new Error(error.error || 'Failed to schedule upload');
-        }
-
-        return response.json();
     } catch (error) {
         console.error("[YouTube API] Failed to schedule upload:", error);
         throw error;
@@ -478,21 +459,10 @@ export async function rescheduleUpload(uploadId, scheduledAt) {
     console.log("[YouTube API] rescheduleUpload called for:", uploadId);
 
     try {
-        const response = await fetch(`/api/uploads/${uploadId}`, {
+        return fetchAPI(`/uploads/${uploadId}`, {
             method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            credentials: 'include',
             body: JSON.stringify({ scheduledAt }),
         });
-
-        if (!response.ok) {
-            const error = await response.json().catch(() => ({ error: 'Unknown error' }));
-            throw new Error(error.error || 'Failed to reschedule upload');
-        }
-
-        return response.json();
     } catch (error) {
         console.error("[YouTube API] Failed to reschedule upload:", error);
         throw error;
@@ -508,17 +478,9 @@ export async function cancelScheduledUpload(uploadId) {
     console.log("[YouTube API] cancelScheduledUpload called for:", uploadId);
 
     try {
-        const response = await fetch(`/api/uploads/${uploadId}`, {
+        return fetchAPI(`/uploads/${uploadId}`, {
             method: 'DELETE',
-            credentials: 'include',
         });
-
-        if (!response.ok) {
-            const error = await response.json().catch(() => ({ error: 'Unknown error' }));
-            throw new Error(error.error || 'Failed to cancel scheduled upload');
-        }
-
-        return response.json();
     } catch (error) {
         console.error("[YouTube API] Failed to cancel scheduled upload:", error);
         throw error;

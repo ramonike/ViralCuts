@@ -10,36 +10,23 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
-import { API_URL } from '../config/api';
+import { fetchAPI } from '../lib/api-client';
 
 async function fetchSubscription() {
-    const res = await fetch(`${API_URL}/api/subscription/me`, { credentials: 'include' });
-    if (!res.ok) throw new Error('Falha ao buscar assinatura');
-    return res.json();
+    return fetchAPI('/subscription/me');
 }
 
 async function createCheckout(planName, billingCycle) {
-    const res = await fetch(`${API_URL}/api/subscription/checkout`, {
+    return fetchAPI('/subscription/checkout', {
         method:      'POST',
-        credentials: 'include',
-        headers:     { 'Content-Type': 'application/json' },
         body:        JSON.stringify({ planName, billingCycle }),
     });
-    if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err.error || 'Falha ao criar checkout');
-    }
-    return res.json();
 }
 
 async function createPortal() {
-    const res = await fetch(`${API_URL}/api/subscription/portal`, {
+    return fetchAPI('/subscription/portal', {
         method:      'POST',
-        credentials: 'include',
-        headers:     { 'Content-Type': 'application/json' },
     });
-    if (!res.ok) throw new Error('Falha ao abrir portal');
-    return res.json();
 }
 
 export function useSubscription() {

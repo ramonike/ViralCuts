@@ -1,4 +1,4 @@
-import { API_URL, API_ENDPOINTS } from '../config/api';
+import { fetchAPI } from '../lib/api-client';
 
 export async function fetchUsers(page = 1, pageSize = 20, search = '') {
     const params = new URLSearchParams({
@@ -10,14 +10,5 @@ export async function fetchUsers(page = 1, pageSize = 20, search = '') {
         params.append('search', search);
     }
 
-    const response = await fetch(`${API_ENDPOINTS.ADMIN.USERS}?${params}`, {
-        credentials: 'include',
-    });
-
-    if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || 'Failed to fetch users');
-    }
-
-    return response.json();
+    return fetchAPI(`/admin/users?${params}`);
 }

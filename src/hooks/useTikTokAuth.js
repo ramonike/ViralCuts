@@ -1,4 +1,5 @@
 import { useCallback, useState } from 'react';
+import { fetchAPI } from '../lib/api-client';
 
 /**
  * useTikTokAuth — Gerencia conexão OAuth com TikTok via backend
@@ -10,8 +11,6 @@ import { useCallback, useState } from 'react';
  * Uso:
  *   const { connectTikTok, connectedTikTokAccounts, disconnectTikTokAccount, loading, error } = useTikTokAuth(state, setState);
  */
-
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
 export function useTikTokAuth(state, setState) {
     const [loading, setLoading] = useState(false);
@@ -25,16 +24,7 @@ export function useTikTokAuth(state, setState) {
         setLoading(true);
         setError(null);
         try {
-            const response = await fetch(`${API_BASE}/api/tiktok/auth/url`, {
-                credentials: 'include',
-            });
-
-            if (!response.ok) {
-                const data = await response.json().catch(() => ({}));
-                throw new Error(data.error || 'Falha ao obter URL de autorização TikTok.');
-            }
-
-            const { url } = await response.json();
+            const { url } = await fetchAPI('/tiktok/auth/url');
 
             // Abre em popup para não perder o contexto da aplicação
             const popup = window.open(url, 'tiktok_oauth', 'width=600,height=700,scrollbars=yes');
@@ -78,12 +68,7 @@ export function useTikTokAuth(state, setState) {
      */
     const fetchConnectedAccounts = useCallback(async () => {
         try {
-            const response = await fetch(`${API_BASE}/api/tiktok/accounts`, {
-                credentials: 'include',
-            });
-            if (!response.ok) return;
-
-            const { accounts } = await response.json();
+            const { accounts } = await fetchAPI('/tiktok/accounts');
 
             // Formata para o padrão de connectedAccounts do ViralCuts
             const tiktokAccounts = accounts
@@ -135,15 +120,9 @@ export function useTikTokAuth(state, setState) {
             // accountId no formato `tiktok_<openId>` — extrai só o openId
             const openId = accountId.startsWith('tiktok_') ? accountId.slice(7) : accountId;
 
-            const response = await fetch(`${API_BASE}/api/tiktok/accounts/${encodeURIComponent(openId)}`, {
+            await fetchAPI(`/tiktok/accounts/${encodeURIComponent(openId)}`, {
                 method: 'DELETE',
-                credentials: 'include',
             });
-
-            if (!response.ok) {
-                const data = await response.json().catch(() => ({}));
-                throw new Error(data.error || 'Falha ao desconectar conta TikTok.');
-            }
 
             // Remove do estado global
             setState(prev => ({

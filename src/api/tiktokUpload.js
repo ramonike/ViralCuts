@@ -9,7 +9,7 @@
  *   // result: { status: 'success'|'error', url, publishId, error }
  */
 
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+import { fetchAPI } from '../lib/api-client';
 
 /**
  * Faz upload de um vídeo para o TikTok via backend.
@@ -37,9 +37,8 @@ export async function uploadTikTok(item, _token, file) {
     try {
         const arrayBuffer = await file.arrayBuffer();
 
-        const response = await fetch(`${API_BASE}/api/tiktok/upload`, {
+        const data = await fetchAPI('/tiktok/upload', {
             method: 'POST',
-            credentials: 'include',
             headers: {
                 'Content-Type': file.type || 'video/mp4',
                 'X-Account-Id': item.accountId || '',
@@ -47,16 +46,6 @@ export async function uploadTikTok(item, _token, file) {
             },
             body: arrayBuffer,
         });
-
-        const data = await response.json();
-
-        if (!response.ok) {
-            console.error('[tiktokUpload] Server error:', data);
-            return {
-                status: 'error',
-                error: data.error || `TikTok upload falhou (${response.status})`,
-            };
-        }
 
         // Sucesso: o TikTok processa o vídeo de forma assíncrona.
         // publishId pode ser usado para checar o status depois.
@@ -97,16 +86,7 @@ export async function checkTikTokStatus(publishId, accountId) {
         const params = new URLSearchParams();
         if (accountId) params.set('accountId', accountId);
 
-        const response = await fetch(
-            `${API_BASE}/api/tiktok/status/${encodeURIComponent(publishId)}?${params}`,
-            { credentials: 'include' }
-        );
-
-        const data = await response.json();
-
-        if (!response.ok) {
-            return { status: 'error', error: data.error || 'Falha ao verificar status.' };
-        }
+        const data = await fetchAPI(`/tiktok/status/${encodeURIComponent(publishId)}?${params}`);
 
         return {
             status: data.status,

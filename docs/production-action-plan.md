@@ -267,14 +267,20 @@ Status atual: frente descontinuada. O pacote legado `command-center` foi removid
 - `vitest.config.js`
 - `tsconfig.json`
 
+#### Status atual
+
+- Ainda nao ha `eslint`, `prettier` ou `typescript` instalados no projeto.
+- `tsconfig.json` existe, mas `tsc` nao esta disponivel como dependencia.
+- Esta frente deve instalar tooling antes de ativar scripts para evitar scripts falsamente verdes.
+
 ### 3. Atualizar onboarding e documentacao
 
 #### Acao
 
-- [ ] Reescrever `README.md` com fluxo real via `npm`.
-- [ ] Explicar `Render`, `Vercel`, `Supabase`, `Prisma`, `Google OAuth`, `Stripe`.
-- [ ] Remover a referencia atual a `bun run index.ts`.
-- [ ] Apontar este plano como backlog tecnico de curto prazo.
+- [x] Reescrever `README.md` com fluxo real via `npm`.
+- [x] Explicar `Render`, `Vercel`, `Supabase`, `Prisma`, `Google OAuth`, `Stripe`.
+- [x] Remover a referencia atual a `bun run index.ts`.
+- [x] Apontar este plano como backlog tecnico de curto prazo.
 
 #### Arquivos impactados
 
@@ -309,22 +315,28 @@ Status atual: frente descontinuada. O pacote legado `command-center` foi removid
 
 #### Acao
 
-- [ ] Confirmar se o job atual deve continuar apenas em `Render`.
+- [x] Confirmar se o job atual deve continuar apenas em `Render`.
 - [ ] Se houver plano de serverless puro, mover para cron externo ou endpoint protegido.
-- [ ] Adicionar locking no banco para evitar execucoes duplicadas.
+- [x] Adicionar locking no banco para evitar execucoes duplicadas.
 
 #### Arquivos impactados
 
 - `server/index.js`
 - `server/jobs/scheduled-uploads.js`
-- `prisma/schema.prisma`
+
+#### Status atual
+
+- Modelo oficial mantido como processo Node/Hono em `Render`.
+- `server/jobs/scheduled-uploads.js` agora faz lock otimista via transicao `scheduled -> processing`.
+- O lock nao exigiu migration Prisma; usa `updateMany` condicionado ao status atual.
+- Rotas serverless/cron externo seguem pendentes apenas se houver decisao futura de sair do job em `Render`.
 
 ### 3. Centralizar cliente HTTP do frontend
 
 #### Acao
 
-- [ ] Escolher um unico client base.
-- [ ] Consolidar fetch wrappers e tratamento de erro.
+- [x] Escolher um unico client base.
+- [x] Consolidar fetch wrappers e tratamento de erro.
 - [ ] Separar adaptadores `real`, `mock` e `offline`.
 
 #### Arquivos impactados
@@ -335,6 +347,14 @@ Status atual: frente descontinuada. O pacote legado `command-center` foi removid
 - `src/api/realUpload.js`
 - `src/api/youtube.js`
 - `src/api/tiktokUpload.js`
+
+#### Status atual
+
+- `src/lib/api-client.js` virou o client base para chamadas internas ao backend.
+- `src/api/notifications.js`, `src/api/admin.js`, `src/api/youtube.js`, `src/api/tiktokUpload.js`, `src/hooks/useSubscription.js` e `src/hooks/useTikTokAuth.js` usam `fetchAPI` nos endpoints internos migrados.
+- Chamadas externas diretas para Google/Opus foram mantidas fora do client interno.
+- Separacao formal de adaptadores `real`, `mock` e `offline` segue pendente.
+- `npm run build` passa apos a migracao.
 
 ### 4. Remover mocks acidentais de producao
 
