@@ -85,6 +85,7 @@ O projeto mistura `npm` com scripts `bun`, entao a padronizacao de runtime deve 
 - `npm run build` passa apos a atualizacao.
 - `npm test` passa apos a atualizacao: 20 arquivos e 328 testes.
 - Regressao corrigida em 2026-07-04: `CalendarPage` voltou a enviar `title`, `fileSize`, `mimeType`, `accountId` e `uploadId` para `/api/youtube/upload/initiate`; backend tambem aceita o formato legado `snippet/status` e tolera payload antigo sem `fileSize`/`mimeType`.
+- Cache legado tratado em 2026-07-04: app novo remove service workers/caches `viralcuts-*`, e `vercel.json` define `Cache-Control: no-store` para HTML/rotas `/dashboard/*`.
 
 ### 2. OAuth state e exposicao de tokens
 

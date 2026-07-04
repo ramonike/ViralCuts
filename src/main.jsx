@@ -6,6 +6,30 @@ import { GoogleOAuthProvider } from '@react-oauth/google';
 
 const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
 
+async function clearLegacyServiceWorkerCache() {
+  if (typeof window === 'undefined') return;
+
+  try {
+    if ('serviceWorker' in navigator) {
+      const registrations = await navigator.serviceWorker.getRegistrations();
+      await Promise.all(registrations.map((registration) => registration.unregister()));
+    }
+
+    if ('caches' in window) {
+      const cacheNames = await caches.keys();
+      await Promise.all(
+        cacheNames
+          .filter((cacheName) => cacheName.startsWith('viralcuts-'))
+          .map((cacheName) => caches.delete(cacheName))
+      );
+    }
+  } catch (error) {
+    console.warn('[main.jsx] Failed to clear legacy service worker cache:', error);
+  }
+}
+
+clearLegacyServiceWorkerCache();
+
 console.log('[main.jsx] Environment variables check:');
 console.log('[main.jsx] VITE_GOOGLE_CLIENT_ID:', clientId ? 'CONFIGURED ✓' : 'MISSING ✗');
 console.log('[main.jsx] Full Client ID:', clientId);
