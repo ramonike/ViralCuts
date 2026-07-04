@@ -39,7 +39,15 @@ function isLegacyBrowserTokenUploadEnabled() {
 // Helper to get valid access token (refreshes if needed)
 async function getValidAccessToken(userId, accountId = null) {
   const whereClause = accountId
-    ? { id: `youtube_${userId}_${accountId}` }
+    ? {
+        userId,
+        providerId: "youtube",
+        OR: [
+          { id: accountId },
+          { id: `youtube_${userId}_${accountId}` },
+          { accountId },
+        ],
+      }
     : { userId, providerId: "youtube" };
 
   const account = await prisma.account.findFirst({ where: whereClause });
@@ -348,29 +356,28 @@ youtube.post("/upload/initiate", authMiddleware, async (c) => {
     const user = c.get("user");
     const body = await c.req.json();
 
-    const {
-      title,
-      description,
-      tags,
-      categoryId,
-      privacyStatus,
-      publishAt,
-      playlistId,
-      fileSize,
-      mimeType,
-      accountId
-    } = body;
+    const uploadId = body.uploadId || null;
+    const title = body.title || body.snippet?.title;
+    const description = body.description ?? body.snippet?.description ?? "";
+    const tags = body.tags ?? body.snippet?.tags ?? [];
+    const categoryId = body.categoryId || body.snippet?.categoryId || "22";
+    const privacyStatus = body.privacyStatus || body.status?.privacyStatus || "private";
+    const publishAt = body.publishAt || body.status?.publishAt || null;
+    const playlistId = body.playlistId || null;
+    const fileSize = body.fileSize;
+    const mimeType = body.mimeType;
+    const accountId = body.accountId || null;
 
     if (!title) {
-      return c.json({ error: "Video title is required" }, 400);
+      return c.json({ error: "Video title is required", code: "YOUTUBE_UPLOAD_TITLE_REQUIRED" }, 400);
     }
 
     if (!fileSize || fileSize <= 0) {
-      return c.json({ error: "Valid file size is required" }, 400);
+      return c.json({ error: "Valid file size is required", code: "YOUTUBE_UPLOAD_FILE_SIZE_REQUIRED" }, 400);
     }
 
     if (!mimeType) {
-      return c.json({ error: "MIME type is required" }, 400);
+      return c.json({ error: "MIME type is required", code: "YOUTUBE_UPLOAD_MIME_TYPE_REQUIRED" }, 400);
     }
 
     // Get valid access token
@@ -384,21 +391,33 @@ youtube.post("/upload/initiate", authMiddleware, async (c) => {
       accessToken
     );
 
-    // Store session in database for resumption
-    const uploadRecord = await prisma.upload.create({
-      data: {
-        id: `upload_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-        userId: user.id,
-        sessionUri: session.sessionUri,
-        fileName: title,
-        fileSize: BigInt(fileSize),
-        mimeType: mimeType,
-        bytesUploaded: BigInt(0),
-        status: "initiated",
-        platform: "youtube",
-        metadata: { title, description, tags, categoryId, privacyStatus, publishAt, playlistId },
-      },
-    });
+    const uploadData = {
+      sessionUri: session.sessionUri,
+      fileName: title,
+      fileSize: BigInt(fileSize),
+      mimeType: mimeType,
+      bytesUploaded: BigInt(0),
+      status: "initiated",
+      platform: "youtube",
+      metadata: { title, description, tags, categoryId, privacyStatus, publishAt, playlistId, accountId },
+    };
+
+    const existingUpload = uploadId
+      ? await prisma.upload.findFirst({ where: { id: uploadId, userId: user.id } })
+      : null;
+
+    const uploadRecord = existingUpload
+      ? await prisma.upload.update({
+          where: { id: existingUpload.id },
+          data: uploadData,
+        })
+      : await prisma.upload.create({
+          data: {
+            id: `upload_${Date.now()}_${crypto.randomUUID()}`,
+            userId: user.id,
+            ...uploadData,
+          },
+        });
 
     return c.json({
       uploadId: uploadRecord.id,

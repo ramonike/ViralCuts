@@ -12,6 +12,7 @@ import { ViewingHeatmap } from "../components/analytics/ViewingHeatmap";
 import { TopVideosTable } from "../components/analytics/TopVideosTable";
 import { ExportButton } from "../components/analytics/ExportButton";
 import { InsightsPanel } from "../components/analytics/InsightsPanel";
+import { MetricCard, MetricGrid } from "../components/ui";
 
 const fmt = (num) => {
     if (!num && num !== 0) return "—";
@@ -95,23 +96,21 @@ export default function AnalyticsPage() {
         { label: "CTR médio", value: `${channelAnalytics.impressionsCTR?.toFixed(1) ?? 0}%`, cardTop: "metric-neutral" },
     ] : null;
 
-    const iconColors = ["var(--accent-coral)", "var(--accent-amber)", "var(--accent-teal)", "var(--accent-amber)"];
+    const headerActions = (
+        <>
+            <select style={{ background: "var(--bg-elevated)", border: "1px solid var(--border-default)", borderRadius: "var(--radius-md)", color: "var(--text-primary)", fontFamily: "var(--font-body)", padding: "6px 12px", fontSize: 13, width: "auto", cursor: "pointer", outline: "none" }}
+                value={period} onChange={e => changePeriod(e.target.value)} disabled={loading}>
+                {DATE_RANGE_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+            </select>
+            <ExportButton data={channelAnalytics} period={period} disabled={!channelAnalytics || loading} />
+            <button className="vc-btn vc-btn-secondary btn-sm" onClick={handleRefresh} disabled={refreshing || loading}>
+                <RefreshCw size={12} className={refreshing ? "spinning" : ""} /> Atualizar
+            </button>
+        </>
+    );
 
     return (
-        <PageLayout title="Analytics" subtitle="Acompanhe o crescimento do seu canal." maxWidth="7xl">
-            <div className="vc-page-header">
-                <div className="vc-page-header-text" />
-                <div className="vc-page-actions">
-                    <select style={{ background: "var(--bg-elevated)", border: "1px solid var(--border-default)", borderRadius: "var(--radius-md)", color: "var(--text-primary)", fontFamily: "var(--font-body)", padding: "6px 12px", fontSize: 13, width: "auto", cursor: "pointer", outline: "none" }}
-                        value={period} onChange={e => changePeriod(e.target.value)} disabled={loading}>
-                        {DATE_RANGE_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-                    </select>
-                    <ExportButton data={channelAnalytics} period={period} disabled={!channelAnalytics || loading} />
-                    <button className="vc-btn vc-btn-secondary btn-sm" onClick={handleRefresh} disabled={refreshing || loading}>
-                        <RefreshCw size={12} className={refreshing ? "spinning" : ""} /> Atualizar
-                    </button>
-                </div>
-            </div>
+        <PageLayout title="Analytics" subtitle="Acompanhe o crescimento do seu canal." maxWidth="7xl" headerActions={headerActions}>
 
             {error && (
                 <div className="vc-toast vc-toast-coral mb-6">
@@ -123,15 +122,11 @@ export default function AnalyticsPage() {
             {totalViews > 0 && (
                 <>
                     <h2 style={{ fontSize: "1rem", fontWeight: 700, marginBottom: 14, color: "var(--text-primary)", letterSpacing: "-.03em" }}>Totais do canal</h2>
-                    <div className="vc-grid-metrics" style={{ marginBottom: "var(--spacing-md, 16px)" }}>
+                    <MetricGrid className="mb-4">
                         {channelSummaryStats.map((s, i) => (
-                            <div key={i} className="vc-metric-card">
-                                {s.icon}
-                                <div className="vc-metric-value">{s.value}</div>
-                                <div className="vc-metric-label">{s.label}</div>
-                            </div>
+                            <MetricCard key={i} label={s.label} value={s.value} icon={s.icon} />
                         ))}
-                    </div>
+                    </MetricGrid>
                 </>
             )}
 
@@ -140,14 +135,11 @@ export default function AnalyticsPage() {
             {hasAnalyticsData && (
                 <>
                     <h2 style={{ fontSize: "1rem", fontWeight: 700, marginBottom: 14, color: "var(--text-primary)", letterSpacing: "-.03em" }}>Período selecionado</h2>
-                    <div className="vc-grid-metrics" style={{ marginBottom: "var(--spacing-md, 16px)" }}>
+                    <MetricGrid className="mb-4">
                         {periodStats.map((s, i) => (
-                            <div key={i} className={`vc-metric-card ${s.cardTop}`}>
-                                <div className="vc-metric-label">{s.label}</div>
-                                <div className="vc-metric-value">{s.value}</div>
-                            </div>
+                            <MetricCard key={i} label={s.label} value={s.value} accent={s.cardTop.replace("metric-", "")} />
                         ))}
-                    </div>
+                    </MetricGrid>
                 </>
             )}
 

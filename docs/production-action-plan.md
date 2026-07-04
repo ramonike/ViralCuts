@@ -84,6 +84,7 @@ O projeto mistura `npm` com scripts `bun`, entao a padronizacao de runtime deve 
 - Nao foi usado `npm audit fix --force` porque exigiria mudancas potencialmente quebradoras (`vite@8` e alteracao maior no caminho do Prisma).
 - `npm run build` passa apos a atualizacao.
 - `npm test` passa apos a atualizacao: 20 arquivos e 328 testes.
+- Regressao corrigida em 2026-07-04: `CalendarPage` voltou a enviar `title`, `fileSize`, `mimeType`, `accountId` e `uploadId` para `/api/youtube/upload/initiate`; backend tambem aceita o formato legado `snippet/status`.
 
 ### 2. OAuth state e exposicao de tokens
 

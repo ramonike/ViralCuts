@@ -477,26 +477,24 @@ export default function CalendarPage() {
                             },
                             credentials: 'include',
                             body: JSON.stringify({
-                                snippet: {
-                                    title: videoData.title || '',
-                                    description: videoData.description || '',
-                                    tags: videoData.tags || [],
-                                    categoryId: '22',
-                                },
-                                status: {
-                                    privacyStatus: 'private',
-                                    selfDeclaredMadeForKids: false,
-                                    // Agendamento nativo do YouTube — ele publica no horário sem depender do nosso job
-                                    ...(videoData.scheduledAt && !videoData.publishNow && {
-                                        publishAt: new Date(videoData.scheduledAt).toISOString(),
-                                    }),
-                                },
+                                title: videoData.title || videoData.file.name,
+                                uploadId,
+                                description: videoData.description || '',
+                                tags: videoData.tags || [],
+                                categoryId: '22',
+                                privacyStatus: videoData.privacyStatus || 'private',
+                                publishAt: videoData.scheduledAt && !videoData.publishNow
+                                    ? new Date(videoData.scheduledAt).toISOString()
+                                    : undefined,
+                                fileSize: videoData.file.size,
+                                mimeType: videoData.file.type || 'video/mp4',
+                                accountId: videoData.accountId || videoData.channelId || state.auth?.activeAccountId || null,
                             }),
                         }
                     );
                     if (!initRes.ok) {
                         const errData = await initRes.json().catch(() => ({}));
-                        throw new Error(errData.error?.message || `HTTP ${initRes.status}`);
+                        throw new Error(errData.error?.message || errData.error || errData.code || `HTTP ${initRes.status}`);
                     }
                     const initData = await initRes.json();
                     uploadUrl = initData.sessionUri;
