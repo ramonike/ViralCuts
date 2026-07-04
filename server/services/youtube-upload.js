@@ -68,14 +68,19 @@ export async function initiateUpload(metadata, fileSize, mimeType, accessToken) 
     part: "snippet,status",
   });
 
+  const headers = {
+    Authorization: `Bearer ${accessToken}`,
+    "Content-Type": "application/json; charset=UTF-8",
+    "X-Upload-Content-Type": mimeType || "video/mp4",
+  };
+
+  if (fileSize && Number(fileSize) > 0) {
+    headers["X-Upload-Content-Length"] = fileSize.toString();
+  }
+
   const response = await fetch(`${YOUTUBE_UPLOAD_URL}?${params}`, {
     method: "POST",
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-      "Content-Type": "application/json; charset=UTF-8",
-      "X-Upload-Content-Length": fileSize.toString(),
-      "X-Upload-Content-Type": mimeType,
-    },
+    headers,
     body: JSON.stringify(videoResource),
   });
 
@@ -96,7 +101,7 @@ export async function initiateUpload(metadata, fileSize, mimeType, accessToken) 
     sessionUri,
     videoId: null,
     bytesUploaded: 0,
-    totalBytes: fileSize,
+    totalBytes: fileSize || null,
     status: "initiated",
     metadata,
     mimeType,

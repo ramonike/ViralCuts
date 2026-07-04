@@ -364,20 +364,21 @@ youtube.post("/upload/initiate", authMiddleware, async (c) => {
     const privacyStatus = body.privacyStatus || body.status?.privacyStatus || "private";
     const publishAt = body.publishAt || body.status?.publishAt || null;
     const playlistId = body.playlistId || null;
-    const fileSize = body.fileSize;
-    const mimeType = body.mimeType;
+    const fileSize = Number(body.fileSize || 0);
+    const mimeType = body.mimeType || "video/mp4";
     const accountId = body.accountId || null;
 
     if (!title) {
       return c.json({ error: "Video title is required", code: "YOUTUBE_UPLOAD_TITLE_REQUIRED" }, 400);
     }
 
-    if (!fileSize || fileSize <= 0) {
-      return c.json({ error: "Valid file size is required", code: "YOUTUBE_UPLOAD_FILE_SIZE_REQUIRED" }, 400);
-    }
-
-    if (!mimeType) {
-      return c.json({ error: "MIME type is required", code: "YOUTUBE_UPLOAD_MIME_TYPE_REQUIRED" }, 400);
+    if (!body.fileSize || !body.mimeType) {
+      console.warn("[YouTube Upload] Initiate received legacy metadata-only payload", {
+        userId: user.id,
+        uploadId,
+        hasFileSize: Boolean(body.fileSize),
+        hasMimeType: Boolean(body.mimeType),
+      });
     }
 
     // Get valid access token
@@ -394,7 +395,7 @@ youtube.post("/upload/initiate", authMiddleware, async (c) => {
     const uploadData = {
       sessionUri: session.sessionUri,
       fileName: title,
-      fileSize: BigInt(fileSize),
+        fileSize: BigInt(fileSize || 0),
       mimeType: mimeType,
       bytesUploaded: BigInt(0),
       status: "initiated",
