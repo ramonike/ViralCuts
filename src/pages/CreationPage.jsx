@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
     Sparkles, FileText, Type, CheckSquare, Image,
     Send, Copy, Check, RefreshCw,
-    Youtube, Calendar, Wand2, AlertCircle, ExternalLink, Mic, Stop
+    Youtube, Calendar, Wand2, AlertCircle, ExternalLink, Mic, Square
 } from 'lucide-react';
 import { PageLayout } from '../components/layout/PageLayout';
 import { useTheme } from '../contexts/ThemeContext';
@@ -180,7 +180,7 @@ function ScriptGenerator({ onPipeline }) {
                     >
                         {isRecording ? (
                             <>
-                                <Stop size={18} style={{ animation: 'pulse 1.5s infinite' }} />
+                                <Square size={18} style={{ animation: 'vc-pulse 1.5s infinite' }} />
                                 <span>Parar</span>
                             </>
                         ) : (
@@ -195,7 +195,7 @@ function ScriptGenerator({ onPipeline }) {
             {isRecording && !loading && (
                 <div style={{ marginBottom: 12, padding: '10px 14px', background: 'var(--accent-coral-3)', borderRadius: 8, border: '1px solid var(--accent-coral)' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                        <Mic size={16} style={{ color: 'var(--accent-coral)', animation: 'pulse 1.5s infinite' }} />
+                        <Mic size={16} style={{ color: 'var(--accent-coral)', animation: 'vc-pulse 1.5s infinite' }} />
                         <span style={{ fontSize: 14, color: 'var(--accent-coral)' }}>Ouvindo... Fale claramente</span>
                     </div>
                 </div>
@@ -248,72 +248,7 @@ function ScriptGenerator({ onPipeline }) {
         </div>
     );
 }
-                `Crie um roteiro completo para um vídeo de ${duracao} segundos no formato ${formato}, tom ${tom}.
 
-Tema: ${tema}
-
-O roteiro deve ter:
-1. GANCHO (primeiros 3 segundos) — frase que para o scroll
-2. PROBLEMA ou PROMESSA — por que o espectador deve continuar assistindo
-3. DESENVOLVIMENTO — conteúdo principal dividido em blocos curtos
-4. CTA FINAL — chamada para ação clara (curtir, seguir, comentar)
-
-Formate com emojis e deixe claro o tempo de cada parte. Escreva em português do Brasil, linguagem natural e direta.`
-            );
-            setResult(text);
-        } catch (e) { setError(e.message); }
-        finally { setLoading(false); }
-    };
-
-    return (
-        <div className="vc-card">
-            <h3 style={{ fontSize: 16, fontWeight: 600, marginBottom: 16 }}>Gerador de Roteiro</h3>
-            <div style={{ marginBottom: 16 }}>
-                <label className="vc-label">Tema ou ideia do vídeo</label>
-                <textarea className="vc-input" value={tema} onChange={e => setTema(e.target.value)}
-                    placeholder="Ex: Bitcoin atingiu novo recorde histórico em 2026 e especialistas preveem..." rows={3}
-                    style={{ resize: 'vertical', minHeight: 80 }} />
-            </div>
-            <div className="vc-grid-3">
-                <div style={{ marginBottom: 16 }}>
-                    <label className="vc-label">Formato</label>
-                    <select className="vc-input" value={formato} onChange={e => setFormato(e.target.value)} style={{ cursor: 'pointer' }}>
-                        <option value="shorts">Shorts/TikTok</option>
-                        <option value="longo">Longo</option>
-                        <option value="reel">Reel</option>
-                    </select>
-                </div>
-                <div style={{ marginBottom: 16 }}>
-                    <label className="vc-label">Duração</label>
-                    <select className="vc-input" value={duracao} onChange={e => setDuracao(e.target.value)} style={{ cursor: 'pointer' }}>
-                        {['30', '60', '90', '180', '300', '600'].map(d => (
-                            <option key={d} value={d}>{d}s{d >= 60 ? ` (${d / 60}min)` : ''}</option>
-                        ))}
-                    </select>
-                </div>
-                <div style={{ marginBottom: 16 }}>
-                    <label className="vc-label">Tom</label>
-                    <select className="vc-input" value={tom} onChange={e => setTom(e.target.value)} style={{ cursor: 'pointer' }}>
-                        <option value="educativo">Educativo</option>
-                        <option value="entretenimento">Entretenimento</option>
-                        <option value="motivacional">Motivacional</option>
-                        <option value="informativo">Informativo</option>
-                    </select>
-                </div>
-            </div>
-            <button className="vc-btn vc-btn-primary" onClick={generate} disabled={!tema.trim()}>
-                <Wand2 size={14} /> {loading ? 'Gerando roteiro...' : 'Gerar Roteiro'}
-            </button>
-            <ErrorBox error={error} />
-            <ResultBox content={result} />
-            {result && onPipeline && (
-                <button className="vc-btn vc-btn-primary" style={{ marginTop: 16 }} onClick={() => onPipeline({ script: result })}>
-                    <Calendar size={13} /> Agendar no Pipeline
-                </button>
-            )}
-        </div>
-    );
-}
 
 function TitleGenerator({ onPipeline }) {
     const [assunto, setAssunto] = useState('');
@@ -444,7 +379,7 @@ function TitleGenerator({ onPipeline }) {
                     >
                         {isRecording ? (
                             <>
-                                <Stop size={18} style={{ animation: 'pulse 1.5s infinite' }} />
+                                <Square size={18} style={{ animation: 'vc-pulse 1.5s infinite' }} />
                                 <span>Parar</span>
                             </>
                         ) : (
@@ -459,7 +394,7 @@ function TitleGenerator({ onPipeline }) {
             {isRecording && !loading && (
                 <div style={{ marginBottom: 12, padding: '10px 14px', background: 'var(--accent-coral-3)', borderRadius: 8, border: '1px solid var(--accent-coral)' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                        <Mic size={16} style={{ color: 'var(--accent-coral)', animation: 'pulse 1.5s infinite' }} />
+                        <Mic size={16} style={{ color: 'var(--accent-coral)', animation: 'vc-pulse 1.5s infinite' }} />
                         <span style={{ fontSize: 14, color: 'var(--accent-coral)' }}>Ouvindo... Fale claramente</span>
                     </div>
                 </div>
@@ -537,111 +472,7 @@ function TitleGenerator({ onPipeline }) {
         </div>
     );
 }
-                `Crie títulos e descrição completa para ${plataforma} sobre o seguinte assunto:
 
-"${assunto}"
-
-Entregue:
-
-## 5 OPÇÕES DE TÍTULO
-(variações com diferentes ângulos: curiosidade, benefício, número, urgência, polêmica)
-
-## DESCRIÇÃO COMPLETA
-(300-500 palavras, com palavras-chave naturais, parágrafos curtos, links placeholder)
-
-## 20 HASHTAGS
-(mix de populares + nichadas, em ordem de relevância)
-
-## TAGS YOUTUBE
-(15 tags separadas por vírgula, sem #)
-
-Tudo em português do Brasil.`
-            );
-            const parsed = parseResult(text);
-            setTitles(parsed.titles);
-            setSelectedTitle(parsed.titles[0] || '');
-            setDescription(parsed.description);
-            setTags(parsed.tags);
-        } catch (e) { setError(e.message); }
-        finally { setLoading(false); }
-    };
-
-    const handlePipeline = () => { if (onPipeline) onPipeline({ title: selectedTitle, description, tags }); };
-
-    return (
-        <div className="vc-card">
-            <h3 style={{ fontSize: 16, fontWeight: 600, marginBottom: 16 }}>Gerador de Títulos e Descrição</h3>
-            <div style={{ marginBottom: 16 }}>
-                <label className="vc-label">Assunto ou resumo do vídeo</label>
-                <textarea className="vc-input" value={assunto} onChange={e => setAssunto(e.target.value)}
-                    placeholder="Descreva o assunto do vídeo..." rows={3}
-                    style={{ resize: 'vertical', minHeight: 80 }} />
-            </div>
-            <div style={{ marginBottom: 16 }}>
-                <label className="vc-label">Plataforma</label>
-                <div style={{ display: 'flex', gap: 0, border: '1px solid var(--border-default)', borderRadius: 8, overflow: 'hidden' }}>
-                    {['youtube', 'tiktok', 'instagram'].map((p, idx) => (
-                        <button key={p}
-                            style={{
-                                flex: 1, padding: '8px 20px', fontSize: 13, fontWeight: 500,
-                                border: 'none', fontFamily: 'var(--font-body)',
-                                borderRight: idx < 2 ? '1px solid var(--border-default)' : 'none',
-                                background: plataforma === p ? 'var(--accent-coral)' : 'transparent',
-                                color: plataforma === p ? '#fff' : 'var(--text-secondary)',
-                                cursor: 'pointer', transition: 'all .2s'
-                            }}
-                            onClick={() => setPlataforma(p)}>
-                            {p === 'youtube' ? 'YouTube' : p === 'tiktok' ? 'TikTok' : 'Instagram'}
-                        </button>
-                    ))}
-                </div>
-            </div>
-            <button className="vc-btn vc-btn-primary" onClick={generate} disabled={!assunto.trim()}>
-                <Wand2 size={14} /> {loading ? 'Gerando títulos...' : 'Gerar Títulos e Descrição'}
-            </button>
-            <ErrorBox error={error} />
-            {titles.length > 0 && (
-                <div style={{ marginTop: 16 }}>
-                    <label className="vc-label">Títulos sugeridos ✨</label>
-                    {titles.map((t, i) => (
-                        <div key={i}
-                            style={{
-                                display: 'flex', alignItems: 'center', gap: 10,
-                                padding: '10px 14px', borderRadius: 8,
-                                border: selectedTitle === t ? '1px solid var(--accent-coral)' : '1px solid var(--border-default)',
-                                background: selectedTitle === t ? 'var(--accent-coral-3)' : 'transparent',
-                                cursor: 'pointer', marginBottom: 8, transition: 'all .2s'
-                            }}
-                            onClick={() => setSelectedTitle(t)}>
-                            <div style={{
-                                width: 16, height: 16, borderRadius: '50%',
-                                border: selectedTitle === t ? '2px solid var(--accent-coral)' : '2px solid var(--border-default)',
-                                display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0
-                            }}>
-                                {selectedTitle === t && <div style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--accent-coral)' }} />}
-                            </div>
-                            <span style={{ fontSize: 14 }}>{t}</span>
-                        </div>
-                    ))}
-                    <div style={{ marginBottom: 16, marginTop: 16 }}>
-                        <label className="vc-label">Descrição</label>
-                        <textarea className="vc-input" value={description} onChange={e => setDescription(e.target.value)} rows={4}
-                            style={{ resize: 'vertical', minHeight: 80 }} />
-                    </div>
-                    <div style={{ marginBottom: 16 }}>
-                        <label className="vc-label">Tags</label>
-                        <input className="vc-input" value={tags} onChange={e => setTags(e.target.value)} placeholder="tag1, tag2, tag3" />
-                    </div>
-                </div>
-            )}
-            {selectedTitle && onPipeline && (
-                <button className="vc-btn vc-btn-primary" style={{ marginTop: 16 }} onClick={handlePipeline}>
-                    <Calendar size={13} /> Agendar no Pipeline
-                </button>
-            )}
-        </div>
-    );
-}
 
 const CHECKLIST_ITEMS = [
     { id: 'thumb', category: 'Visual', text: 'Miniatura personalizada criada' },
