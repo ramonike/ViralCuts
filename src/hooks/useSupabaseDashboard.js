@@ -93,8 +93,13 @@ export function useSupabaseDashboard() {
     const switchToAccount = useCallback((accountId) => {
         setActiveAccountId(accountId);
         setUploadQueue(filterQueue(rawQueueRef.current, accountId));
+        // Also store the active accountId for future reloads
+        accountIdRef.current = accountId;
         setHistory(buildHistory(rawHistoryRef.current, accountId));
     }, []);
+
+    // Ref to track current active accountId for reloadQueue
+    const accountIdRef = useRef(null);
 
     // ── Salvar settings ────────────────────────────────────────────────────
     const saveSettings = async (newSettings) => {

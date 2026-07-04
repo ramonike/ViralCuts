@@ -169,17 +169,25 @@ export default function CalendarPage() {
 
     // ── Queue: usa supabase.uploadQueue (mesma fonte do Dashboard) ─────────
     // Não faz fetch próprio — evita 504 em cold start do Render
-    const backendUploads = useMemo(() =>
-        (supabase.uploadQueue || state.uploadQueue || []).map(item => ({
+    const backendUploads = useMemo(() => {
+        const rawUploads = supabase.uploadQueue || state.uploadQueue || [];
+        // Primeiro filtra pelo activeAccountId ANTES de normalizar
+        // O useSupabaseDashboard já filtra, mas aqui garantimos filtro duplicado por segurança
+        const activeId = state.auth?.activeAccountId;
+        const filtered = rawUploads.filter(item => {
+            const itemAccountId = item.metadata?.accountId || item.accountId || item.channelId;
+            if (!itemAccountId) return true; // legado — mostra em todos
+            return itemAccountId === activeId;
+        });
+        return filtered.map(item => ({
             ...item,
             // Garante campos normalizados
             title: item.metadata?.title || item.fileName || item.title || 'Sem título',
             platform: (item.platform || item.platforms?.[0] || 'youtube').toLowerCase(),
             scheduledAt: item.scheduledAt || item.publishAt || null,
             channelId: item.metadata?.accountId || item.accountId || item.channelId || null,
-        })),
-        [supabase.uploadQueue, state.uploadQueue]
-    );
+        }));
+    }, [supabase.uploadQueue, state.uploadQueue, state.auth?.activeAccountId]);
 
     const loadingUploads = supabase.loading || false;
     const hasFetchedRef = useRef(true); // sempre true — dados vêm do supabase hook
@@ -188,7 +196,8 @@ export default function CalendarPage() {
     const loadUploads = useCallback(async (silent = false) => {
         // supabase.uploadQueue é atualizado automaticamente pelo useSupabaseDashboard
         // Não precisamos de fetch manual — apenas force re-render aguardando o hook
-    }, []);
+        await supabase.actions.reloadQueue?.();
+    }, [supabase.actions]);
 
     // ── Títulos publicados no histórico ( usado por combinedQueue + stats ) ─
     // Precisa ser declarado antes de combinedQueue pois este filtra por esses títulos
@@ -210,7 +219,7 @@ export default function CalendarPage() {
 
     // ── Queue combinada: backend é sempre incluído ─────────────────────────
     const combinedQueue = useMemo(() => {
-        // backendUploads é sempre a fonte principal (vem de /api/uploads autenticado)
+        // backendUploads já foi filtrado por activeAccountId acima
         // localQueue só adiciona itens que ainda não chegaram ao backend
         const localQueue = state.uploadQueue || [];
         const backendIds = new Set(backendUploads.map(u => u.id));
@@ -221,9 +230,10 @@ export default function CalendarPage() {
 
         // Remove vídeos já publicados: se o título está no histórico de publicados,
         // não deve aparecer mais como "Pendente" na fila
+        // TAMBÉM remove por status publicado direto
         const filtered = merged.filter(item => {
-            const isPublished = ['done', 'success', 'published', 'completed'].includes(item.status);
-            if (isPublished) return false; // publicados não pertencem à fila de pendentes
+            const isPublishedStatus = ['done', 'success', 'published', 'completed'].includes(item.status);
+            if (isPublishedStatus) return false; // publicados não pertencem à fila de pendentes
 
             const titleNormalized = item.title?.trim().toLowerCase();
             const isAlreadyInHistory = titleNormalized && publishedTitles.has(titleNormalized);
@@ -289,14 +299,23 @@ export default function CalendarPage() {
         });
 
         // Mescla backend history (supabase.history = tabela Video)
+        // FILTRA pelo activeAccountId ANTES de mesclar
         const backendHistory = (supabase.user ? supabase.history : {}) || {};
         const merged = { ...mergedYoutube };
         Object.entries(backendHistory).forEach(([date, day]) => {
+            // Filtra itens do backend history pelo canal ativo
+            const filteredItems = (day.completedItems || []).filter(item => {
+                const itemAccountId = item.channelId || item.accountId;
+                if (!itemAccountId) return true; // legado
+                return itemAccountId === activeAccountId;
+            });
+            if (filteredItems.length === 0) return;
+
             if (!merged[date]) {
-                merged[date] = day;
+                merged[date] = { ...day, completedItems: filteredItems };
             } else {
                 const existingIds = new Set((merged[date].completedItems || []).map(i => i.id));
-                const newItems = (day.completedItems || []).filter(i => !existingIds.has(i.id));
+                const newItems = filteredItems.filter(i => !existingIds.has(i.id));
                 merged[date] = {
                     ...merged[date],
                     completedItems: [...(merged[date].completedItems || []), ...newItems],
@@ -305,9 +324,12 @@ export default function CalendarPage() {
         });
 
         // Mescla uploads agendados/publicados do banco (tabela Upload)
-        // Isso garante que novos agendamentos aparecem no calendário sem F5
+        // FILTRA pelo activeAccountId
         const uploadItems = (supabase.user ? supabase.uploadQueue || [] : []);
         uploadItems.forEach(upload => {
+            const uploadAccountId = upload.metadata?.accountId || upload.channelId;
+            if (uploadAccountId && uploadAccountId !== activeAccountId) return;
+
             const dateRef = upload.scheduledAt || upload.publishedAt || upload.publishAt;
             if (!dateRef) return;
             const dateStr = new Date(dateRef).toLocaleDateString('en-CA');
@@ -663,7 +685,6 @@ export default function CalendarPage() {
                     <div className="vc-metric-value">{isFirstLoad ? '—' : statsPosted}</div>
                 </div>
             </div>
-
 
 
             {/* Grid */}
