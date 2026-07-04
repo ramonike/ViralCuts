@@ -87,6 +87,7 @@ O projeto mistura `npm` com scripts `bun`, entao a padronizacao de runtime deve 
 - Regressao corrigida em 2026-07-04: `CalendarPage` voltou a enviar `title`, `fileSize`, `mimeType`, `accountId` e `uploadId` para `/api/youtube/upload/initiate`; backend tambem aceita o formato legado `snippet/status` e tolera payload antigo sem `fileSize`/`mimeType`.
 - Cache legado tratado em 2026-07-04: app novo remove service workers/caches `viralcuts-*`, e `vercel.json` define `Cache-Control: no-store` para HTML/rotas `/dashboard/*`.
 - Deploy corrigido em 2026-07-04: `prisma`, `@prisma/client` e `@prisma/adapter-pg` foram fixados em `7.2.0` para evitar lockfile misturando Prisma CLI `7.8.0` com client `7.2.0`.
+- Diagnostico de upload melhorado em 2026-07-04: `/api/youtube/upload/initiate` agora retorna erros seguros e acionaveis para scope ausente, quota excedida, canal ausente ou rejeicao 4xx do YouTube.
 
 ### 2. OAuth state e exposicao de tokens
 

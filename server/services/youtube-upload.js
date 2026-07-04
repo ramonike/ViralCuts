@@ -20,6 +20,16 @@ const RETRY_CONFIG = {
   retryableStatusCodes: [408, 500, 502, 503, 504],
 };
 
+export class YouTubeUploadError extends Error {
+  constructor(message, status, reason, details) {
+    super(message);
+    this.name = "YouTubeUploadError";
+    this.status = status;
+    this.reason = reason;
+    this.details = details;
+  }
+}
+
 /**
  * Initiate a resumable upload session with YouTube
  * @param {Object} metadata - Video metadata
@@ -86,8 +96,14 @@ export async function initiateUpload(metadata, fileSize, mimeType, accessToken) 
 
   if (!response.ok) {
     const error = await response.json().catch(() => ({ error: { message: "Unknown error" } }));
-    const errorMessage = error.error?.message || error.error?.errors?.[0]?.message || "Failed to initiate upload";
-    throw new Error(`YouTube API error: ${errorMessage}`);
+    const firstError = error.error?.errors?.[0];
+    const errorMessage = error.error?.message || firstError?.message || "Failed to initiate upload";
+    throw new YouTubeUploadError(
+      errorMessage,
+      response.status,
+      firstError?.reason || error.error?.status || "youtube_upload_error",
+      error.error
+    );
   }
 
   // Get the resumable session URI from response headers

@@ -16,6 +16,7 @@ import { consumeOAuthState, issueOAuthState } from "../services/oauth-state.js";
 import { sendError } from "../utils/http-error.js";
 import {
   initiateUpload,
+  YouTubeUploadError,
   uploadChunk,
   resumeUpload,
   uploadThumbnail,
@@ -36,6 +37,57 @@ function isLegacyBrowserTokenUploadEnabled() {
   return process.env.ALLOW_LEGACY_BROWSER_YOUTUBE_TOKEN === "true";
 }
 
+function hasYouTubeUploadScope(scope) {
+  return typeof scope === "string" && scope.split(/\s+/).includes("https://www.googleapis.com/auth/youtube.upload");
+}
+
+function getUploadErrorResponse(error) {
+  const reason = error?.reason || "";
+  const message = error?.message || "";
+
+  if (reason === "insufficientPermissions" || message.toLowerCase().includes("insufficient")) {
+    return {
+      status: 403,
+      body: {
+        error: "Reconecte sua conta YouTube para conceder permissao de upload.",
+        code: "YOUTUBE_UPLOAD_SCOPE_REQUIRED",
+      },
+    };
+  }
+
+  if (reason === "quotaExceeded" || message.toLowerCase().includes("quota")) {
+    return {
+      status: 429,
+      body: {
+        error: "Cota da API do YouTube excedida. Tente novamente mais tarde.",
+        code: "YOUTUBE_QUOTA_EXCEEDED",
+      },
+    };
+  }
+
+  if (reason === "youtubeSignupRequired") {
+    return {
+      status: 403,
+      body: {
+        error: "Esta conta Google ainda nao possui canal YouTube habilitado.",
+        code: "YOUTUBE_CHANNEL_REQUIRED",
+      },
+    };
+  }
+
+  if (error instanceof YouTubeUploadError && error.status >= 400 && error.status < 500) {
+    return {
+      status: error.status,
+      body: {
+        error: message || "YouTube rejeitou o inicio do upload.",
+        code: "YOUTUBE_UPLOAD_REJECTED",
+      },
+    };
+  }
+
+  return null;
+}
+
 // Helper to get valid access token (refreshes if needed)
 async function getValidAccessToken(userId, accountId = null) {
   const whereClause = accountId
@@ -54,6 +106,13 @@ async function getValidAccessToken(userId, accountId = null) {
 
   if (!account) {
     throw new Error("YouTube account not found");
+  }
+
+  if (!hasYouTubeUploadScope(account.scope)) {
+    const error = new Error("YouTube upload scope is missing");
+    error.reason = "insufficientPermissions";
+    error.status = 403;
+    throw error;
   }
 
   // Check if token is expired or about to expire (within 5 minutes)
@@ -427,6 +486,16 @@ youtube.post("/upload/initiate", authMiddleware, async (c) => {
       totalBytes: session.totalBytes,
     });
   } catch (error) {
+    const uploadError = getUploadErrorResponse(error);
+    if (uploadError) {
+      console.warn("[YouTube Upload] Initiate rejected", {
+        reason: error.reason,
+        status: error.status,
+        message: error.message,
+      });
+      return c.json(uploadError.body, uploadError.status);
+    }
+
     return sendError(c, { scope: "[YouTube Upload] Initiate", error, message: "Failed to initiate upload" });
   }
 });
