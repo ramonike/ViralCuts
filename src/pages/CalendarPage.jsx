@@ -170,6 +170,24 @@ export default function CalendarPage() {
         // Não precisamos de fetch manual — apenas force re-render aguardando o hook
     }, []);
 
+    // ── Títulos publicados no histórico ( usado por combinedQueue + stats ) ─
+    // Precisa ser declarado antes de combinedQueue pois este filtra por esses títulos
+    const publishedTitles = useMemo(() => {
+        const titles = new Set();
+        const allHistory = state.history || {};
+        const channelsDataHistory = state.channelsData || {};
+        const backendHistory = (supabase.user ? supabase.history : {}) || {};
+        const allSources = [allHistory, ...Object.values(channelsDataHistory).map(d => d?.history || {}), backendHistory];
+        allSources.forEach(src => {
+            Object.values(src).forEach(day => {
+                (day?.completedItems || []).forEach(item => {
+                    if (item.title) titles.add(item.title.trim().toLowerCase());
+                });
+            });
+        });
+        return titles;
+    }, [state.history, state.channelsData, supabase.user, supabase.history]);
+
     // ── Queue combinada: backend é sempre incluído ─────────────────────────
     const combinedQueue = useMemo(() => {
         // backendUploads é sempre a fonte principal (vem de /api/uploads autenticado)
@@ -180,13 +198,27 @@ export default function CalendarPage() {
             ...backendUploads,
             ...localQueue.filter(item => !backendIds.has(item.id)),
         ];
-        if (activeFilter === 'all') return merged;
-        return merged.filter(item => {
+
+        // Remove vídeos já publicados: se o título está no histórico de publicados,
+        // não deve aparecer mais como "Pendente" na fila
+        const filtered = merged.filter(item => {
+            const isPublished = ['done', 'success', 'published', 'completed'].includes(item.status);
+            if (isPublished) return false; // publicados não pertencem à fila de pendentes
+
+            const titleNormalized = item.title?.trim().toLowerCase();
+            const isAlreadyInHistory = titleNormalized && publishedTitles.has(titleNormalized);
+            if (isAlreadyInHistory) return false; // já está no histórico — remover da fila
+
+            return true;
+        });
+
+        if (activeFilter === 'all') return filtered;
+        return filtered.filter(item => {
             const cid = item.channelId || item.accountId;
             if (!cid) return true;
             return cid === activeFilter;
         });
-    }, [backendUploads, state.uploadQueue, activeFilter]);
+    }, [backendUploads, state.uploadQueue, activeFilter, publishedTitles]);
 
     // ── Histórico filtrado por canal ───────────────────────────────────────
     const filteredHistory = useMemo(() => {
@@ -308,17 +340,7 @@ export default function CalendarPage() {
     endOfWeek.setDate(startOfWeek.getDate() + 7);
 
     // Coleciona títulos publicados para evitar contar duplicados da fila que já estão no histórico (sync delay)
-    const publishedTitles = useMemo(() => {
-        const titles = new Set();
-        Object.values(filteredHistory || {}).forEach(day => {
-            (day?.completedItems || []).forEach(item => {
-                if (item.title) {
-                    titles.add(item.title.trim().toLowerCase());
-                }
-            });
-        });
-        return titles;
-    }, [filteredHistory]);
+    // (declarado acima, antes de combinedQueue — reutiliza publishedTitles já criado)
 
     // Contar itens do histórico local como publicados também
     const historyPublishedCount = useMemo(() => {
@@ -620,59 +642,7 @@ export default function CalendarPage() {
                 </div>
             </div>
 
-            {/* Channel filter */}
-            <div className="flex flex-wrap gap-2" style={{ marginBottom: 'var(--spacing-md, 16px)' }}>
-                <button
-                    onClick={() => setActiveFilter('all')}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold font-display border transition-all duration-150 cursor-pointer"
-                    style={{
-                        background: activeFilter === 'all' ? 'var(--accent-coral)' : 'var(--bg-elevated)',
-                        borderColor: activeFilter === 'all' ? 'var(--accent-coral)' : 'var(--border-subtle)',
-                        color: activeFilter === 'all' ? '#fff' : 'var(--text-secondary)',
-                        fontFamily: 'var(--font-display)',
-                    }}
-                >
-                    <div
-                        className="w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-bold flex-shrink-0"
-                        style={{
-                            background: activeFilter === 'all' ? 'rgba(255,255,255,0.2)' : 'var(--bg-secondary)',
-                            color: activeFilter === 'all' ? '#fff' : 'var(--text-muted)',
-                        }}
-                    >
-                        VC
-                    </div>
-                    Todos
-                </button>
-                {channelFilter.map(ch => {
-                    const isActive = activeFilter === ch.id;
-                    return (
-                        <button
-                            key={ch.id}
-                            onClick={() => setActiveFilter(isActive ? 'all' : ch.id)}
-                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold font-display border transition-all duration-150 cursor-pointer"
-                            style={{
-                                background: isActive ? 'var(--bg-elevated)' : 'var(--bg-tertiary)',
-                                borderColor: isActive ? 'var(--accent-coral)' : 'var(--border-subtle)',
-                                color: isActive ? 'var(--text-primary)' : 'var(--text-secondary)',
-                                fontFamily: 'var(--font-display)',
-                            }}
-                        >
-                            <div
-                                className="w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-bold flex-shrink-0"
-                                style={{
-                                    background: isActive ? 'var(--accent-coral-3)' : 'var(--bg-elevated)',
-                                    color: isActive ? 'var(--accent-coral)' : 'var(--text-muted)',
-                                }}
-                            >
-                                {ch.name.charAt(0).toUpperCase()}
-                            </div>
-                            {ch.name}
-                        </button>
-                    );
-                })}
-            </div>
-            {/* separador sutil entre filtros e calendário */}
-            <div style={{ height: 1, background: "var(--border-default)", marginBottom: 20, opacity: .4 }} />
+
 
             {/* Grid */}
             <div className="grid" style={{ gridTemplateColumns: "1fr 320px", gap: 24 }}>
