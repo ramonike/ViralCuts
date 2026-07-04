@@ -4,6 +4,7 @@
  */
 
 import { Hono } from "hono";
+import crypto from "node:crypto";
 import { prisma } from "../db/prisma.js";
 import { authMiddleware } from "../middleware/auth.js";
 import {
@@ -451,10 +452,11 @@ youtube.post("/upload/initiate", authMiddleware, async (c) => {
       accessToken
     );
 
+    const fallbackUploadId = uploadId || `upload_${Date.now()}_${crypto.randomUUID()}`;
     const uploadData = {
       sessionUri: session.sessionUri,
       fileName: title,
-        fileSize: BigInt(fileSize || 0),
+      fileSize: BigInt(fileSize || 0),
       mimeType: mimeType,
       bytesUploaded: BigInt(0),
       status: "initiated",
@@ -462,25 +464,36 @@ youtube.post("/upload/initiate", authMiddleware, async (c) => {
       metadata: { title, description, tags, categoryId, privacyStatus, publishAt, playlistId, accountId },
     };
 
-    const existingUpload = uploadId
-      ? await prisma.upload.findFirst({ where: { id: uploadId, userId: user.id } })
-      : null;
+    let uploadRecordId = fallbackUploadId;
+    try {
+      const existingUpload = uploadId
+        ? await prisma.upload.findFirst({ where: { id: uploadId, userId: user.id } })
+        : null;
 
-    const uploadRecord = existingUpload
-      ? await prisma.upload.update({
-          where: { id: existingUpload.id },
-          data: uploadData,
-        })
-      : await prisma.upload.create({
-          data: {
-            id: `upload_${Date.now()}_${crypto.randomUUID()}`,
-            userId: user.id,
-            ...uploadData,
-          },
-        });
+      const uploadRecord = existingUpload
+        ? await prisma.upload.update({
+            where: { id: existingUpload.id },
+            data: uploadData,
+          })
+        : await prisma.upload.create({
+            data: {
+              id: fallbackUploadId,
+              userId: user.id,
+              ...uploadData,
+            },
+          });
+
+      uploadRecordId = uploadRecord.id;
+    } catch (dbError) {
+      console.warn("[YouTube Upload] Session persistence failed; continuing with resumable URL", {
+        uploadId: fallbackUploadId,
+        message: dbError?.message,
+        code: dbError?.code,
+      });
+    }
 
     return c.json({
-      uploadId: uploadRecord.id,
+      uploadId: uploadRecordId,
       sessionUri: session.sessionUri,
       status: session.status,
       totalBytes: session.totalBytes,
