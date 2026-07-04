@@ -226,7 +226,7 @@ function VideoCard({ item, onUpdate, onRemove }) {
         setLocalAiLoad(false);
     };
 
-    const accentBorder = item.status === 'done' ? 'rgba(0,201,167,0.3)'
+    const accentBorder = item.status === 'done' || item.status === 'scheduled' ? 'rgba(0,201,167,0.3)'
         : item.status === 'error' ? 'rgba(232,65,42,0.3)'
             : item.status === 'submitting' ? 'rgba(240,165,0,0.3)'
                 : 'var(--border-subtle)';
@@ -466,7 +466,7 @@ export function ScheduleVideoModal({ isOpen, onClose, selectedDate, onSchedule, 
 
     if (!isOpen) return null;
 
-    const doneCount = items.filter(i => i.status === 'done').length;
+    const doneCount = items.filter(i => i.status === 'done' || i.status === 'scheduled').length;
     const errorCount = items.filter(i => i.status === 'error').length;
     const allDone = items.length > 0 && doneCount === items.length;
 
@@ -571,7 +571,7 @@ export function ScheduleVideoModal({ isOpen, onClose, selectedDate, onSchedule, 
 
             setItems(prev => prev.map(i =>
                 i.id === item.id
-                    ? { ...i, status: itemError ? 'error' : 'done', errorMsg: itemError, uploadProgress: 100 }
+                    ? { ...i, status: itemError ? 'error' : 'scheduled', errorMsg: itemError, uploadProgress: 100 }
                     : i
             ));
         }
@@ -582,8 +582,8 @@ export function ScheduleVideoModal({ isOpen, onClose, selectedDate, onSchedule, 
         // O items atualizado já está via setItems anterior no loop
         setTimeout(() => {
             setItems(prev => {
-                const allDoneNow = prev.length > 0 && prev.every(i => i.status === 'done');
-                const allFinished = prev.every(i => i.status === 'done' || i.status === 'error');
+                const allDoneNow = prev.length > 0 && prev.every(i => i.status === 'done' || i.status === 'scheduled');
+                const allFinished = prev.every(i => i.status === 'done' || i.status === 'scheduled' || i.status === 'error');
                 if (allFinished && allDoneNow) {
                     setTimeout(() => (onAllDone ? onAllDone() : onClose()), 1200);
                 }
