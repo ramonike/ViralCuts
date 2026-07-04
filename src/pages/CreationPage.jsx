@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
     Sparkles, FileText, Type, CheckSquare, Image,
     Send, Copy, Check, RefreshCw,
@@ -6,7 +7,6 @@ import {
 } from 'lucide-react';
 import { PageLayout } from '../components/layout/PageLayout';
 import { useTheme } from '../contexts/ThemeContext';
-import { ScheduleVideoModal } from '../components/calendar/ScheduleVideoModal';
 
 const VITE_API_URL = import.meta.env.VITE_API_URL || '';
 
@@ -899,23 +899,34 @@ const TABS = [
 
 export default function CreationPage() {
     const { theme } = useTheme();
+    const navigate = useNavigate();
     const [activeTab, setActiveTab] = useState('script');
-    const [pipelineModalOpen, setPipelineModalOpen] = useState(false);
     const [pipelineData, setPipelineData] = useState(null);
     const [scriptTheme, setScriptTheme] = useState('');
     const [scriptContent, setScriptContent] = useState(null);
 
     const handlePipeline = (data) => {
-        setPipelineData(prev => {
-            const merged = { ...prev };
+        const nextPipelineData = (() => {
+            const merged = { ...pipelineData };
             if (data.script) merged.script = data.script;
             if (data.title !== undefined) merged.title = data.title;
             if (data.description !== undefined) merged.description = data.description;
             if (data.tags !== undefined) merged.tags = data.tags;
             if (data.thumbnailUrl) merged.thumbnailUrl = data.thumbnailUrl;
             return merged;
+        })();
+        setPipelineData(nextPipelineData);
+        navigate('/dashboard/calendar', {
+            state: {
+                pipelineDraft: {
+                    title: nextPipelineData.title || '',
+                    description: nextPipelineData.description || '',
+                    tags: nextPipelineData.tags || '',
+                    thumbnailUrl: nextPipelineData.thumbnailUrl || '',
+                    script: nextPipelineData.script || '',
+                },
+            },
         });
-        setPipelineModalOpen(true);
     };
 
     return (
@@ -961,15 +972,6 @@ export default function CreationPage() {
             <div style={{ display: activeTab !== 'thumbnail' ? 'none' : undefined }}><ThumbnailGenerator onPipeline={handlePipeline} defaultPrompt={scriptTheme} /></div>
             <div style={{ display: activeTab !== 'checklist' ? 'none' : undefined }}><PublicationChecklist /></div>
 
-            <ScheduleVideoModal
-                isOpen={pipelineModalOpen}
-                onClose={() => setPipelineModalOpen(false)}
-                initialData={pipelineData ? {
-                    title: pipelineData.title || '',
-                    description: pipelineData.description || '',
-                    tags: pipelineData.tags || '',
-                } : null}
-            />
         </PageLayout>
     );
 }

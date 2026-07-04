@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useDashboardState } from "../hooks/useDashboardState";
 import { useSupabaseDashboard } from "../hooks/useSupabaseDashboard";
 import { ModernCalendar } from "../components/calendar/ModernCalendar";
@@ -124,6 +125,8 @@ function QueueSidebar({ queue, onScheduleNow, loading, onRefresh }) {
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
 export default function CalendarPage() {
+    const location = useLocation();
+    const navigate = useNavigate();
     const { state, actions } = useDashboardState();
     const supabase = useSupabaseDashboard();
     const { success, error: showError } = useNotification();
@@ -131,12 +134,29 @@ export default function CalendarPage() {
 
     const [isScheduleModalOpen, setScheduleModalOpen] = useState(false);
     const [selectedScheduleDate, setSelectedScheduleDate] = useState(null);
+    const [scheduleInitialData, setScheduleInitialData] = useState(null);
     const [selectedVideo, setSelectedVideo] = useState(null);
     const [isVideoModalOpen, setVideoModalOpen] = useState(false);
 
     const connectedAccounts = state.auth?.connectedAccounts || [];
     const activeAccountId = state.auth?.activeAccountId;
     const [activeFilter, setActiveFilter] = useState('all');
+
+    useEffect(() => {
+        const draft = location.state?.pipelineDraft;
+        if (!draft) return;
+
+        setScheduleInitialData({
+            title: draft.title || '',
+            description: draft.description || '',
+            tags: draft.tags || '',
+            thumbnailUrl: draft.thumbnailUrl || '',
+            script: draft.script || '',
+        });
+        setSelectedScheduleDate(null);
+        setScheduleModalOpen(true);
+        navigate(location.pathname, { replace: true, state: null });
+    }, [location.pathname, location.state, navigate]);
 
     const channelFilter = useMemo(() => {
         return connectedAccounts.map(a => ({
@@ -401,6 +421,7 @@ export default function CalendarPage() {
 
     // ── Ações ──────────────────────────────────────────────────────────────
     const handleScheduleVideo = (date) => {
+        setScheduleInitialData(null);
         setSelectedScheduleDate(date);
         setScheduleModalOpen(true);
     };
@@ -567,6 +588,7 @@ export default function CalendarPage() {
     const handleScheduleDone = () => {
         setScheduleModalOpen(false);
         setSelectedScheduleDate(null);
+        setScheduleInitialData(null);
         success('Vídeo(s) agendado(s) com sucesso!');
         // Recarrega fila do banco para refletir status corretos (scheduled)
         supabase.actions.reloadQueue?.();
@@ -615,7 +637,7 @@ export default function CalendarPage() {
                     <p>Agendamento e distribuição multicanal dos seus Shorts.</p>
                 </div>
                 <div className="vc-page-actions">
-                    <button className="vc-btn vc-btn-primary" onClick={() => setScheduleModalOpen(true)}>
+                    <button className="vc-btn vc-btn-primary" onClick={() => { setScheduleInitialData(null); setSelectedScheduleDate(null); setScheduleModalOpen(true); }}>
                         <Plus size={15} />
                         Novo upload
                     </button>
@@ -661,7 +683,7 @@ export default function CalendarPage() {
 
                 <QueueSidebar
                     queue={combinedQueue}
-                    onScheduleNow={() => { setSelectedScheduleDate(new Date()); setScheduleModalOpen(true); }}
+                    onScheduleNow={() => { setScheduleInitialData(null); setSelectedScheduleDate(new Date()); setScheduleModalOpen(true); }}
                     loading={loadingUploads}
                     onRefresh={() => loadUploads(false)}
                 />
@@ -669,8 +691,9 @@ export default function CalendarPage() {
 
             <ScheduleVideoModal
                 isOpen={isScheduleModalOpen}
-                onClose={() => { setScheduleModalOpen(false); setSelectedScheduleDate(null); }}
+                onClose={() => { setScheduleModalOpen(false); setSelectedScheduleDate(null); setScheduleInitialData(null); }}
                 selectedDate={selectedScheduleDate}
+                initialData={scheduleInitialData}
                 onSchedule={handleScheduleSubmit}
                 onAllDone={handleScheduleDone}
             />

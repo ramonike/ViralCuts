@@ -88,14 +88,27 @@ function isFuture(date, time) {
     return new Date(y, m - 1, dd, h, mn) > new Date(Date.now() + 5 * 60 * 1000);
 }
 
-function makeItem(file, date, time) {
+function normalizeInitialData(initialData) {
+    if (!initialData) return null;
+    return {
+        title: initialData.title || '',
+        description: initialData.description || '',
+        tags: Array.isArray(initialData.tags) ? initialData.tags.join(', ') : (initialData.tags || ''),
+        thumbnailUrl: initialData.thumbnailUrl || '',
+        script: initialData.script || '',
+    };
+}
+
+function makeItem(file, date, time, defaults = null) {
     const base = new Date(Date.now() + 10 * 60 * 1000);
     return {
         id: Math.random().toString(36).slice(2),
         file,
-        title: file.name.replace(/\.[^/.]+$/, ''),
-        description: '',
-        tags: '',
+        title: defaults?.title || file.name.replace(/\.[^/.]+$/, ''),
+        description: defaults?.description || '',
+        tags: defaults?.tags || '',
+        thumbnailUrl: defaults?.thumbnailUrl || '',
+        script: defaults?.script || '',
         privacyStatus: 'public',
         publishNow: false,
         scheduledDate: date || localDateStr(base),
@@ -377,6 +390,7 @@ function DropZone({ onFiles, compact }) {
 // ─── Main Modal ───────────────────────────────────────────────────────────────
 export function ScheduleVideoModal({ isOpen, onClose, selectedDate, onSchedule, onAllDone, initialData }) {
     const { state } = useDashboardState();
+    const initialDefaults = useMemo(() => normalizeInitialData(initialData), [initialData]);
 
     // Contas conectadas — mostra todas, mesmo com token expirado
     // O servidor faz refresh automático se necessário
@@ -397,27 +411,6 @@ export function ScheduleVideoModal({ isOpen, onClose, selectedDate, onSchedule, 
     useEffect(() => {
         if (isOpen) {
             setItems(prev => {
-                // Se tem initialData, cria item virtual sem arquivo
-                if (initialData) {
-                    const base = new Date(Date.now() + 10 * 60 * 1000);
-                    const item = {
-                        id: 'from-creation',
-                        file: { name: initialData.title || 'Vídeo', size: 0, type: 'video/mp4' },
-                        title: initialData.title || '',
-                        description: initialData.description || '',
-                        tags: initialData.tags || '',
-                        privacyStatus: 'public',
-                        publishNow: false,
-                        scheduledDate: localDateStr(base),
-                        scheduledTime: localTimeStr(base),
-                        timezone: localTZ(),
-                        expanded: true,
-                        aiLoading: false,
-                        status: 'idle',
-                        errorMsg: '',
-                    };
-                    return [item];
-                }
                 const hadError = prev.some(i => i.status === 'error' || i.status === 'failed');
                 if (hadError) {
                     return prev.map(i => ({
@@ -436,7 +429,7 @@ export function ScheduleVideoModal({ isOpen, onClose, selectedDate, onSchedule, 
             connectedAccounts.forEach(a => { autoSelected[a.id] = true; });
             setSelectedAccounts(autoSelected);
         }
-    }, [isOpen, initialData]);
+    }, [isOpen, initialDefaults, connectedAccounts]);
 
     const addFiles = useCallback((files) => {
         const videoFiles = Array.from(files).filter(f => f.type.startsWith('video/'));
@@ -447,10 +440,10 @@ export function ScheduleVideoModal({ isOpen, onClose, selectedDate, onSchedule, 
                 : null;
             const times = makeSchedule(prev.length + videoFiles.length, baseDate, null);
             const existing = prev.map((item, i) => ({ ...item, scheduledDate: times[i].date, scheduledTime: times[i].time }));
-            const added = videoFiles.map((file, i) => makeItem(file, times[prev.length + i].date, times[prev.length + i].time));
+            const added = videoFiles.map((file, i) => makeItem(file, times[prev.length + i].date, times[prev.length + i].time, initialDefaults));
             return [...existing, ...added];
         });
-    }, [selectedDate]);
+    }, [selectedDate, initialDefaults]);
 
     const updateItem = useCallback((id, patch) => {
         setItems(prev => prev.map(item => item.id === id ? { ...item, ...patch } : item));
@@ -478,6 +471,10 @@ export function ScheduleVideoModal({ isOpen, onClose, selectedDate, onSchedule, 
     const allDone = items.length > 0 && doneCount === items.length;
 
     const handleSubmit = async () => {
+        if (!onSchedule) {
+            setGlobalError('Fluxo de agendamento indisponível nesta tela. Abra pelo Pipeline.');
+            return;
+        }
         if (!allValid) {
             setGlobalError('Preencha título e horário válido em todos os vídeos');
             setItems(prev => prev.map(item => {
@@ -649,6 +646,16 @@ export function ScheduleVideoModal({ isOpen, onClose, selectedDate, onSchedule, 
 
                 {/* Body */}
                 <div style={{ overflowY: 'auto', flex: 1, padding: 16, display: 'flex', flexDirection: 'column', gap: 10 }}>
+                    {initialDefaults && items.length === 0 && (
+                        <div style={{ padding: '12px 14px', background: 'var(--accent-coral-3)', border: '1px solid rgba(232,65,42,0.22)', borderRadius: 'var(--radius-md)' }}>
+                            <p style={{ margin: 0, fontSize: '0.8125rem', color: 'var(--text-primary)', fontFamily: 'var(--font-display)', fontWeight: 600 }}>
+                                Draft do Estúdio carregado
+                            </p>
+                            <p style={{ margin: '4px 0 0', fontSize: '0.75rem', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
+                                Selecione o arquivo de vídeo para aplicar automaticamente título, descrição e tags antes de agendar.
+                            </p>
+                        </div>
+                    )}
                     {items.length === 0
                         ? <DropZone onFiles={addFiles} compact={false} />
                         : (
