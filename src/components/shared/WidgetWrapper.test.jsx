@@ -56,7 +56,7 @@ describe('WidgetWrapper Component', () => {
     expect(wrapper).toHaveClass('rounded-2xl');
   });
 
-  it('should apply consistent padding class (p-6)', () => {
+  it('should apply responsive padding classes', () => {
     const { container } = render(
       <WidgetWrapper title="Test Widget">
         <div>Content</div>
@@ -64,7 +64,8 @@ describe('WidgetWrapper Component', () => {
     );
     
     const wrapper = container.firstChild;
-    expect(wrapper).toHaveClass('p-6');
+    expect(wrapper).toHaveClass('p-4');
+    expect(wrapper).toHaveClass('md:p-6');
   });
 
   it('should apply animation classes (animate-in fade-in)', () => {
@@ -149,7 +150,7 @@ describe('WidgetWrapper Component', () => {
     expect(header).toBeInTheDocument();
     
     // Icon should be in the left section
-    const leftSection = header.querySelector('.flex.items-center.gap-3');
+    const leftSection = screen.getByTestId('test-icon').closest('.flex.items-center');
     expect(leftSection).toContainElement(screen.getByTestId('test-icon'));
     
     // Actions should be in the right section

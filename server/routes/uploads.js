@@ -294,9 +294,9 @@ uploads.post("/store-video", async (c) => {
     const buffer = Buffer.from(await file.arrayBuffer());
     const mimeType = file.type || "video/mp4";
 
-    const fileUrl = await uploadVideoToStorage(buffer, userId, uploadId, mimeType);
+    const { path } = await uploadVideoToStorage(buffer, userId, uploadId, mimeType);
 
-    return c.json({ success: true, fileUrl });
+    return c.json({ success: true, storagePath: path });
   } catch (error) {
     return sendError(c, {
       scope: "[Uploads] Store video",

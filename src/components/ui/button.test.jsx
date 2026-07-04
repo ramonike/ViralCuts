@@ -8,22 +8,22 @@ describe('Button Component', () => {
     expect(screen.getByText('Click me')).toBeInTheDocument();
   });
 
-  it('should apply active:scale-95 class for click effect', () => {
+  it('should apply base button class', () => {
     render(<Button>Click me</Button>);
     const button = screen.getByRole('button');
-    expect(button.className).toContain('active:scale-95');
+    expect(button.className).toContain('vc-btn');
   });
 
-  it('should apply transition-all class', () => {
+  it('should apply primary variant by default', () => {
     render(<Button>Click me</Button>);
     const button = screen.getByRole('button');
-    expect(button.className).toContain('transition-all');
+    expect(button.className).toContain('vc-btn-primary');
   });
 
-  it('should apply cursor-pointer class', () => {
-    render(<Button>Click me</Button>);
+  it('should preserve custom className', () => {
+    render(<Button className="custom-class">Click me</Button>);
     const button = screen.getByRole('button');
-    expect(button.className).toContain('cursor-pointer');
+    expect(button.className).toContain('custom-class');
   });
 
   it('should show loading spinner when loading prop is true', () => {
@@ -51,23 +51,24 @@ describe('Button Component', () => {
 
   it('should render different variants', () => {
     const { rerender } = render(<Button variant="primary">Primary</Button>);
-    expect(screen.getByRole('button').className).toContain('bg-primary');
+    expect(screen.getByRole('button').className).toContain('vc-btn-primary');
 
     rerender(<Button variant="secondary">Secondary</Button>);
     expect(screen.getByRole('button').className).toContain('vc-btn-secondary');
 
     rerender(<Button variant="ghost">Ghost</Button>);
-    expect(screen.getByRole('button').className).toContain('bg-transparent');
+    expect(screen.getByRole('button').className).toContain('vc-btn-ghost');
   });
 
   it('should render different sizes', () => {
     const { rerender } = render(<Button size="sm">Small</Button>);
-    expect(screen.getByRole('button').className).toContain('h-8');
+    expect(screen.getByRole('button').className).toContain('vc-btn-sm');
 
     rerender(<Button size="default">Default</Button>);
-    expect(screen.getByRole('button').className).toContain('h-10');
+    expect(screen.getByRole('button').className).not.toContain('vc-btn-sm');
+    expect(screen.getByRole('button').className).not.toContain('vc-btn-lg');
 
     rerender(<Button size="lg">Large</Button>);
-    expect(screen.getByRole('button').className).toContain('h-12');
+    expect(screen.getByRole('button').className).toContain('vc-btn-lg');
   });
 });

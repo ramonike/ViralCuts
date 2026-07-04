@@ -581,7 +581,7 @@ export default function CalendarPage() {
                     throw new Error(err.error || `Storage falhou: HTTP ${storageRes.status}`);
                 }
 
-                const { fileUrl } = await storageRes.json();
+                const { storagePath } = await storageRes.json();
 
                 await fetch(`/api/uploads/${uploadId}`, {
                     method: 'PUT',
@@ -591,7 +591,7 @@ export default function CalendarPage() {
                         status: 'scheduled',
                         metadata: {
                             ...(supabaseItem.metadata || {}),
-                            fileUrl,
+                            storagePath,
                             title: videoData.title,
                             description: videoData.description || '',
                             tags: videoData.tags || [],

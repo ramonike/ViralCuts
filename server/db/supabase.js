@@ -29,7 +29,7 @@ export function getSupabaseStorageClient() {
  * @param {string} userId - User ID (for path namespacing)
  * @param {string} uploadId - Upload record ID (used as filename)
  * @param {string} mimeType - Video MIME type
- * @returns {Promise<string>} Public URL of the uploaded file
+ * @returns {Promise<{ path: string }>} Storage object path
  */
 export async function uploadVideoToStorage(buffer, userId, uploadId, mimeType = 'video/mp4') {
     const supabase = getSupabaseStorageClient();
@@ -45,11 +45,19 @@ export async function uploadVideoToStorage(buffer, userId, uploadId, mimeType = 
 
     if (error) throw new Error(`Storage upload failed: ${error.message}`);
 
-    const { data } = supabase.storage
-        .from('scheduled-videos')
-        .getPublicUrl(path);
+    return { path };
+}
 
-    return data.publicUrl;
+export async function createSignedVideoUrl(path, expiresIn = 60 * 30) {
+    const supabase = getSupabaseStorageClient();
+
+    const { data, error } = await supabase.storage
+        .from('scheduled-videos')
+        .createSignedUrl(path, expiresIn);
+
+    if (error) throw new Error(`Storage signed URL failed: ${error.message}`);
+
+    return data.signedUrl;
 }
 
 /**
@@ -61,6 +69,11 @@ export async function uploadVideoToStorage(buffer, userId, uploadId, mimeType = 
 export async function deleteVideoFromStorage(userId, uploadId, ext = 'mp4') {
     const supabase = getSupabaseStorageClient();
     const path = `${userId}/${uploadId}.${ext}`;
+    await supabase.storage.from('scheduled-videos').remove([path]);
+}
+
+export async function deleteVideoPathFromStorage(path) {
+    const supabase = getSupabaseStorageClient();
     await supabase.storage.from('scheduled-videos').remove([path]);
 }
 

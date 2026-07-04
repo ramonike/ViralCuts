@@ -32,6 +32,10 @@ function getPublicOAuthErrorMessage() {
   return "Falha ao conectar conta YouTube";
 }
 
+function isLegacyBrowserTokenUploadEnabled() {
+  return process.env.ALLOW_LEGACY_BROWSER_YOUTUBE_TOKEN === "true";
+}
+
 // Helper to get valid access token (refreshes if needed)
 async function getValidAccessToken(userId, accountId = null) {
   const whereClause = accountId
@@ -877,6 +881,13 @@ youtube.post("/upload-init", authMiddleware, async (c) => {
       return c.json({ error: "uploadId e fileSize são obrigatórios" }, 400);
     }
 
+    if (clientAccessToken && !isLegacyBrowserTokenUploadEnabled()) {
+      return c.json({
+        error: "Legacy browser token upload is disabled.",
+        code: "LEGACY_BROWSER_TOKEN_UPLOAD_DISABLED",
+      }, 410);
+    }
+
     let accessToken = clientAccessToken || null;
 
     // Se o frontend já enviou o accessToken (caso normal com múltiplas contas),
@@ -928,7 +939,11 @@ youtube.post("/upload-init", authMiddleware, async (c) => {
 
     if (!initRes.ok) {
       const err = await initRes.json().catch(() => ({}));
-      return c.json({ error: `YouTube rejeitou o upload: ${err.error?.message || initRes.status}` }, 502);
+      console.error("[YouTube Upload Init] YouTube rejected legacy upload", {
+        status: initRes.status,
+        message: err.error?.message,
+      });
+      return c.json({ error: "YouTube rejeitou o upload." }, 502);
     }
 
     const uploadUrl = initRes.headers.get("Location");

@@ -28,7 +28,8 @@ Este plano transforma a analise anterior em um backlog executavel, priorizando b
 - [x] Confirmar qual valor real de `VITE_API_URL` esta apontando o frontend.
 - [x] Verificar se `api/[[...route]].js` esta sendo usado em producao ou e apenas fallback.
 - [x] Registrar o fluxo oficial `Vercel -> Render -> Supabase`.
-- [ ] Tirar uma baseline local de `build`, `tests` e `audit`.
+- [x] Tirar uma baseline local de `build` e `tests`.
+- [x] Tirar uma baseline local de `audit`.
 
 ### Arquivos para revisar primeiro
 
@@ -50,7 +51,11 @@ Este plano transforma a analise anterior em um backlog executavel, priorizando b
 - O `vercel.json` reescreve `/api/*` para `api/[[...route]].js`, mas o handler serverless expõe apenas `auth` e `health`.
 - O fluxo operacional atual fica registrado como `Vercel -> Render -> Supabase`.
 - O projeto Supabase confirmado via plugin e `.env` e `viralcuts-production` (`wpguzmkmxpwlliksyauv`).
-- `build` e `test` ainda nao fecharam baseline porque `vite/vitest` falharam ao carregar config via `esbuild` com erro de acesso ao diretorio.
+- `build` e `test` exigem execucao fora do sandbox local porque `vite/vitest` usam `esbuild` para resolver configs e tentam acessar diretorios ancestrais bloqueados pelo ambiente restrito.
+- `npm run build` passa com Vite 5.4.21; restam apenas avisos de bundle acima de 500 kB, `baseline-browser-mapping` antigo e `caniuse-lite` antigo.
+- `npm test` passa com Vitest 4.0.16: 20 arquivos e 328 testes aprovados.
+- `npm audit` inicial encontrou 30 vulnerabilidades: 4 criticas, 17 altas, 8 moderadas e 1 baixa.
+- `npm audit fix` sem `--force` reduziu para 5 vulnerabilidades restantes; as demais exigem breaking changes (`vite@8` ou downgrade/alteracao maior em `prisma`).
 
 ## Fase 1 - Seguranca P0
 
@@ -58,9 +63,10 @@ Este plano transforma a analise anterior em um backlog executavel, priorizando b
 
 #### Acao
 
-- [ ] Atualizar `better-auth`, `hono`, `@hono/node-server`, `react-router-dom`, `postcss`.
-- [ ] Rodar `npm audit fix` em branch isolada.
-- [ ] Revalidar `build`, `test` e fluxos de login/upload.
+- [x] Atualizar dependencias vulneraveis corrigiveis sem breaking change via lockfile.
+- [x] Rodar `npm audit fix` sem `--force`.
+- [x] Revalidar `build` e `test`.
+- [ ] Revalidar fluxos de login/upload.
 
 #### Arquivos impactados
 
@@ -70,6 +76,14 @@ Este plano transforma a analise anterior em um backlog executavel, priorizando b
 #### Observacao
 
 O projeto mistura `npm` com scripts `bun`, entao a padronizacao de runtime deve acontecer junto dessa etapa.
+
+#### Status atual
+
+- `package-lock.json` foi atualizado pelo `npm audit fix`; `package.json` manteve os ranges atuais.
+- Vulnerabilidades restantes: `@hono/node-server` via `prisma`, `esbuild` via `vite`, `vite` e dependencias relacionadas.
+- Nao foi usado `npm audit fix --force` porque exigiria mudancas potencialmente quebradoras (`vite@8` e alteracao maior no caminho do Prisma).
+- `npm run build` passa apos a atualizacao.
+- `npm test` passa apos a atualizacao: 20 arquivos e 328 testes.
 
 ### 2. OAuth state e exposicao de tokens
 
@@ -104,7 +118,7 @@ O projeto mistura `npm` com scripts `bun`, entao a padronizacao de runtime deve 
 - [x] Escolher um fluxo oficial de upload YouTube.
 - [x] Priorizar upload resumable iniciado/controlado no backend.
 - [x] Descontinuar o fluxo ativo que dependia de `token` trafegando pelo browser no agendamento do calendario.
-- [ ] Se mantido temporariamente, proteger com flag e escopos minimos.
+- [x] Se mantido temporariamente, proteger com flag e escopos minimos.
 
 #### Arquivos impactados
 
@@ -119,7 +133,8 @@ O projeto mistura `npm` com scripts `bun`, entao a padronizacao de runtime deve 
 - `src/pages/CalendarPage.jsx` agora inicia a sessao resumable via backend autenticado e faz apenas o `PUT` binario direto para o Google.
 - `src/components/calendar/ScheduleVideoModal.jsx` deixou de repassar `_accessToken` no fluxo de agendamento.
 - `server/routes/youtube.js` valida ownership em `/upload-complete`.
-- Ainda restam caminhos legados em `src/api/realUpload.js` e `server/routes/youtube.js` para consolidacao futura.
+- `server/routes/youtube.js` bloqueia token vindo do browser no endpoint legado `/upload-init`, exceto se `ALLOW_LEGACY_BROWSER_YOUTUBE_TOKEN=true`.
+- Ainda restam caminhos legados em `src/api/realUpload.js` e `server/routes/youtube.js` para consolidacao futura, mas sem token client-side habilitado por padrao.
 
 ### 4. Falhas de ownership e autorizacao
 
@@ -181,13 +196,20 @@ O projeto mistura `npm` com scripts `bun`, entao a padronizacao de runtime deve 
 
 - [x] Exigir `SUPABASE_SERVICE_KEY` no backend para storage.
 - [x] Falhar explicitamente quando a chave nao existir.
-- [ ] Revisar se `scheduled-videos` precisa permanecer privado.
-- [ ] Avaliar troca de `getPublicUrl` por URL assinada ou leitura autenticada.
+- [x] Revisar se `scheduled-videos` precisa permanecer privado.
+- [x] Avaliar troca de `getPublicUrl` por URL assinada ou leitura autenticada.
 
 #### Arquivos impactados
 
 - `server/db/supabase.js`
 - `server/routes/uploads.js`
+
+#### Status atual
+
+- `server/routes/uploads.js` agora retorna `storagePath`, nao URL publica.
+- `server/jobs/scheduled-uploads.js` gera URL assinada curta somente na hora de baixar o video para publicar no TikTok.
+- O job preserva fallback para `metadata.fileUrl` antigo, para nao quebrar uploads ja agendados antes da mudanca.
+- `scheduled-videos` pode operar como bucket privado; nao depende mais de `getPublicUrl`.
 
 ### 7. Cookies, CORS e rate limit de auth
 
@@ -213,6 +235,8 @@ Status atual: frente descontinuada. O pacote legado `command-center` foi removid
 
 - [x] Remover a suite de testes do `command-center` junto com a feature legada.
 - [x] Encerrar manutencao de mocks e asserts desse modulo nao utilizado.
+- [x] Corrigir testes desalinhados de `Button`, `WidgetWrapper` e `ExportButton`.
+- [x] Confirmar suite completa verde com `npm test`.
 
 #### Arquivos impactados
 
@@ -224,6 +248,10 @@ Status atual: frente descontinuada. O pacote legado `command-center` foi removid
 - `server/services/commandCenterService.js`
 - `server/index.js`
 - `prisma/schema.prisma`
+- `src/components/ui/button.test.jsx`
+- `src/components/shared/WidgetWrapper.test.jsx`
+- `src/components/analytics/ExportButton.jsx`
+- `src/components/analytics/ExportButton.test.jsx`
 
 ### 2. Adicionar validacoes de qualidade
 

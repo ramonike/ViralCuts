@@ -42,6 +42,11 @@ describe('ExportButton Component', () => {
     impressionsCTR: 4.8
   };
 
+  async function clickExportOption(optionText) {
+    fireEvent.click(screen.getByText('Exportar Relatório'));
+    fireEvent.click(await screen.findByText(optionText));
+  }
+
   beforeEach(() => {
     vi.clearAllMocks();
     // Store originals
@@ -124,15 +129,7 @@ describe('ExportButton Component', () => {
     document.body.appendChild = mockAppendChild;
     document.body.removeChild = mockRemoveChild;
     
-    // Open menu
-    const button = screen.getByText('Exportar Relatório');
-    fireEvent.click(button);
-    
-    // Click CSV export
-    await waitFor(() => {
-      const csvButton = screen.getByText('Exportar CSV');
-      fireEvent.click(csvButton);
-    });
+    await clickExportOption('Exportar CSV');
     
     // Verify CSV export was triggered
     await waitFor(() => {
@@ -148,15 +145,7 @@ describe('ExportButton Component', () => {
   it('should export to PDF when PDF option is clicked', async () => {
     render(<ExportButton data={mockData} period="30d" />);
     
-    // Open menu
-    const button = screen.getByText('Exportar Relatório');
-    fireEvent.click(button);
-    
-    // Click PDF export
-    await waitFor(() => {
-      const pdfButton = screen.getByText('Exportar PDF');
-      fireEvent.click(pdfButton);
-    });
+    await clickExportOption('Exportar PDF');
     
     // Verify PDF export was triggered (window.open)
     await waitFor(() => {
@@ -171,7 +160,7 @@ describe('ExportButton Component', () => {
     
     // Mock Blob to capture CSV content AFTER render
     const originalBlob = global.Blob;
-    global.Blob = vi.fn((content) => {
+    global.Blob = vi.fn(function (content) {
       csvContent = content[0];
       return { type: 'text/csv;charset=utf-8;' };
     });
@@ -190,14 +179,7 @@ describe('ExportButton Component', () => {
     document.body.appendChild = vi.fn();
     document.body.removeChild = vi.fn();
     
-    // Open menu and click CSV
-    const button = screen.getByText('Exportar Relatório');
-    fireEvent.click(button);
-    
-    await waitFor(() => {
-      const csvButton = screen.getByText('Exportar CSV');
-      fireEvent.click(csvButton);
-    });
+    await clickExportOption('Exportar CSV');
     
     // Verify CSV content includes all metrics
     await waitFor(() => {
@@ -218,7 +200,7 @@ describe('ExportButton Component', () => {
     render(<ExportButton data={mockData} period="90d" />);
     
     let csvContent = '';
-    global.Blob = vi.fn((content) => {
+    global.Blob = vi.fn(function (content) {
       csvContent = content[0];
       return { type: 'text/csv;charset=utf-8;' };
     });
@@ -236,13 +218,7 @@ describe('ExportButton Component', () => {
     document.body.appendChild = vi.fn();
     document.body.removeChild = vi.fn();
     
-    const button = screen.getByText('Exportar Relatório');
-    fireEvent.click(button);
-    
-    await waitFor(() => {
-      const csvButton = screen.getByText('Exportar CSV');
-      fireEvent.click(csvButton);
-    });
+    await clickExportOption('Exportar CSV');
     
     await waitFor(() => {
       expect(csvContent).toContain('Período,90d');
@@ -252,13 +228,7 @@ describe('ExportButton Component', () => {
   it('should show loading state during export', async () => {
     render(<ExportButton data={mockData} period="30d" />);
     
-    const button = screen.getByText('Exportar Relatório');
-    fireEvent.click(button);
-    
-    await waitFor(() => {
-      const csvButton = screen.getByText('Exportar CSV');
-      fireEvent.click(csvButton);
-    });
+    await clickExportOption('Exportar CSV');
     
     // Button should show loading state
     await waitFor(() => {
@@ -270,17 +240,11 @@ describe('ExportButton Component', () => {
     render(<ExportButton data={mockData} period="30d" />);
     
     // Mock Blob to throw error
-    global.Blob = vi.fn(() => {
+    global.Blob = vi.fn(function () {
       throw new Error('Export failed');
     });
     
-    const button = screen.getByText('Exportar Relatório');
-    fireEvent.click(button);
-    
-    await waitFor(() => {
-      const csvButton = screen.getByText('Exportar CSV');
-      fireEvent.click(csvButton);
-    });
+    await clickExportOption('Exportar CSV');
     
     // Should show error alert
     await waitFor(() => {
@@ -304,13 +268,7 @@ describe('ExportButton Component', () => {
     document.body.appendChild = vi.fn();
     document.body.removeChild = vi.fn();
     
-    const button = screen.getByText('Exportar Relatório');
-    fireEvent.click(button);
-    
-    await waitFor(() => {
-      const csvButton = screen.getByText('Exportar CSV');
-      fireEvent.click(csvButton);
-    });
+    await clickExportOption('Exportar CSV');
     
     await waitFor(() => {
       const downloadCall = mockLink.setAttribute.mock.calls.find(
@@ -329,7 +287,7 @@ describe('ExportButton Component', () => {
     render(<ExportButton data={incompleteData} period="30d" />);
     
     let csvContent = '';
-    global.Blob = vi.fn((content) => {
+    global.Blob = vi.fn(function (content) {
       csvContent = content[0];
       return { type: 'text/csv;charset=utf-8;' };
     });
@@ -347,13 +305,7 @@ describe('ExportButton Component', () => {
     document.body.appendChild = vi.fn();
     document.body.removeChild = vi.fn();
     
-    const button = screen.getByText('Exportar Relatório');
-    fireEvent.click(button);
-    
-    await waitFor(() => {
-      const csvButton = screen.getByText('Exportar CSV');
-      fireEvent.click(csvButton);
-    });
+    await clickExportOption('Exportar CSV');
     
     // Should use 0 for missing values
     await waitFor(() => {

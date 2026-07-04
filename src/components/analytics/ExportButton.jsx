@@ -182,7 +182,7 @@ export function ExportButton({ data, period, disabled = false }) {
             console.error('Export error:', error);
             alert('Erro ao exportar relatório. Tente novamente.');
         } finally {
-            setIsExporting(false);
+            setTimeout(() => setIsExporting(false), 100);
         }
     };
 

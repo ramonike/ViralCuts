@@ -162,9 +162,10 @@ async function processScheduledUpload(upload) {
   try {
     // ── TikTok ────────────────────────────────────────────────────────────
     if (upload.platform === "tiktok") {
+      const storagePath = upload.metadata?.storagePath;
       const fileUrl = upload.metadata?.fileUrl;
-      if (!fileUrl) {
-        throw new Error("TikTok upload sem fileUrl no metadata");
+      if (!storagePath && !fileUrl) {
+        throw new Error("TikTok upload sem storagePath no metadata");
       }
 
       // Buscar token TikTok do usuário
@@ -173,8 +174,14 @@ async function processScheduledUpload(upload) {
       });
       if (!tiktokAccount?.accessToken) throw new Error("Conta TikTok não encontrada");
 
+      let downloadUrl = fileUrl;
+      if (storagePath) {
+        const { createSignedVideoUrl } = await import("../db/supabase.js");
+        downloadUrl = await createSignedVideoUrl(storagePath);
+      }
+
       // Baixar o arquivo do Supabase Storage
-      const fileRes = await fetch(fileUrl);
+      const fileRes = await fetch(downloadUrl);
       if (!fileRes.ok) throw new Error(`Não foi possível baixar o vídeo: HTTP ${fileRes.status}`);
       const videoBuffer = Buffer.from(await fileRes.arrayBuffer());
 
@@ -199,9 +206,13 @@ async function processScheduledUpload(upload) {
 
       // Limpa arquivo do storage após publicação
       try {
-        const { deleteVideoFromStorage } = await import("../db/supabase.js");
-        const ext = (upload.metadata?.mimeType || "video/mp4").split("/")[1] || "mp4";
-        await deleteVideoFromStorage(upload.userId, upload.id, ext);
+        const { deleteVideoFromStorage, deleteVideoPathFromStorage } = await import("../db/supabase.js");
+        if (storagePath) {
+          await deleteVideoPathFromStorage(storagePath);
+        } else {
+          const ext = (upload.metadata?.mimeType || "video/mp4").split("/")[1] || "mp4";
+          await deleteVideoFromStorage(upload.userId, upload.id, ext);
+        }
       } catch (e) {
         console.warn("[Scheduled Uploads] Não foi possível limpar storage:", e.message);
       }
