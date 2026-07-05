@@ -467,9 +467,10 @@ export default function CalendarPage() {
                 const ctrl = new AbortController();
                 const timer = setTimeout(() => ctrl.abort(), 45000);
                 let uploadUrl;
+                let selectedAccountId = videoData.accountId || videoData.channelId || state.auth?.activeAccountId || null;
                 try {
                     const syncedAccount = await ensureYouTubeAccountSynced(state.auth);
-                    const selectedAccountId = videoData.accountId
+                    selectedAccountId = videoData.accountId
                         || videoData.channelId
                         || syncedAccount?.accountId
                         || state.auth?.activeAccountId
@@ -520,28 +521,88 @@ export default function CalendarPage() {
 
                 supabase.actions.markQueueStatus(uploadId, 'uploading', { uploadProgress: 0 });
 
+                const confirmUploadAfterNetworkError = async ({ selectedAccountId }) => {
+                    let lastError;
+                    for (let attempt = 1; attempt <= 3; attempt += 1) {
+                        try {
+                            const response = await fetch(`${API_URL}/api/youtube/upload/resume`, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                credentials: 'include',
+                                body: JSON.stringify({
+                                    uploadId,
+                                    sessionUri: uploadUrl,
+                                    totalBytes: videoData.file.size,
+                                    accountId: selectedAccountId,
+                                }),
+                            });
+
+                            const data = await response.json().catch(() => ({}));
+                            if (!response.ok) {
+                                throw new Error(data.error || `Falha ao confirmar upload: HTTP ${response.status}`);
+                            }
+
+                            if (data.status === 'complete' && data.videoId) {
+                                return { id: data.videoId, fallbackConfirmed: true };
+                            }
+
+                            lastError = new Error(data.error || 'Upload enviado, mas ainda nao confirmado pelo YouTube');
+                        } catch (confirmError) {
+                            lastError = confirmError;
+                        }
+
+                        await new Promise(resolveDelay => setTimeout(resolveDelay, 1500));
+                    }
+
+                    throw lastError || new Error('Upload enviado, mas nao confirmado pelo YouTube');
+                };
+
                 const uploadResult = await new Promise((resolve, reject) => {
                     const xhr = new XMLHttpRequest();
+                    let lastProgress = 0;
                     xhr.open('PUT', uploadUrl);
                     xhr.setRequestHeader('Content-Type', videoData.file.type || 'video/mp4');
                     xhr.timeout = 300000;
                     if (videoData._onProgress) {
                         xhr.upload.onprogress = (e) => {
                             if (e.lengthComputable) {
-                                videoData._onProgress(uploadId, Math.round((e.loaded / e.total) * 100));
+                                lastProgress = Math.round((e.loaded / e.total) * 100);
+                                videoData._onProgress(uploadId, lastProgress);
                             }
                         };
                     }
                     xhr.onload = () => {
-                        if (xhr.status === 200 || xhr.status === 201) resolve(JSON.parse(xhr.responseText));
+                        if (xhr.status === 200 || xhr.status === 201) {
+                            try {
+                                resolve(JSON.parse(xhr.responseText));
+                            } catch {
+                                resolve({ id: null, uploadComplete: true });
+                            }
+                        }
                         else reject(new Error(`Upload falhou: HTTP ${xhr.status}`));
                     };
-                    xhr.onerror = () => reject(new Error('Erro de rede no upload'));
-                    xhr.ontimeout = () => reject(new Error('Upload excedeu tempo limite (5 min)'));
+                    xhr.onerror = () => {
+                        if (lastProgress >= 100) {
+                            confirmUploadAfterNetworkError({ selectedAccountId }).then(resolve).catch(reject);
+                            return;
+                        }
+                        reject(new Error('Erro de rede no upload'));
+                    };
+                    xhr.ontimeout = () => {
+                        if (lastProgress >= 100) {
+                            confirmUploadAfterNetworkError({ selectedAccountId }).then(resolve).catch(reject);
+                            return;
+                        }
+                        reject(new Error('Upload excedeu tempo limite (5 min)'));
+                    };
                     xhr.send(videoData.file);
                 });
 
                 const youtubeVideoId = uploadResult.id;
+
+                if (!youtubeVideoId) {
+                    throw new Error('Upload concluido, mas o YouTube nao retornou o ID do video');
+                }
 
                 // Awaita upload-complete para garantir DB atualizado
                 try {

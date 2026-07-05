@@ -92,6 +92,7 @@ O projeto mistura `npm` com scripts `bun`, entao a padronizacao de runtime deve 
 - Diagnostico de token reforcado em 2026-07-04: erros de conta YouTube ausente, token ausente, refresh expirado e falha 5xx upstream do YouTube deixam de cair no erro generico 500.
 - Observabilidade do upload reforcada em 2026-07-04: frontend loga `status`, `code` e `requestId` quando `/api/youtube/upload/initiate` falha.
 - Sync de conta YouTube corrigido em 2026-07-05: tokens Google obtidos no frontend agora sao validados e persistidos em `account` antes do upload, evitando falso `YOUTUBE_ACCOUNT_NOT_FOUND`.
+- Falso negativo pos-upload tratado em 2026-07-05: erro de CORS/rede depois de 100% no PUT direto ao YouTube agora aciona confirmacao via backend antes de marcar falha.
 
 ### 2. OAuth state e exposicao de tokens
 
