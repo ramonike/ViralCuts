@@ -76,12 +76,52 @@ function getUploadErrorResponse(error) {
     };
   }
 
+  if (reason === "youtubeAccountNotFound") {
+    return {
+      status: 404,
+      body: {
+        error: "Conta YouTube nao encontrada. Reconecte sua conta.",
+        code: "YOUTUBE_ACCOUNT_NOT_FOUND",
+      },
+    };
+  }
+
+  if (reason === "youtubeTokenMissing") {
+    return {
+      status: 401,
+      body: {
+        error: "Token do YouTube ausente. Reconecte sua conta.",
+        code: "YOUTUBE_TOKEN_MISSING",
+      },
+    };
+  }
+
+  if (reason === "youtubeTokenRefreshFailed") {
+    return {
+      status: 401,
+      body: {
+        error: "Sessao do YouTube expirada. Reconecte sua conta.",
+        code: "YOUTUBE_TOKEN_REFRESH_FAILED",
+      },
+    };
+  }
+
   if (error instanceof YouTubeUploadError && error.status >= 400 && error.status < 500) {
     return {
       status: error.status,
       body: {
         error: message || "YouTube rejeitou o inicio do upload.",
         code: "YOUTUBE_UPLOAD_REJECTED",
+      },
+    };
+  }
+
+  if (error instanceof YouTubeUploadError && error.status >= 500) {
+    return {
+      status: 502,
+      body: {
+        error: "YouTube indisponivel ao iniciar upload. Tente novamente em alguns minutos.",
+        code: "YOUTUBE_UPLOAD_UPSTREAM_ERROR",
       },
     };
   }
@@ -106,7 +146,10 @@ async function getValidAccessToken(userId, accountId = null) {
   const account = await prisma.account.findFirst({ where: whereClause });
 
   if (!account) {
-    throw new Error("YouTube account not found");
+    const error = new Error("YouTube account not found");
+    error.reason = "youtubeAccountNotFound";
+    error.status = 404;
+    throw error;
   }
 
   if (!hasYouTubeUploadScope(account.scope)) {
@@ -122,23 +165,33 @@ async function getValidAccessToken(userId, accountId = null) {
     : true;
 
   if (isExpired && account.refreshToken) {
-    const tokens = await refreshYouTubeToken(account.refreshToken);
-    const expiresAt = new Date(Date.now() + tokens.expires_in * 1000);
+    try {
+      const tokens = await refreshYouTubeToken(account.refreshToken);
+      const expiresAt = new Date(Date.now() + tokens.expires_in * 1000);
 
-    await prisma.account.update({
-      where: { id: account.id },
-      data: {
-        accessToken: tokens.access_token,
-        accessTokenExpiresAt: expiresAt,
-        updatedAt: new Date(),
-      },
-    });
+      await prisma.account.update({
+        where: { id: account.id },
+        data: {
+          accessToken: tokens.access_token,
+          accessTokenExpiresAt: expiresAt,
+          updatedAt: new Date(),
+        },
+      });
 
-    return tokens.access_token;
+      return tokens.access_token;
+    } catch (refreshError) {
+      const error = new Error(refreshError?.message || "Failed to refresh YouTube token");
+      error.reason = "youtubeTokenRefreshFailed";
+      error.status = 401;
+      throw error;
+    }
   }
 
   if (!account.accessToken) {
-    throw new Error("No access token available");
+    const error = new Error("No access token available");
+    error.reason = "youtubeTokenMissing";
+    error.status = 401;
+    throw error;
   }
 
   return account.accessToken;

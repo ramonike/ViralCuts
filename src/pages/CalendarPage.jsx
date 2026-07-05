@@ -494,7 +494,14 @@ export default function CalendarPage() {
                     );
                     if (!initRes.ok) {
                         const errData = await initRes.json().catch(() => ({}));
-                        throw new Error(errData.error?.message || errData.error || errData.code || `HTTP ${initRes.status}`);
+                        const errorMessage = errData.error?.message || errData.error || errData.code || `HTTP ${initRes.status}`;
+                        console.error('[ScheduleSubmit] YouTube initiate failed:', {
+                            status: initRes.status,
+                            code: errData.code,
+                            requestId: errData.requestId,
+                            error: errData.error,
+                        });
+                        throw new Error(errData.requestId ? `${errorMessage} (${errData.requestId})` : errorMessage);
                     }
                     const initData = await initRes.json();
                     uploadUrl = initData.sessionUri;

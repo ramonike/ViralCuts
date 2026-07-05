@@ -89,6 +89,8 @@ O projeto mistura `npm` com scripts `bun`, entao a padronizacao de runtime deve 
 - Deploy corrigido em 2026-07-04: `prisma`, `@prisma/client` e `@prisma/adapter-pg` foram fixados em `7.2.0` para evitar lockfile misturando Prisma CLI `7.8.0` com client `7.2.0`.
 - Diagnostico de upload melhorado em 2026-07-04: `/api/youtube/upload/initiate` agora retorna erros seguros e acionaveis para scope ausente, quota excedida, canal ausente ou rejeicao 4xx do YouTube.
 - Robustez de upload melhorada em 2026-07-04: falha ao persistir a sessao resumable no banco nao bloqueia mais o retorno da `sessionUri` do YouTube para o frontend.
+- Diagnostico de token reforcado em 2026-07-04: erros de conta YouTube ausente, token ausente, refresh expirado e falha 5xx upstream do YouTube deixam de cair no erro generico 500.
+- Observabilidade do upload reforcada em 2026-07-04: frontend loga `status`, `code` e `requestId` quando `/api/youtube/upload/initiate` falha.
 
 ### 2. OAuth state e exposicao de tokens
 

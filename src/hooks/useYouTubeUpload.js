@@ -94,7 +94,14 @@ export function useYouTubeUpload(options = {}) {
 
     if (!response.ok) {
       const data = await response.json().catch(() => ({}));
-      throw new Error(data.error || 'Failed to initiate upload');
+      const errorMessage = data.error?.message || data.error || data.code || 'Failed to initiate upload';
+      console.error('[useYouTubeUpload] Failed to initiate upload:', {
+        status: response.status,
+        code: data.code,
+        requestId: data.requestId,
+        error: data.error,
+      });
+      throw new Error(data.requestId ? `${errorMessage} (${data.requestId})` : errorMessage);
     }
 
     return response.json();
