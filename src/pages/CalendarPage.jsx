@@ -9,6 +9,7 @@ import { PageLayout } from "../components/layout/PageLayout";
 import { useNotification } from "../contexts/NotificationContext";
 import { useTheme } from "../contexts/ThemeContext";
 import { rescheduleUpload, cancelScheduledUpload } from "../api/youtube";
+import { ensureYouTubeAccountSynced } from "../api/youtubeAccounts";
 import { API_URL } from "../config/api";
 import { RefreshCw, Plus } from "lucide-react";
 import { PlatformIcon } from "../components/shared/PlatformIcon";
@@ -467,6 +468,13 @@ export default function CalendarPage() {
                 const timer = setTimeout(() => ctrl.abort(), 45000);
                 let uploadUrl;
                 try {
+                    const syncedAccount = await ensureYouTubeAccountSynced(state.auth);
+                    const selectedAccountId = videoData.accountId
+                        || videoData.channelId
+                        || syncedAccount?.accountId
+                        || state.auth?.activeAccountId
+                        || null;
+
                     const initRes = await fetch(
                         `${API_URL}/api/youtube/upload/initiate`,
                         {
@@ -488,7 +496,7 @@ export default function CalendarPage() {
                                     : undefined,
                                 fileSize: videoData.file.size,
                                 mimeType: videoData.file.type || 'video/mp4',
-                                accountId: videoData.accountId || videoData.channelId || state.auth?.activeAccountId || null,
+                                accountId: selectedAccountId,
                             }),
                         }
                     );

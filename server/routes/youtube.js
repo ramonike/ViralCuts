@@ -106,6 +106,16 @@ function getUploadErrorResponse(error) {
     };
   }
 
+  if (reason === "youtubeTokenExpired") {
+    return {
+      status: 401,
+      body: {
+        error: "Sessao do YouTube expirada. Reconecte sua conta.",
+        code: "YOUTUBE_TOKEN_EXPIRED",
+      },
+    };
+  }
+
   if (error instanceof YouTubeUploadError && error.status >= 400 && error.status < 500) {
     return {
       status: error.status,
@@ -185,6 +195,13 @@ async function getValidAccessToken(userId, accountId = null) {
       error.status = 401;
       throw error;
     }
+  }
+
+  if (isExpired && !account.refreshToken) {
+    const error = new Error("YouTube token expired");
+    error.reason = "youtubeTokenExpired";
+    error.status = 401;
+    throw error;
   }
 
   if (!account.accessToken) {
@@ -403,6 +420,86 @@ youtube.get("/accounts", authMiddleware, async (c) => {
     return c.json({ accounts: accountsWithStatus });
   } catch (error) {
     return sendError(c, { scope: "[YouTube Auth] Accounts", error, message: "Failed to fetch YouTube accounts" });
+  }
+});
+
+youtube.post("/accounts/sync-browser-token", authMiddleware, async (c) => {
+  try {
+    const user = c.get("user");
+    const body = await c.req.json().catch(() => ({}));
+    const accessToken = body.accessToken;
+    const expiresIn = Number(body.expiresIn || body.expires_in || 3600);
+    const scope = body.scope || "https://www.googleapis.com/auth/youtube.upload https://www.googleapis.com/auth/youtube.readonly";
+
+    if (!accessToken) {
+      return c.json({ error: "Access token is required", code: "YOUTUBE_TOKEN_REQUIRED" }, 400);
+    }
+
+    const channelResponse = await fetch(
+      "https://www.googleapis.com/youtube/v3/channels?part=snippet&mine=true",
+      { headers: { Authorization: `Bearer ${accessToken}` } }
+    );
+
+    if (!channelResponse.ok) {
+      const data = await channelResponse.json().catch(() => ({}));
+      console.warn("[YouTube Auth] Browser token validation failed", {
+        status: channelResponse.status,
+        reason: data.error?.errors?.[0]?.reason || data.error?.status,
+      });
+      return c.json({
+        error: "Token do YouTube invalido. Reconecte sua conta.",
+        code: "YOUTUBE_TOKEN_INVALID",
+      }, 401);
+    }
+
+    const channelData = await channelResponse.json();
+    const channel = channelData.items?.[0];
+
+    if (!channel) {
+      return c.json({
+        error: "Esta conta Google ainda nao possui canal YouTube habilitado.",
+        code: "YOUTUBE_CHANNEL_REQUIRED",
+      }, 403);
+    }
+
+    const accountId = channel.id;
+    const expiresAt = new Date(Date.now() + Math.max(1, expiresIn) * 1000);
+    const account = await prisma.account.upsert({
+      where: { id: `youtube_${user.id}_${accountId}` },
+      update: {
+        accountId,
+        providerId: "youtube",
+        accessToken,
+        accessTokenExpiresAt: expiresAt,
+        scope,
+        displayName: channel.snippet?.title || null,
+        avatarUrl: channel.snippet?.thumbnails?.default?.url || null,
+        updatedAt: new Date(),
+      },
+      create: {
+        id: `youtube_${user.id}_${accountId}`,
+        accountId,
+        providerId: "youtube",
+        userId: user.id,
+        accessToken,
+        accessTokenExpiresAt: expiresAt,
+        scope,
+        displayName: channel.snippet?.title || null,
+        avatarUrl: channel.snippet?.thumbnails?.default?.url || null,
+      },
+      select: {
+        id: true,
+        accountId: true,
+        displayName: true,
+        avatarUrl: true,
+        accessTokenExpiresAt: true,
+        scope: true,
+      },
+    });
+
+    return c.json({ account });
+  } catch (error) {
+    return sendError(c, { scope: "[YouTube Auth] Sync browser token", error, message: "Failed to sync YouTube account" });
   }
 });
 

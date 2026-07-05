@@ -2,6 +2,7 @@ import React, { useState, useEffect, createContext, useContext } from "react";
 import { uploadVideo } from "../api/upload";
 import { uploadTikTok } from "../api/tiktokUpload";
 import { fetchChannelDetails, fetchChannelVideos, fetchChannelAnalytics, searchVideos } from "../api/youtube";
+import { syncYouTubeBrowserToken } from "../api/youtubeAccounts";
 import { uploadToOpus, checkProjectStatus, getClips, createProjectFromUrl } from "../api/opus";
 
 const STORAGE_KEY = "viralcuts_workflow_v1";
@@ -749,6 +750,7 @@ export function useDashboardLogic() {
             stats = await fetchChannelDetails(token);
             if (stats) {
                 trackQuota(1); // Channel details cost 1 unit
+                await syncYouTubeBrowserToken(tokenResponse);
             }
         } catch (e) {
             console.error("Failed to fetch initial stats", e);
