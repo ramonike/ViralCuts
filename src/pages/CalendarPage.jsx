@@ -36,6 +36,58 @@ function normalizeUpload(u) {
 
 // ─── Queue Sidebar ────────────────────────────────────────────────────────────
 
+const YOUTUBE_UPLOAD_CHUNK_SIZE = 8 * 1024 * 1024;
+
+async function uploadYouTubeFileThroughBackend({ sessionUri, uploadId, file, accountId, onProgress }) {
+    let startByte = 0;
+    let lastProgress = 0;
+
+    while (startByte < file.size) {
+        const endByte = Math.min(startByte + YOUTUBE_UPLOAD_CHUNK_SIZE, file.size) - 1;
+        const chunk = file.slice(startByte, endByte + 1);
+
+        const response = await fetch(`${API_URL}/api/youtube/upload/chunk`, {
+            method: 'POST',
+            headers: {
+                'Content-Range': `bytes ${startByte}-${endByte}/${file.size}`,
+                'X-Session-Uri': sessionUri,
+                'X-Upload-Id': uploadId,
+                'X-Account-Id': accountId || '',
+            },
+            credentials: 'include',
+            body: chunk,
+        });
+
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok) {
+            throw new Error(result.error || `Upload falhou: HTTP ${response.status}`);
+        }
+
+        const bytesUploaded = Number(result.bytesUploaded ?? endByte + 1);
+        const progress = Number(result.progress ?? Math.round((bytesUploaded / file.size) * 100));
+
+        if (progress > lastProgress) {
+            lastProgress = progress;
+            onProgress?.(uploadId, progress);
+        }
+
+        if (result.status === 'complete') {
+            if (!result.videoId) {
+                throw new Error('YouTube nao retornou o ID do video apos concluir o upload');
+            }
+            return result;
+        }
+
+        if (bytesUploaded <= startByte) {
+            throw new Error('Upload nao avancou. Tente novamente.');
+        }
+
+        startByte = bytesUploaded;
+    }
+
+    throw new Error('Upload terminou sem confirmacao do YouTube');
+}
+
 function QueueSidebar({ queue, onScheduleNow, loading, onRefresh }) {
     const [tab, setTab] = useState("upcoming");
     const now = new Date();
@@ -233,7 +285,7 @@ export default function CalendarPage() {
         // não deve aparecer mais como "Pendente" na fila
         // TAMBÉM remove por status publicado direto
         const filtered = merged.filter(item => {
-            const isPublishedStatus = ['done', 'success', 'published', 'completed', 'scheduled'].includes(item.status);
+            const isPublishedStatus = ['done', 'success', 'published', 'completed'].includes(item.status);
             if (isPublishedStatus) return false; // publicados não pertencem à fila de pendentes
 
             const titleNormalized = item.title?.trim().toLowerCase();
@@ -466,6 +518,7 @@ export default function CalendarPage() {
                 const ctrl = new AbortController();
                 const timer = setTimeout(() => ctrl.abort(), 45000);
                 let uploadUrl;
+                const accountId = videoData.accountId || videoData.channelId || state.auth?.activeAccountId || null;
                 try {
                     const initRes = await fetch(
                         `${API_URL}/api/youtube/upload/initiate`,
@@ -488,7 +541,7 @@ export default function CalendarPage() {
                                     : undefined,
                                 fileSize: videoData.file.size,
                                 mimeType: videoData.file.type || 'video/mp4',
-                                accountId: videoData.accountId || videoData.channelId || state.auth?.activeAccountId || null,
+                                accountId,
                             }),
                         }
                     );
@@ -505,28 +558,15 @@ export default function CalendarPage() {
 
                 supabase.actions.markQueueStatus(uploadId, 'uploading', { uploadProgress: 0 });
 
-                const uploadResult = await new Promise((resolve, reject) => {
-                    const xhr = new XMLHttpRequest();
-                    xhr.open('PUT', uploadUrl);
-                    xhr.setRequestHeader('Content-Type', videoData.file.type || 'video/mp4');
-                    xhr.timeout = 300000;
-                    if (videoData._onProgress) {
-                        xhr.upload.onprogress = (e) => {
-                            if (e.lengthComputable) {
-                                videoData._onProgress(uploadId, Math.round((e.loaded / e.total) * 100));
-                            }
-                        };
-                    }
-                    xhr.onload = () => {
-                        if (xhr.status === 200 || xhr.status === 201) resolve(JSON.parse(xhr.responseText));
-                        else reject(new Error(`Upload falhou: HTTP ${xhr.status}`));
-                    };
-                    xhr.onerror = () => reject(new Error('Erro de rede no upload'));
-                    xhr.ontimeout = () => reject(new Error('Upload excedeu tempo limite (5 min)'));
-                    xhr.send(videoData.file);
+                const uploadResult = await uploadYouTubeFileThroughBackend({
+                    sessionUri: uploadUrl,
+                    uploadId,
+                    file: videoData.file,
+                    accountId,
+                    onProgress: videoData._onProgress,
                 });
 
-                const youtubeVideoId = uploadResult.id;
+                const youtubeVideoId = uploadResult.videoId;
 
                 // Awaita upload-complete para garantir DB atualizado
                 try {
@@ -611,13 +651,12 @@ export default function CalendarPage() {
         return supabaseItem;
     };
 
-    const handleScheduleDone = () => {
+    const handleScheduleDone = async () => {
         setScheduleModalOpen(false);
         setSelectedScheduleDate(null);
         setScheduleInitialData(null);
-        success('Vídeo(s) agendado(s) com sucesso!');
-        // Recarrega fila do banco para refletir status corretos (scheduled)
-        supabase.actions.reloadQueue?.();
+        success('Video(s) agendado(s) com sucesso!');
+        await supabase.reloadData?.(activeAccountId);
     };
 
     const handleRescheduleVideo = async (videoId, newScheduledAt) => {

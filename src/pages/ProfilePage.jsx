@@ -301,8 +301,11 @@ export default function ProfilePage() {
     const navigate = useNavigate();
 
     const { channelStats, auth } = state;
-    const isConnected = !!(auth?.youtubeToken && auth?.youtubeTokenExpiresAt > Date.now());
     const connectedAccounts = auth?.connectedAccounts || [];
+    const isConnected = !!(
+        (auth?.youtubeToken && auth?.youtubeTokenExpiresAt > Date.now()) ||
+        connectedAccounts.some(account => (account.platform || 'youtube') === 'youtube')
+    );
     const activeAccountId = auth?.activeAccountId;
 
     const { plan, maxChannels } = useSubscription();

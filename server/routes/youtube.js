@@ -36,6 +36,12 @@ function isLegacyBrowserTokenUploadEnabled() {
   return process.env.ALLOW_LEGACY_BROWSER_YOUTUBE_TOKEN === "true";
 }
 
+function getYouTubeSettingsRedirect(params = {}) {
+  const frontendUrl = process.env.FRONTEND_URL || "http://localhost:5173";
+  const query = new URLSearchParams(params);
+  return `${frontendUrl}/dashboard/settings?${query.toString()}`;
+}
+
 // Helper to get valid access token (refreshes if needed)
 async function getValidAccessToken(userId, accountId = null) {
   const whereClause = accountId
@@ -113,9 +119,8 @@ youtube.get("/auth/callback", async (c) => {
 
     if (error) {
       console.error("[YouTube Auth] OAuth error:", error);
-      const frontendUrl = process.env.FRONTEND_URL || "http://localhost:5173";
       const publicError = getPublicOAuthErrorMessage();
-      return c.redirect(`${frontendUrl}/settings?youtube_error=${encodeURIComponent(publicError)}`);
+      return c.redirect(getYouTubeSettingsRedirect({ youtube_error: publicError }));
     }
 
     if (!code) {
@@ -182,17 +187,13 @@ youtube.get("/auth/callback", async (c) => {
       },
     });
 
-    // Redirect to frontend with success
-    const frontendUrl = process.env.FRONTEND_URL || "http://localhost:5173";
-    return c.redirect(
-      `${frontendUrl}/settings?youtube_connected=true&channel=${encodeURIComponent(channel.snippet.title)}`
-    );
+    return c.redirect(getYouTubeSettingsRedirect({
+      youtube_connected: "true",
+      channel: channel.snippet.title,
+    }));
   } catch (error) {
-    const frontendUrl = process.env.FRONTEND_URL || "http://localhost:5173";
     const publicError = getPublicOAuthErrorMessage();
-    return c.redirect(
-      `${frontendUrl}/settings?youtube_error=${encodeURIComponent(publicError)}`
-    );
+    return c.redirect(getYouTubeSettingsRedirect({ youtube_error: publicError }));
   }
 });
 
@@ -273,6 +274,7 @@ youtube.get("/accounts", authMiddleware, async (c) => {
       select: {
         id: true,
         accountId: true,
+        idToken: true,
         accessTokenExpiresAt: true,
         scope: true,
         createdAt: true,
@@ -427,6 +429,13 @@ youtube.post("/upload/initiate", authMiddleware, async (c) => {
       totalBytes: session.totalBytes,
     });
   } catch (error) {
+    if (error?.message === "YouTube account not found" || error?.message === "No access token available") {
+      return c.json({
+        error: "Conta YouTube nao conectada no backend local. Reconecte o YouTube em Configuracoes > Plataformas.",
+        code: "YOUTUBE_ACCOUNT_NOT_CONNECTED",
+      }, 401);
+    }
+
     return sendError(c, { scope: "[YouTube Upload] Initiate", error, message: "Failed to initiate upload" });
   }
 });

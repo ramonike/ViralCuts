@@ -488,6 +488,7 @@ export function ScheduleVideoModal({ isOpen, onClose, selectedDate, onSchedule, 
         setItems(prev => prev.map(i => ({ ...i, status: 'submitting', expanded: false, uploadProgress: 0 })));
 
         // Para cada vídeo: faz o upload do arquivo UMA VEZ, depois agenda para cada conta
+        let hasAnyError = false;
         for (const item of items) {
             let itemError = '';
 
@@ -573,22 +574,14 @@ export function ScheduleVideoModal({ isOpen, onClose, selectedDate, onSchedule, 
                     ? { ...i, status: itemError ? 'error' : 'scheduled', errorMsg: itemError, uploadProgress: 100 }
                     : i
             ));
+            if (itemError) hasAnyError = true;
         }
         setSubmitting(false);
-        // Usar queueMicrotask para garantir que rode após todas as atualizações de estado do lote
-        queueMicrotask(() => {
-            setItems(prev => {
-                // Lê o estado via callback do setState para garantir os status mais recentes
-                // (o 'items' fechado no início do handleSubmit fica desatualizado durante o loop)
-                const allDoneNow = prev.length > 0 && prev.every(i => i.status === 'done' || i.status === 'scheduled');
-                const allFinished = prev.every(i => i.status === 'done' || i.status === 'scheduled' || i.status === 'error');
-                if (allFinished && allDoneNow) {
-                    // Fechar imediatamente após confirmação de conclusão
-                    onAllDone ? onAllDone() : onClose();
-                }
-                return prev;
-            });
-        });
+        if (!hasAnyError) {
+            setTimeout(() => {
+                onAllDone ? onAllDone() : onClose();
+            }, 0);
+        }
     };
 
     return (

@@ -356,7 +356,12 @@ export default function DashboardHome() {
     var theme = useTheme().theme;
     var navigate = useNavigate();
 
-    var hasYouTube = !!(state.auth?.youtubeToken && state.auth?.youtubeTokenExpiresAt > Date.now());
+    var hasYouTube = !!(
+        (state.auth?.youtubeToken && state.auth?.youtubeTokenExpiresAt > Date.now()) ||
+        state.auth?.connectedAccounts?.some(function(account) {
+            return (account.platform || 'youtube') === 'youtube';
+        })
+    );
     var user = supabase.user;
 
     return (

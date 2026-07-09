@@ -131,8 +131,8 @@ export default function ChannelPage() {
     const activeAccountId = state.auth?.activeAccountId;
 
     const hasChannel = !!(
-        state.auth?.youtubeToken &&
-        state.auth?.youtubeTokenExpiresAt > Date.now()
+        (state.auth?.youtubeToken && state.auth?.youtubeTokenExpiresAt > Date.now()) ||
+        connectedAccounts.some(account => (account.platform || 'youtube') === 'youtube')
     );
 
     const filteredVideos = useMemo(() => {

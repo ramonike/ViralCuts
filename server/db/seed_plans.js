@@ -6,8 +6,8 @@
  *   node server/db/seed-plans.js
  */
 
-import { PrismaClient } from '@prisma/client';
-const prisma = new PrismaClient();
+import 'dotenv/config';
+import { prisma } from './prisma.js';
 
 const PLANS = [
     {
