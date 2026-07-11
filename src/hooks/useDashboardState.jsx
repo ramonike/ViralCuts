@@ -170,6 +170,8 @@ function loadState() {
         const raw = typeof window !== "undefined" ? localStorage.getItem(STORAGE_KEY) : null;
         if (!raw) return defaultData;
         const loaded = JSON.parse(raw);
+        const loadedAuth = loaded.auth || {};
+        const shouldKeepBrowserToken = loadedAuth.youtubeToken?.startsWith?.("MOCK_TOKEN");
         // Ensure history and other new fields exist by merging with defaultData
         return {
             ...defaultData,
@@ -182,9 +184,11 @@ function loadState() {
             pipeline: loaded.pipeline || { jobs: [] },
             auth: {
                 ...defaultData.auth,
-                ...(loaded.auth || {}),
-                connectedAccounts: loaded.auth?.connectedAccounts || [],
-                activeAccountId: loaded.auth?.activeAccountId || null
+                ...loadedAuth,
+                youtubeToken: shouldKeepBrowserToken ? loadedAuth.youtubeToken : null,
+                youtubeTokenExpiresAt: shouldKeepBrowserToken ? loadedAuth.youtubeTokenExpiresAt : null,
+                connectedAccounts: loadedAuth.connectedAccounts || [],
+                activeAccountId: loadedAuth.activeAccountId || null
             },
             channelsData: loaded.channelsData || {}
         };
@@ -351,21 +355,8 @@ export function useDashboardLogic() {
                     console.error("[useDashboardState] Error fetching analytics:", err);
                 });
 
-
         } else {
-            console.log("[useDashboardState] No token, clearing channelStats and history");
-            setState(prev => ({
-                ...prev,
-                channelStats: null,
-                history: {},
-                channelsData: {},
-                recentUploads: [],
-                auth: {
-                    ...prev.auth,
-                    activeAccountId: null,
-                    connectedAccounts: [],
-                },
-            }));
+            console.log("[useDashboardState] No browser YouTube token; skipping direct YouTube API fetches");
         }
     }, [state.auth.youtubeToken]);
 

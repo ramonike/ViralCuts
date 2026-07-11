@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { Button } from "../ui/button";
 import { useDashboardState } from "../../hooks/useDashboardState";
+import { API_URL } from "../../config/api";
 
 // Platform configuration
 const PLATFORMS = {
@@ -197,7 +198,7 @@ function PlatformCard({ platform, connection, onConnect, onDisconnect, onRefresh
  */
 export default function PlatformConnections() {
   // Get YouTube accounts from dashboard state
-  const { state, actions } = useDashboardState();
+  const { state, setState, actions } = useDashboardState();
   const { auth, channelStats } = state;
   const connectedAccounts = auth?.connectedAccounts || [];
   
@@ -206,8 +207,9 @@ export default function PlatformConnections() {
   const [loading, setLoading] = useState({});
   const [error, setError] = useState(null);
 
-  // Fetch TikTok accounts on mount
+  // Fetch connected accounts on mount
   useEffect(() => {
+    fetchYouTubeAccounts();
     fetchTikTokAccounts();
   }, []);
 
@@ -241,7 +243,68 @@ export default function PlatformConnections() {
         setTimeout(() => window.close(), 100);
       }
     }
+
+    if (params.get('youtube_connected') === 'true') {
+      const channelName = params.get('channel');
+      setError(null);
+      fetchYouTubeAccounts();
+      window.history.replaceState({}, '', window.location.pathname);
+      if (channelName) {
+        console.log(`[PlatformConnections] YouTube conectado: ${channelName}`);
+      }
+    }
+
+    if (params.get('youtube_error')) {
+      setError(`YouTube: ${params.get('youtube_error')}`);
+      window.history.replaceState({}, '', window.location.pathname);
+    }
   }, []);
+
+  const fetchYouTubeAccounts = async () => {
+    try {
+      const response = await fetch(`${API_URL}/api/youtube/accounts`, {
+        credentials: 'include',
+      });
+
+      if (!response.ok) return;
+
+      const data = await response.json();
+      const accounts = (data.accounts || []).map(account => {
+        const channelId = account.accountId || account.id;
+        const existing = connectedAccounts.find(a => a.id === channelId || a.accountId === channelId);
+
+        return {
+          ...existing,
+          id: channelId,
+          accountId: channelId,
+          backendId: account.id,
+          platform: 'youtube',
+          name: account.idToken || existing?.name || 'Canal YouTube',
+          expiresAt: account.accessTokenExpiresAt ? new Date(account.accessTokenExpiresAt).getTime() : 0,
+          tokenExpired: account.isExpired,
+        };
+      });
+
+      setState(prev => {
+        const currentAccounts = prev.auth?.connectedAccounts || [];
+        const nonYouTubeAccounts = currentAccounts.filter(a => a.platform && a.platform !== 'youtube');
+        const activeAccountId = accounts.some(a => a.id === prev.auth?.activeAccountId)
+          ? prev.auth.activeAccountId
+          : accounts[0]?.id || prev.auth?.activeAccountId || null;
+
+        return {
+          ...prev,
+          auth: {
+            ...prev.auth,
+            connectedAccounts: [...accounts, ...nonYouTubeAccounts],
+            activeAccountId,
+          },
+        };
+      });
+    } catch (err) {
+      console.error('Failed to fetch YouTube accounts:', err);
+    }
+  };
 
   const fetchTikTokAccounts = async () => {
     try {
@@ -264,9 +327,16 @@ export default function PlatformConnections() {
 
     try {
       if (platform === 'youtube') {
-        // Trigger Google OAuth - this would typically open a popup or redirect
-        // For now, show a message that this should be done via the Google button
-        setError('Use o botão "Conectar com Google" no painel lateral para conectar o YouTube.');
+        const response = await fetch(`${API_URL}/api/youtube/auth/url`, {
+          credentials: 'include',
+        });
+
+        if (!response.ok) {
+          throw new Error('Falha ao obter URL de autenticacao do YouTube');
+        }
+
+        const data = await response.json();
+        window.location.href = data.url;
       } else if (platform === 'tiktok') {
         // Get TikTok auth URL and redirect
         const response = await fetch('/api/tiktok/auth/url', {
@@ -300,7 +370,17 @@ export default function PlatformConnections() {
 
     try {
       if (platform === 'youtube') {
+        const response = await fetch(`${API_URL}/api/youtube/accounts/${accountId}`, {
+          method: 'DELETE',
+          credentials: 'include',
+        });
+
+        if (!response.ok) {
+          throw new Error('Falha ao desconectar conta YouTube');
+        }
+
         actions.disconnectAccount(accountId);
+        await fetchYouTubeAccounts();
       } else if (platform === 'tiktok') {
         const response = await fetch(`/api/tiktok/accounts/${accountId}`, {
           method: 'DELETE',

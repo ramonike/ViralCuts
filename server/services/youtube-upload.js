@@ -44,6 +44,11 @@ export async function initiateUpload(metadata, fileSize, mimeType, accessToken) 
     throw new Error("Access token is required");
   }
 
+  const isScheduledPublish = Boolean(metadata.publishAt);
+  const youtubePrivacyStatus = isScheduledPublish
+    ? "private"
+    : (metadata.privacyStatus || "private");
+
   // Build video resource for YouTube API
   const videoResource = {
     snippet: {
@@ -53,13 +58,13 @@ export async function initiateUpload(metadata, fileSize, mimeType, accessToken) 
       categoryId: metadata.categoryId || "22", // Default: People & Blogs
     },
     status: {
-      privacyStatus: metadata.privacyStatus || "private",
+      privacyStatus: youtubePrivacyStatus,
       selfDeclaredMadeForKids: false,
     },
   };
 
-  // Add scheduled publish time if provided
-  if (metadata.publishAt && metadata.privacyStatus === "private") {
+  // YouTube requires scheduled uploads to be private until publishAt.
+  if (isScheduledPublish) {
     videoResource.status.publishAt = metadata.publishAt;
   }
 
