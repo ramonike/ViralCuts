@@ -171,7 +171,7 @@ function ScriptGenerator({ onPipeline, onThemeChange, onContentChange }) {
     };
 
     return (
-        <div className="vc-card">
+        <div className="vc-card vc-script-generator-card">
             <h3 style={{ fontSize: 16, fontWeight: 600, marginBottom: 16 }}>Gerador de Roteiro</h3>
             <div style={{ marginBottom: 16, display: 'flex', gap: 8, alignItems: 'end' }}>
                 <label className="vc-label">Tema ou ideia do vídeo</label>

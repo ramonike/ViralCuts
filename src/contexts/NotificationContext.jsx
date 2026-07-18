@@ -369,7 +369,7 @@ export function NotificationProvider({ children }) {
             {children}
             
             {/* Container de Notificações Toast */}
-            <div className="fixed top-4 right-4 z-[9999] w-full max-w-sm space-y-2">
+            <div className="vc-context-toast-container fixed top-4 right-4 z-[9999] w-full max-w-sm space-y-2">
                 <AnimatePresence mode="popLayout">
                     {toastNotifications.map(notification => (
                         <NotificationItem

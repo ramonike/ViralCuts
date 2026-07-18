@@ -56,12 +56,12 @@ export default function RegisterPage() {
     const handleKeyDown = (e) => { if (e.key === "Enter") handleRegister(e); };
 
     return (
-        <div style={{ display: "flex", minHeight: "100vh", background: "var(--bg-default)" }}>
+        <div className="vc-auth-page" style={{ display: "flex", minHeight: "100vh", background: "var(--bg-default)" }}>
             <button onClick={toggleTheme} style={{ position: "fixed", top: 16, right: 16, zIndex: 50, padding: 8, background: "var(--bg-elevated)", border: "1px solid var(--border)", borderRadius: 8, color: "var(--text-secondary)", cursor: "pointer" }}>
                 {isDark ? <Sun size={16} /> : <Moon size={16} />}
             </button>
 
-            <div style={{ flex: "0 0 44%", background: "var(--bg-card)", position: "relative", overflow: "hidden", display: "flex", flexDirection: "column", justifyContent: "center", padding: "60px 48px" }}>
+            <div className="vc-auth-brand" style={{ flex: "0 0 44%", background: "var(--bg-card)", position: "relative", overflow: "hidden", display: "flex", flexDirection: "column", justifyContent: "center", padding: "60px 48px" }}>
                 <div style={{ position: "absolute", top: "-50%", right: "-30%", width: 600, height: 600, borderRadius: "50%", background: "radial-gradient(circle, rgba(232,65,42,0.12), transparent 70%)", pointerEvents: "none" }} />
                 <Link to="/" style={{ textDecoration: "none" }}>
                     <div style={{ fontSize: 32, fontWeight: 900, color: "var(--accent-coral)", marginBottom: 16 }}>ViralCuts</div>
@@ -79,7 +79,7 @@ export default function RegisterPage() {
                 </div>
             </div>
 
-            <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", padding: 40 }}>
+            <div className="vc-auth-form" style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", padding: 40 }}>
                 <div style={{ width: "100%", maxWidth: 400 }}>
                     <Link to="/" className="lg:hidden" style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 13, color: "var(--text-muted)", textDecoration: "none", marginBottom: 32 }}>
                         <ArrowLeft size={14} /> Voltar

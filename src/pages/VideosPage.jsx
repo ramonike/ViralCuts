@@ -84,7 +84,7 @@ function ChannelStrip({ channelStats }) {
         { label: "Vídeos", value: formatNum(stats.videoCount) },
     ];
     return (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12, marginBottom: 24 }}>
+        <div className="vc-channel-stats-grid" style={{ gap: 12, marginBottom: 24 }}>
             {items.map(item => (
                 <div key={item.label} className="vc-metric-card">
                     <div className="vc-metric-label" style={{ fontSize: 11 }}>{item.label}</div>

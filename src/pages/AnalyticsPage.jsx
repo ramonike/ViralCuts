@@ -154,7 +154,7 @@ export default function AnalyticsPage() {
                 </div>
             )}
 
-            <div style={{ display: "grid", gridTemplateColumns: "3fr 2fr", gap: 20, marginBottom: 24 }}>
+            <div className="vc-analytics-grid" style={{ gap: 20, marginBottom: 24 }}>
                 <div className="vc-card" style={{ padding: 24 }}>
                     <h3 style={{ fontSize: 15, fontWeight: 600, marginBottom: 16 }}>
                         Desempenho ({period === "7days" ? "7 dias" : period === "30days" ? "30 dias" : "período"})

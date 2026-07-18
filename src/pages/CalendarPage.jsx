@@ -692,7 +692,7 @@ export default function CalendarPage() {
 
 
             {/* Grid */}
-            <div className="grid" style={{ gridTemplateColumns: "1fr 320px", gap: 24 }}>
+            <div className="vc-calendar-grid" style={{ gap: 24 }}>
                 <ModernCalendar
                     history={filteredHistory}
                     uploadQueue={combinedQueue}

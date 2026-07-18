@@ -45,11 +45,10 @@ export const DashboardLayout = () => {
             {/* ── Mobile Sidebar Drawer ─────────────────────────── */}
             <div style={{
                 position: 'fixed', inset: 0, left: 0, zIndex: 50,
-                width: 220,
                 transform: mobileMenuOpen ? 'translateX(0)' : 'translateX(-100%)',
                 transition: 'transform 0.25s ease',
             }}
-                className="lg:hidden"
+                className="vc-mobile-sidebar lg:hidden"
             >
                 <SidebarLeft />
             </div>
@@ -80,7 +79,7 @@ export const DashboardLayout = () => {
                     </button>
 
                     {/* Page breadcrumb */}
-                    <span style={{
+                    <span className="vc-topbar-title" style={{
                         fontFamily: 'var(--font-display)',
                         fontSize: '0.875rem',
                         fontWeight: 600,
@@ -97,7 +96,7 @@ export const DashboardLayout = () => {
                 </div>
 
                 {/* Page Content */}
-                <main style={{ padding: '24px 28px' }}>
+                <main className="vc-content">
                     <Outlet />
                 </main>
             </div>

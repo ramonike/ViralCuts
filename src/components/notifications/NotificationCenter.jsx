@@ -56,7 +56,7 @@ export function NotificationCenter({ maxHeight = 400, onClose }) {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -10, scale: 0.95 }}
             transition={{ duration: 0.15 }}
-            className="absolute right-0 top-full mt-2 w-96 bg-slate-900 border border-slate-700 rounded-xl shadow-2xl overflow-hidden z-50"
+            className="vc-notification-center absolute right-0 top-full mt-2 w-96 bg-slate-900 border border-slate-700 rounded-xl shadow-2xl overflow-hidden z-50"
         >
             {/* Header */}
             <div className="px-4 py-3 border-b border-slate-700 bg-slate-800/50">

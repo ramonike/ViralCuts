@@ -336,7 +336,7 @@ export default function ProfilePage() {
     return (
         <>
             <PageLayout title="Perfil e Conexões" subtitle="Gerencie seu canal e conexões com plataformas.">
-                <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: 24 }}>
+                <div className="vc-profile-grid" style={{ gap: 24 }}>
 
                     <div>
                         {isConnected && channelStats ? (

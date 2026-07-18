@@ -118,7 +118,7 @@ export default function SettingsPage() {
             </div>
 
             {/* Conta + Idioma/Região (2 colunas) */}
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 24, marginBottom: 24 }}>
+            <div className="vc-settings-grid" style={{ gap: 24, marginBottom: 24 }}>
                 <div style={{ background: "var(--bg-card)", border: "1px solid var(--border-default)", borderRadius: "var(--radius-lg)", padding: 24 }}>
                     <div className="flex items-center gap-3 mb-4">
                         <User size={18} style={{ color: "var(--accent-coral)" }} />
@@ -152,7 +152,7 @@ export default function SettingsPage() {
                         <Globe size={18} style={{ color: "var(--accent-amber)" }} />
                         <h3 style={{ fontSize: 16, fontWeight: 600 }}>Idioma e Região</h3>
                     </div>
-                    <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 16 }}>
+                    <div className="vc-settings-fields-grid" style={{ gap: 16 }}>
                         <div style={{ marginBottom: 16 }}>
                             <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "var(--text-secondary)", marginBottom: 6 }}>Idioma</label>
                             <select style={{ width: "100%", padding: "10px 12px", background: "var(--bg-elevated)", border: "1px solid var(--border-default)", borderRadius: "var(--radius)", color: "var(--text-primary)", fontSize: 14, outline: "none" }} value={language} onChange={e => setLanguage(e.target.value)}>

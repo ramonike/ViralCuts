@@ -50,7 +50,7 @@ export default function HelpPage() {
                     </div>
                 </div>
 
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16 }}>
+                <div className="vc-help-categories-grid" style={{ gap: 16 }}>
                     {categories.map((cat, idx) => (
                         <div key={idx} style={{ background: "var(--bg-card)", border: "1px solid var(--border-default)", borderRadius: "var(--radius)", padding: 24, cursor: "pointer", textAlign: "center" }}>
                             <div style={{ width: 48, height: 48, borderRadius: "var(--radius)", background: "var(--bg-card2)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
@@ -62,7 +62,7 @@ export default function HelpPage() {
                     ))}
                 </div>
 
-                <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: 24 }}>
+                <div className="vc-help-content-grid" style={{ gap: 24 }}>
                     <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                         <h2 style={{ fontSize: 20, fontWeight: 700, marginBottom: 8 }}>Perguntas Frequentes</h2>
                         {filteredFaqs.length > 0 ? (

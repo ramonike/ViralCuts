@@ -260,7 +260,7 @@ function ConnectedDashboard({ user, state, supabase, navigate }) {
 
             <TodayTimeline uploadQueue={uploadQueue} />
 
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 296px", gap: 16 }}>
+            <div className="vc-home-grid" style={{ gap: 16 }}>
                 <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
                     <div style={{ padding: "16px 20px 18px" }}>
                         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
